@@ -4,9 +4,11 @@
 
 - change to your modules/registrars directory
 - get plugin:  git clone https://github.com/rendermani/ascio-whmcs-plugin.git ascio
-- add your credentials to callbacks.php
+- copy it to modules/registrars
+- add your credentials and your API Url to callbacks.php
+- activate the ascio plugin in the WHMCS settings and configure it
 
-Known issues: 
+##Known issues: 
 
 - After submitting an order status is active instead of pending
 - Not all TLDs and fields are configured
