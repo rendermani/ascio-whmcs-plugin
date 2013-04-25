@@ -2,13 +2,13 @@
 
 ##First version of the WHMCS domain registration plugin for the Ascio Webservice. 
 
-1. Commandline install
+###Commandline install
 
 - change to your modules/registrars directory
 - get plugin:  git clone https://github.com/rendermani/ascio-whmcs-plugin.git ascio
 - copy it to modules/registrars
 
-2. FTP install
+###FTP install
 - Download ZIP - https://github.com/rendermani/ascio-whmcs-plugin/archive/master.zip
 - unpack the php-files to modules/registrars/ascio
 
