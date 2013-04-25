@@ -12,7 +12,7 @@
 - Download ZIP - https://github.com/rendermani/ascio-whmcs-plugin/archive/master.zip
 - unpack the php-files to modules/registrars/ascio
 
-###configuring plugin
+###Configuring the plugin
 
 - add your Ascio and WHMCS credentials and your API Url to callbacks.php
 - activate the ascio plugin in the WHMCS settings and configure it
