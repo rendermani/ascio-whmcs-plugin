@@ -29,8 +29,8 @@ function ascio_GetNameservers($params) {
 	# Put your code to get the nameservers here and return the values below
 	$values["ns1"] = $ns->NameServer1->HostName;
 	$values["ns2"] = $ns->NameServer2->HostName;
-    $values["ns3"] = $ns->NameServer3->HostName;
-    $values["ns4"] = $ns->NameServer4->HostName;
+    	$values["ns3"] = $ns->NameServer3->HostName;
+    	$values["ns4"] = $ns->NameServer4->HostName;
 	return $values;
 }
 function ascio_SaveNameservers($params) {
@@ -128,12 +128,12 @@ function ascio_SaveDNS($params) {
 function ascio_RegisterDomain($params) {
 	$ascioParams = mapToOrder($params,"Register_Domain");
 	$result = request("CreateOrder",$ascioParams,$params);
-	if (!$results) {
+	if (!$result) {
 		$command = "updateclientdomain";
 	 	$adminuser = "manuel";
 	 	$values["domain"] =  $params["sld"] ."." . $params["tld"];
 	 	$values["status"] = "Pending";
-	 	var_dump(localAPI($command,$values,$adminuser));
+	 	localAPI($command,$values,$adminuser);
 	}
 	return $result; 
 }
