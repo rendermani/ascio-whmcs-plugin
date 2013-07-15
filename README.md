@@ -2,6 +2,10 @@
 
 ##First version of the WHMCS domain registration plugin for the Ascio Webservice. 
 
+###Requirements
+- php 5+
+- PHP SoapClient module installed
+
 ###Commandline install
 
 - change to your modules/registrars directory
