@@ -1,31 +1,63 @@
 <?php
+require_once("config.php");
+
+Class SessionCache {
+	var $m;
+	function init() {
+		$m = new Memcached();
+		$m->addServer('localhost', 11211);
+		return $m;
+	}
+	public static function get() {
+		$m =  SessionCache::init();
+		return $m->get('ascioSession');
+	}
+	public static function put($sessionId) {
+		$m =  SessionCache::init();
+		$m->delete('ascioSession');
+		$m->add('ascioSession',$sessionId);
+	}
+	public static function clear() {
+		$m =  SessionCache::init();
+		$m->delete('ascioSession');
+	}	
+}
 
 function login($params) {
 	$session = array(
 	             'Account'=> $params["Username"],
 	             'Password' =>  $params["Password"]
 	);
-	return sendRequest('LogIn',array('session' => $session ),$params);
+	return sendRequest('LogIn',array('session' => $session ));
 	 
 };
-function request($functionName, $ascioParams, $params, $outputResult=false)  {
-	$result = login($params); 
-	if(is_array($result)) return $result;
-	$ascioParams["sessionId"] = $result->sessionId; 
-	$result = sendRequest($functionName,$ascioParams,$params);
-	if(is_array($result)) return $result;
-	if($outputResult) return $result;
+function request($functionName, $ascioParams, $outputResult=false)  {	
+	$sessionId = SessionCache::get();	
+	if (!$sessionId) {		
+		$result = login(getAscioCredentials()); 
+		if(is_array($result)) return $result;
+		$ascioParams["sessionId"] = $result->sessionId; 		
+		SessionCache::put($result->sessionId);
+	} else {		
+		$ascioParams["sessionId"] = $sessionId; 
+	}
+	$result = sendRequest($functionName,$ascioParams);
+	if(is_array($result) && strpos("Invalid Session",$result["error"]) > -1) {
+		SessionCache::clear();
+		return request($functionName, $ascioParams, $outputResult);		
+	} else {		
+		if($outputResult) return $result;
+		
+	}
+
+	
 	return;
 	//elseif($result->CreateOrderResult->Message) return array("error" => $result->CreateOrderResult->Message);
 };
-function sendRequest($functionName,$ascioParams, $params) {
+function sendRequest($functionName,$ascioParams) {
+		syslog(LOG_INFO, $functionName  );
 		$ascioParams = cleanAscioParams($ascioParams);
-		if ($params["TestMode"] == "on") {
-			$wsdl = "https://awstest.ascio.com/2012/01/01/AscioService.wsdl";	
-		} else {
-			$wsdl = "https://aws.ascio.com/2012/01/01/AscioService.wsdl";	
-		} 
-        $client = new SoapClient($wsdl,array( "trace" => 1 ));
+        $client = new SoapClient(getAscioWsdl(),array( "trace" => 1 ));
         $result = $client->__call($functionName, array('parameters' => $ascioParams));        
 		$resultName = $functionName . "Result";	
 		$status = $result->$resultName;
@@ -39,10 +71,16 @@ function sendRequest($functionName,$ascioParams, $params) {
 			}
 			return array('error' => $status->Message . "<br/>\n" .$messages);
 		}     
-        
-        
 };
-function getDomain($params) {
+function getDomain($handle) {
+	$ascioParams = array(
+		'sessionId' => 'mySessionId',
+		'domainHandle' => $handle
+	);
+	$result = request("GetDomain", $ascioParams,true); 
+	return $result;
+}
+function searchDomain($params) {
 	$criteria= array(
 		'Mode' => 'Strict',
 		'Clauses' => Array(
@@ -57,11 +95,109 @@ function getDomain($params) {
 		'sessionId' => 'mySessionId',
 		'criteria' => $criteria
 	);
-	$result = request("SearchDomain",$ascioParams,$params,true);
+	$result = request("SearchDomain",$ascioParams,true);
 	if(is_array($result)) return $result;
 	else return $result->domains->Domain;
 }
+function splitName($name) {
+	$spacePos = strpos($name," ");
+	$out = array();
+	$out["first"] = substr($name,0,$spacePos);
+	$out["last"] = substr($name, $spacePos+1);
+	return $out;
+
+
+}
+function getCallbackData($orderStatus,$messageId,$orderId) {
+	global $config;
+	// get message
+	$ascioParams = array(
+		'sessionId' => 'mySessionId',
+		'msgId' => $messageId
+	);
+	$result = request("GetMessageQueue", $ascioParams,true);  
+	$domainName = $result->item->DomainName;
+	if ($orderStatus=="Completed") {
+		$status = "Active";
+	} else {
+		$status =  mapResult($orderStatus);
+	}
+	// External WHMCS API: Set Status
+	$postfields = array();
+	$postfields["action"] = "updateclientdomain";
+	$postfields["domain"] = $domainName;
+	$postfields["status"] = $status;
+
+	$id = callApi($postfields);
+	// External WHMCS API: Send Mail
+	$msgPart = "Domain order ". $id . ", ".$domainName;
+	if ($orderStatus=="Completed") {
+		$message =formatOK($msgPart);
+	} else {
+		$message = formatError($result->item->StatusList->CallbackStatus,$msgPart);
+	}
+	$postfields = array();
+	$postfields["action"] = "sendemail";
+	$postfields["customtype"] = "domain";
+	$postfields["customsubject"] = $msgPart ." ". strtolower($status);
+	$postfields["custommessage"] = $message;
+	$postfields["id"] = $id;
+	callApi($postfields);
+	// Ascio ACK Message
+	$ascioParams = array(
+		'sessionId' => 'mySessionId',
+		'msgId' => $messageId
+	);
+	syslog(LOG_INFO,$domainName . ": ". $status);
+	$order = getOrder($orderId);
+	sendAuthCode($order->order);
+	$result = request("AckMessage", $ascioParams,true); 
+}
+function getOrder($orderId) {
+	$ascioParams = array(
+		'sessionId' => 'mySessionId',
+		'orderId' => $orderId
+	);
+	$result = request("GetOrder", $ascioParams,true); 
+	return $result;
+}
+
+function sendAuthCode($order) {
+	if($order->Type != "Update_AuthInfo") return;
+	$domain = getDomain($order->Domain->DomainHandle);
+	syslog(LOG_INFO,"EPP Code: ". $domain->domain->AuthInfo);
+	$msg = "New AuthCode generated for ".$domain->domain->DomainName . ": ".$domain->domain->AuthInfo;
+	$postfields = array();
+	$postfields["action"] = "sendemail";
+	$postfields["customtype"] = "domain";
+	$postfields["customsubject"] = $domain->domain->DomainName . ": New AuthCode generated";
+	$postfields["custommessage"] = $msg;
+	$postfields["id"] = $order->OrderId;
+	callApi($postfields);
+
+}
+function poll() {
+	$params = getAscioCredentials();
+	$ascioParams = array(
+		'sessionId' => 'mySessionId',
+		'msgType' 	=> 'Message_to_Partner'
+	);
+	$result = request("PollMessage",$ascioParams,true);
+	if(is_array($result)) return $result;
+	else return $result;
+}
+function ack($msgId) {
+	$ascioParams = array(
+		'sessionId' => 'mySessionId',
+		'msgId' 	=> $msgId
+	);
+	$result = request("AckMessage",$ascioParams,true);
+	if(is_array($result)) return $result;
+	else return $result;
+}
 function mapToOrder ($params,$orderType) {
+	$domainName = $params["sld"] ."." . $params["tld"];
+	syslog(LOG_INFO,  $orderType . ": ".$domainName);
 	$registrant = mapToContact($params,"Registrant");
 	$admin = mapToContact($params,"Admin");
 	$tech = mapToContact($params,"Admin");
@@ -69,7 +205,7 @@ function mapToOrder ($params,$orderType) {
 		array( 
 		'Type' => $orderType, 
 		'Domain' => array( 
-			'DomainName' => $params["sld"] ."." . $params["tld"],
+			'DomainName' => $domainName,
 			'RegPeriod' =>  $params["regperiod"],
 			'AuthInfo'	=> 	$params["eppcode"],
 			'DomainPurpose' =>  $params["Application Purpose"],
@@ -131,34 +267,32 @@ function cleanAscioParams($ascioParams) {
 	}
 	return $ascioParams;
 }
-function callApi( $params,$apiParams) {	 
-	 $params["username"] = $apiParams["Username"];
- 	 $params["password"] = md5($apiParams["Password"]);
+function callApi( $params) {
+	 $config = getAscioConfig();
+	 $params = array_merge($params,getWHMCSCredentials());
 	 $ch = curl_init();
-	 curl_setopt($ch, CURLOPT_URL, $apiParams["Url"]);
+	 curl_setopt($ch, CURLOPT_URL, $config["whmcs"]["api"]);
 	 curl_setopt($ch, CURLOPT_POST, 1);
 	 curl_setopt($ch, CURLOPT_TIMEOUT, 100);
 	 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 	 curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
 	 $data = curl_exec($ch);
 	 curl_close($ch);
-	 
 	 $data = explode(";",$data);
 	 foreach ($data AS $temp) {
 	   $temp = explode("=",$temp);
-	   $results[$temp[0]] = $temp[1];
+	   if(count($temp)>1) $results[$temp[0]] = $temp[1];
 	 }
-
 	 if ($results["result"]=="success") {
 	   # Result was OK!
 	 } else {
-	   # An error occured
-	 	
+	   # An error occured	 	
 	   echo "The following error occured: ".$results["message"];
 	 }
-	 $id =  split ("=",$data[1]);
-	 return $id[1];
- 
+	 if($data[1]) {
+	 	$id =  split ("=",$data[1]);
+	 	return $id[1];
+	 }
 }
 function formatError($items,$message) {
 	$html = "<h2>Following errors occurred in: ".$message."</h2><ul>";

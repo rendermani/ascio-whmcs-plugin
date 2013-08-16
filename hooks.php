@@ -11,6 +11,15 @@
 	$values["domain"] =  $params["sld"] ."." . $params["tld"];
 	$values["status"] = "Pending";
 	$results = localAPI($command,$values,$adminuser); 
+
+	// log here 
+	$apiParams["Username"]= "manuel";
+	$apiParams["Password"]= "smurf";
+	$apiParams["Url"]= "http://localhost/whmcs/includes/api.php";
+	$postfields = array();
+	$postfields["action"] = "logactivity";
+	$postfields["description"] = "Set domain: ". $values["domain"];
+	$result = callApi($postfields,$apiParams);
  }
  
 // hook_set_domain_status(array("a" => "abc"));

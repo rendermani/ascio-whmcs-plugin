@@ -23,7 +23,7 @@ function ascio_getConfigArray() {
 	return $configarray;
 }
 function ascio_GetNameservers($params) {
-	$domain = getDomain($params);
+	$domain = searchDomain($params); 
 	if (is_array($domain)) return $domain;
 	$ns = $domain->NameServers;
 	# Put your code to get the nameservers here and return the values below
@@ -35,7 +35,7 @@ function ascio_GetNameservers($params) {
 }
 function ascio_SaveNameservers($params) {
 	$ascioParams = mapToOrder($params,"Nameserver_Update");
-	return request("CreateOrder",$ascioParams,$params);
+	return request("CreateOrder",$ascioParams);
 }
 
 function ascio_GetRegistrarLock($params) {
@@ -61,7 +61,7 @@ function ascio_SaveRegistrarLock($params) {
 	}
 	$ascioParams = mapToOrder($params,"Change_Locks");
 	$ascioParams->Order->Domain->TransferLock = $lockstatus;
-	return request("CreateOrder",$ascioParams,$params);
+	return request("CreateOrder",$ascioParams);
 
 
 }
@@ -127,7 +127,7 @@ function ascio_SaveDNS($params) {
 
 function ascio_RegisterDomain($params) {
 	$ascioParams = mapToOrder($params,"Register_Domain");
-	$result = request("CreateOrder",$ascioParams,$params);
+	$result = request("CreateOrder",$ascioParams);
 	if (!$result) {
 		$command = "updateclientdomain";
 	 	$adminuser = "manuel";
@@ -141,33 +141,32 @@ function ascio_RegisterDomain($params) {
 function ascio_TransferDomain($params) {
 	$ascioParams = mapToOrder($params,"Transfer_Domain");
 	//$ascioParams->Order->Domain->AuthInfo = $params["transfersecret"];
-	return request("CreateOrder",$ascioParams,$params);
+	return request("CreateOrder",$ascioParams);
 }
 
 function ascio_RenewDomain($params) {
 	$ascioParams = mapToOrder($params,"Renew_Domain");
-	return request("CreateOrder",$ascioParams,$params);
+	return request("CreateOrder",$ascioParams);
 }
 
 function ascio_ExpireDomain($params) {
 	$ascioParams = mapToOrder($params,"Expire_Domain");
-	return request("CreateOrder",$ascioParams,$params);
+	return request("CreateOrder",$ascioParams);
 }
 
 function ascio_GetContactDetails($params) {
-	$username = $params["Username"];
-	$password = $params["Password"];
-	$testmode = $params["TestMode"];
-	$tld = $params["tld"];
-	$sld = $params["sld"];
+	$result = searchDomain($params);
+	$name = splitName($result->Registrant->Name);
+	
 	# Put your code to get WHOIS data here
 	# Data should be returned in an array as follows
-	$values["Registrant"]["First Name"] = $firstname;
-	$values["Registrant"]["Last Name"] = $lastname;
-	$values["Admin"]["First Name"] = $adminfirstname;
-	$values["Admin"]["Last Name"] = $adminlastname;
-	$values["Tech"]["First Name"] = $techfirstname;
-	$values["Tech"]["Last Name"] = $techlastname;
+	$values["Registrant"]["First Name"] = $name["first"];
+	$values["Registrant"]["Last Name"]  = $name["last"];
+	$values["Admin"]["First Name"] 		= $result->Admin->Firstname;
+	$values["Admin"]["Last Name"] 		= $result->Admin->Lastname;
+	$values["Tech"]["First Name"] 		= $result->Tech->Firstname;
+	$values["Tech"]["Last Name"] 		=  $result->Tech->Lastname;
+	syslog(LOG_INFO, "GetContactDetails");
 	return $values;
 }
 
@@ -193,7 +192,7 @@ function ascio_SaveContactDetails($params) {
 function ascio_GetEPPCode($params) {
     $ascioParams = mapToOrder($params,"Update_AuthInfo");
     // todo: set AuthInfo before order;	
-	$result = request("CreateOrder",$ascioParams,$params,true);
+	$result = request("CreateOrder",$ascioParams,true);
 	if(is_array($result)) {
 		return $result;
 	} else {
