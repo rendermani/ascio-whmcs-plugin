@@ -42,17 +42,14 @@ function request($functionName, $ascioParams, $outputResult=false)  {
 		$ascioParams["sessionId"] = $sessionId; 
 	}
 	$result = sendRequest($functionName,$ascioParams);
-	if(is_array($result) && strpos("Invalid Session",$result["error"]) > -1) {
+	if(is_array($result) && strpos($result["error"],"Invalid Session") > -1) {
 		SessionCache::clear();
 		return request($functionName, $ascioParams, $outputResult);		
 	} else {		
 		if($outputResult) return $result;
 		
-	}
-
-	
+	}	
 	return;
-	//elseif($result->CreateOrderResult->Message) return array("error" => $result->CreateOrderResult->Message);
 };
 function sendRequest($functionName,$ascioParams) {
 		syslog(LOG_INFO, $functionName  );
