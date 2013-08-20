@@ -1,4 +1,6 @@
 <?
+# Please rename this to config.php and customize parameters.
+
 function getAscioConfig () {
 	$cfg = array(
 		"test" => array (
