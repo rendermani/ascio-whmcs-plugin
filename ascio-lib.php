@@ -247,30 +247,6 @@ function mapToContact($params,$type) {
 }
 // WHMCS has 2 contact structures. Flat and nested.
 // This function in converting from adminfirstname to Admin["First Name"]
-function mapFlatToNestedContact($params){
-	$type = $params["Job Title"];
-	$prefix = "";
-	if($type != "Registrant") {
-		$prefix = strtolower($type);
-		$contactName["FirstName"] = $params[$prefix . "firstname"];
-		$contactName["LastName"] = $params[$prefix . "lastname"];
-	}
-	$contact = Array(
-		$prefix . "firstname" 		=> $params['First Name'],
-		$prefix . "lastname" 		=> $params['Last Name'],
-		$prefix . "companyname" 	=> $params['Organisation Name'],
-		$prefix . "address1" 		=> $params['Address 1'],
-		$prefix . "address2" 		=> $params['Address 2'],
-		$prefix . "postcode" 		=> $params['ZIP Code'],
-		$prefix . "city" 			=> $params['City'],
-		$prefix . "state"	 		=> $params['State'],	
-		$prefix . "country" 		=> $params['Country'],
-		$prefix . "email" 			=> $params['Email'],
-		$prefix . "phonenumber" 	=> $params['Phone'],
-		$prefix . "faxnumber" 		=> $params['Fax']
-	);
-	return $contact;
-}
 function mapContactToAscio($params,$type) {
 
 	$ascio = (object) array(
