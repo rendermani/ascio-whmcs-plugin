@@ -157,36 +157,62 @@ function ascio_ExpireDomain($params) {
 function ascio_GetContactDetails($params) {
 	$result = searchDomain($params);
 	$name = splitName($result->Registrant->Name);
-	
+
 	# Put your code to get WHOIS data here
 	# Data should be returned in an array as follows
 	$values["Registrant"]["First Name"] = $name["first"];
 	$values["Registrant"]["Last Name"]  = $name["last"];
+	
 	$values["Admin"]["First Name"] 		= $result->Admin->Firstname;
 	$values["Admin"]["Last Name"] 		= $result->Admin->Lastname;
 	$values["Tech"]["First Name"] 		= $result->Tech->Firstname;
-	$values["Tech"]["Last Name"] 		=  $result->Tech->Lastname;
+	$values["Tech"]["Last Name"] 		= $result->Tech->Lastname;
 	syslog(LOG_INFO, "GetContactDetails");
 	return $values;
 }
 
 function ascio_SaveContactDetails($params) {
-	$username = $params["Username"];
-	$password = $params["Password"];
-	$testmode = $params["TestMode"];
-	$tld = $params["tld"];
-	$sld = $params["sld"];
-	# Data is returned as specified in the GetContactDetails() function
-	$firstname = $params["contactdetails"]["Registrant"]["First Name"];
-	$lastname = $params["contactdetails"]["Registrant"]["Last Name"];
-	$adminfirstname = $params["contactdetails"]["Admin"]["First Name"];
-	$adminlastname = $params["contactdetails"]["Admin"]["Last Name"];
-	$techfirstname = $params["contactdetails"]["Tech"]["First Name"];
-	$techlastname = $params["contactdetails"]["Tech"]["Last Name"];
-	# Put your code to save new WHOIS data here
-	# If error, return the error message in the value below
-	$values["error"] = $error;
-	return $values;
+	$result = "";
+
+	$old = searchDomain($params);
+	$newRegistrant 	= mapContactToAscio($params["contactdetails"]["Registrant"],"Registrant");
+	$newAdmin 		= mapContactToAscio($params["contactdetails"]["Admin"],"Contact");
+	$newTech 		= mapContactToAscio($params["contactdetails"]["Tech"],"Contact");
+	$updateRegistrant = compareRegistrant($newRegistrant,$old->Registrant);
+	$updateAdmin = compareContact($newAdmin,$old->AdminContact);
+	$updateTech = compareContact($newTech,$old->TechContact);	
+
+	echo "<h2>$updateRegistrant</h2>";
+
+	if($updateRegistrant) {
+		syslog(LOG_INFO,"Update Registrant: ".$registrantResult);
+		$ascioParams = mapToOrder($params,$updateRegistrant);		
+		$ascioParams["order"]["Domain"]["Registrant"] = $newRegistrant;
+		// Do the Adminchange within the owner-change
+		if($updateAdmin && $updateRegistrant=="Owner_Change") {
+			syslog(LOG_INFO,"Owner_Change + Admin_Change");
+			$ascioParams["order"]["Domain"]["AdminContact"] = $newAdmin;
+		}
+		$registrantResult = request("CreateOrder",$ascioParams);		
+	} 
+	if($updateTech || $updateBilling || ($updateAdmin && $updateRegistrant!="Owner_Change")) {
+		syslog(LOG_INFO,"Contact_Update");
+		$ascioParams = mapToOrder($params,"Contact_Update");		
+		if($updateAdmin) {
+			syslog(LOG_INFO,"Update Tech");
+			$ascioParams["order"]["Domain"]["AdminContact"] = $newAdmin;
+		} else {
+			$ascioParams["order"]["Domain"]["AdminContact"] = $old->AdminContact;
+		}
+		if($updateTech) {
+			syslog(LOG_INFO,"Update Tech");
+			$ascioParams["order"]["Domain"]["AdminContact"] = $newTech;
+		} else {
+			$ascioParams["order"]["Domain"]["TechContact"] = $old->TechContact;
+		}
+		$ascioParams["order"]["Domain"]["BillingContact"] = $old->BillingContact;
+		$contactResult = request("CreateOrder",$ascioParams);
+	}
 }
 
 function ascio_GetEPPCode($params) {

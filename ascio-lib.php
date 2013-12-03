@@ -102,8 +102,6 @@ function splitName($name) {
 	$out["first"] = substr($name,0,$spacePos);
 	$out["last"] = substr($name, $spacePos+1);
 	return $out;
-
-
 }
 function getCallbackData($orderStatus,$messageId,$orderId) {
 	global $config;
@@ -117,15 +115,18 @@ function getCallbackData($orderStatus,$messageId,$orderId) {
 	if ($orderStatus=="Completed") {
 		$status = "Active";
 	} else {
-		$status =  mapResult($orderStatus);
+		$status =  ($orderStatus);
 	}
+	
 	// External WHMCS API: Set Status
 	$postfields = array();
 	$postfields["action"] = "updateclientdomain";
 	$postfields["domain"] = $domainName;
 	$postfields["status"] = $status;
-
+	syslog(LOG_INFO, "Call API... set Status...");
 	$id = callApi($postfields);
+	syslog(LOG_INFO, "getMessageQueues finished: ".$status);
+	syslog(LOG_INFO, "api response: ".$id);
 	// External WHMCS API: Send Mail
 	$msgPart = "Domain order ". $id . ", ".$domainName;
 	if ($orderStatus=="Completed") {
@@ -158,7 +159,6 @@ function getOrder($orderId) {
 	$result = request("GetOrder", $ascioParams,true); 
 	return $result;
 }
-
 function sendAuthCode($order) {
 	if($order->Type != "Update_AuthInfo") return;
 	$domain = getDomain($order->Domain->DomainHandle);
@@ -171,7 +171,6 @@ function sendAuthCode($order) {
 	$postfields["custommessage"] = $msg;
 	$postfields["id"] = $order->OrderId;
 	callApi($postfields);
-
 }
 function poll() {
 	$params = getAscioCredentials();
@@ -196,8 +195,6 @@ function mapToOrder ($params,$orderType) {
 	$domainName = $params["sld"] ."." . $params["tld"];
 	syslog(LOG_INFO,  $orderType . ": ".$domainName);
 	$registrant = mapToContact($params,"Registrant");
-	$admin = mapToContact($params,"Admin");
-	$tech = mapToContact($params,"Admin");
 	$order = 
 		array( 
 		'Type' => $orderType, 
@@ -208,25 +205,27 @@ function mapToOrder ($params,$orderType) {
 			'DomainPurpose' =>  $params["Application Purpose"],
 			'Registrant' 	=> mapToContact($params,"Registrant"),
 			'AdminContact' 	=> mapToContact($params,"Admin"), 
-			'TechContact' 	=> mapToContact($params,"Admin"), 
-			'BillingContact'=> mapToContact($params,"Admin"),
+			'TechContact' 	=> mapToContact($params,"Tech"), 
+			'BillingContact'=> mapToContact($params,"Billing"),
 			'NameServers' 	=> mapToNameservers($params),
 			'Comment'		=> $params["userid"]
 			),
 		'Comments'	=>	$params["userid"]
 		); 
+	//echo(nl2br(print_r($order,1)));
 	return array(
 			'sessionId' => "set-it-later",
 			'order' => $order
         );
 }
+// map contact from Ascio to WHMCS - admincompanyname
 function mapToContact($params,$type) {
 	$contactName = array();
 	$prefix = "";
 	if($type == "Registrant") {
 		$contactName["Name"] = $params["firstname"] . " " . $params["lastname"];
-		$contactName["NexusCategory"] = $params["Nexus Category"];
-		$contactName["RegistrantNumber"] = "55203780600585";
+		//$contactName["NexusCategory"] = $params["Nexus Category"];
+		//$contactName["RegistrantNumber"] = "55203780600585";
 	} else {
 		$prefix = strtolower($type);
 		$contactName["FirstName"] = $params[$prefix . "firstname"];
@@ -242,9 +241,58 @@ function mapToContact($params,$type) {
 		'CountryCode' 	=>  $params[$prefix . "country"],
 		'Email' 		=>  $params[$prefix . "email"],
 		'Phone'			=>  $params[$prefix . "phonenumber"],
-		'Fax' 			=> '');
+		'Fax' 			=> 	$params[$prefix . "faxnumber"]);
 			
 	return array_merge($contactName,$contact);
+}
+// WHMCS has 2 contact structures. Flat and nested.
+// This function in converting from adminfirstname to Admin["First Name"]
+function mapFlatToNestedContact($params){
+	$type = $params["Job Title"];
+	$prefix = "";
+	if($type != "Registrant") {
+		$prefix = strtolower($type);
+		$contactName["FirstName"] = $params[$prefix . "firstname"];
+		$contactName["LastName"] = $params[$prefix . "lastname"];
+	}
+	$contact = Array(
+		$prefix . "firstname" 		=> $params['First Name'],
+		$prefix . "lastname" 		=> $params['Last Name'],
+		$prefix . "companyname" 	=> $params['Organisation Name'],
+		$prefix . "address1" 		=> $params['Address 1'],
+		$prefix . "address2" 		=> $params['Address 2'],
+		$prefix . "postcode" 		=> $params['ZIP Code'],
+		$prefix . "city" 			=> $params['City'],
+		$prefix . "state"	 		=> $params['State'],	
+		$prefix . "country" 		=> $params['Country'],
+		$prefix . "email" 			=> $params['Email'],
+		$prefix . "phonenumber" 	=> $params['Phone'],
+		$prefix . "faxnumber" 		=> $params['Fax']
+	);
+	return $contact;
+}
+function mapContactToAscio($params,$type) {
+
+	$ascio = (object) array(
+		'OrgName'  				=> $params["Organisation Name"],
+		'Address1'  			=> $params["Address 1"],
+		'Address2'  			=> $params["Address 2"],
+		'PostalCode'  			=> $params["ZIP Code"],
+		'City'  				=> $params["City"],
+		'State'	  				=> $params["State"],
+		'CountryCode'  			=> $params["Country"],
+		'Email'  				=> $params["Email"],
+		'Phone'  				=> $params["Phone"],
+		'Fax'  					=> $params["Fax"]
+	);
+	if($type=="Registrant") {
+		$ascio->Name = $params["First Name"]. " ". $params["Last Name"];		
+	} else {
+		$ascio->FirstName 	= $params["First Name"];
+		$ascio->LastName 	= $params["Last Name"];
+	}
+	return $ascio; 
+
 }
 function mapToNameservers($params) {
 	return array (
@@ -308,6 +356,7 @@ function mapResult($status) {
 	$resultMap = array (
 		"Completed" => "Active",
 		"Failed"	=> "Cancelled",
+		"Invalid"	=> "Cancelled",
 		"Documentation_Not_Approved" => "Cancelled",
 		"Pending_Documentation" => "Pending",
 		"Pending_End_User_Action" => "Pending",
@@ -316,10 +365,43 @@ function mapResult($status) {
 	);
 	return $resultMap[$status];
 }
-
+function diffContact($newContact,$oldContact) {
+	if($newContact->City == NULL) return array();
+	$diffs  = array();	
+	foreach (get_object_vars($newContact) as $key => $value) {
+		$originalValue = replaceSpecialCharacters($oldContact->$key);
+		if($value != $originalValue ) {
+			$diffs[$key] = $value;
+			//echo "$key:".$value . " != ". $originalValue  . "<br/>";
+		} 		
+	}	
+	return $diffs;
+}
+function compareRegistrant($newContact,$oldContact) {
+	$diffs = diffContact($newContact,$oldContact);
+	if($diffs["Name"] || $diffs["OrgName"] || $diffs["RegistrantNumber"]) return "Owner_Change";
+	elseif (count($diffs) > 0) return "Registrant_Details_Update";
+	else return false; 
+}
+function compareContact($newContact,$oldContact) {
+	$diffs = diffContact($newContact,$oldContact);
+	if (count($diffs) > 0) return "Contact_Update";
+	else return false;
+}
 function htmldump($variable, $height="9em") {
 	echo "<pre style=\"border: 1px solid #000; height: {$height}; overflow: auto; margin: 0.5em;\">";
 	var_dump($variable);
 	echo "</pre>\n";
 }
+function replaceSpecialCharacters($string) {
+	$string = str_replace("ü", "u", $string);
+	$string = str_replace("ä", "a", $string);
+	$string = str_replace("ö", "o", $string);
+	$string = str_replace("ß", "s", $string);
+	$string = str_replace("Ü", "U", $string);
+	$string = str_replace("Ä", "A", $string);
+	$string = str_replace("Ö", "O", $string);
+	return $string; 
+};
+
 ?>
