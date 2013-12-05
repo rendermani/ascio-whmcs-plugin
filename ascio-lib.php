@@ -1,5 +1,6 @@
 <?php
 require_once("config.php");
+//require_once("libphonenumber");
 
 Class SessionCache {
 	var $m;
@@ -111,6 +112,7 @@ function getCallbackData($orderStatus,$messageId,$orderId) {
 		'msgId' => $messageId
 	);
 	$result = request("GetMessageQueue", $ascioParams,true);  
+	syslog(LOG_INFO, "getCallbackData: ".$orderStatus);
 	$domainName = $result->item->DomainName;
 	if ($orderStatus=="Completed") {
 		$status = "Active";
@@ -205,8 +207,8 @@ function mapToOrder ($params,$orderType) {
 			'DomainPurpose' =>  $params["Application Purpose"],
 			'Registrant' 	=> mapToContact($params,"Registrant"),
 			'AdminContact' 	=> mapToContact($params,"Admin"), 
-			'TechContact' 	=> mapToContact($params,"Tech"), 
-			'BillingContact'=> mapToContact($params,"Billing"),
+			'TechContact' 	=> mapToContact($params,"Admin"), 
+			'BillingContact'=> mapToContact($params,"Admin"),
 			'NameServers' 	=> mapToNameservers($params),
 			'Comment'		=> $params["userid"]
 			),
