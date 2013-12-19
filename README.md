@@ -26,4 +26,3 @@
 ##Known issues: 
 
 - Not all TLDs and fields are configured
-- Changing contacts not implemented yet. 
