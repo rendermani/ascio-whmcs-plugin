@@ -8,7 +8,7 @@ Class SessionCache {
 		$fp = fopen($filename,"r");
 		$contents = fread($fp, filesize($filename));
 		fclose($fp);
-		if($contents == "false") $contents = false;
+		if(trim($contents) == "false") $contents = false;
 		return $contents;
 	}
 	public static function put($sessionId) {
@@ -22,7 +22,6 @@ Class SessionCache {
 	}
 }
 function login($params) {
-	echo "login<br/>";
 	$session = array(
 	             'Account'=> $params["Username"],
 	             'Password' =>  $params["Password"]
