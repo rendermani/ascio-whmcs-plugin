@@ -5,7 +5,7 @@
 ###Requirements
 - php 5+
 - PHP SoapClient module installed
-- php5-memcached, memcached (if you can't install it ask me for a workaround)
+- The webserver needs write permissions for the file ascio-session.txt
 
 ###Commandline install
 
