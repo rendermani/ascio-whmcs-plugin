@@ -3,28 +3,26 @@ require_once("config.php");
 //require_once("libphonenumber");
 
 Class SessionCache {
-	var $m;
-	function init() {
-		$m = new Memcached();
-		$m->addServer('localhost', 11211);
-		return $m;
-	}
 	public static function get() {
-		$m =  SessionCache::init();
-		return $m->get('ascioSession');
+		$filename = dirname(realpath ( __FILE__ ))."/ascio-session.txt";
+		$fp = fopen($filename,"r");
+		$contents = fread($fp, filesize($filename));
+		fclose($fp);
+		if($contents == "false") $contents = false;
+		return $contents;
 	}
 	public static function put($sessionId) {
-		$m =  SessionCache::init();
-		$m->delete('ascioSession');
-		$m->add('ascioSession',$sessionId);
+		$filename = dirname(realpath ( __FILE__ ))."/ascio-session.txt";
+		$fp = fopen($filename,"w");		
+		fwrite($fp,$sessionId);
+		fclose($fp);
 	}
 	public static function clear() {
-		$m =  SessionCache::init();
-		$m->delete('ascioSession');
-	}	
+		SessionCache::put("false");
+	}
 }
-
 function login($params) {
+	echo "login<br/>";
 	$session = array(
 	             'Account'=> $params["Username"],
 	             'Password' =>  $params["Password"]
@@ -112,7 +110,6 @@ function getCallbackData($orderStatus,$messageId,$orderId) {
 		'msgId' => $messageId
 	);
 	$result = request("GetMessageQueue", $ascioParams,true);  
-	syslog(LOG_INFO, "getCallbackData: ".$orderStatus);
 	$domainName = $result->item->DomainName;
 	if ($orderStatus=="Completed") {
 		$status = "Active";
@@ -125,10 +122,7 @@ function getCallbackData($orderStatus,$messageId,$orderId) {
 	$postfields["action"] = "updateclientdomain";
 	$postfields["domain"] = $domainName;
 	$postfields["status"] = $status;
-	syslog(LOG_INFO, "Call API... set Status...");
 	$id = callApi($postfields);
-	syslog(LOG_INFO, "getMessageQueues finished: ".$status);
-	syslog(LOG_INFO, "api response: ".$id);
 	// External WHMCS API: Send Mail
 	$msgPart = "Domain order ". $id . ", ".$domainName;
 	if ($orderStatus=="Completed") {
