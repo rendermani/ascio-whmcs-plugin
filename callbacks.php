@@ -7,6 +7,6 @@ $orderId = $_GET["OrderId"];
 $messageId = $_GET["MessageId"];
 $orderStatus = $_GET["OrderStatus"];
 
-getCallbackData($orderStatus,$messageId,$orderId);
+ASCIO::getCallbackData($orderStatus, $messageId, $orderId);
 
 ?>

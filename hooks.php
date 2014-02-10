@@ -16,6 +16,6 @@ function hook_set_domain_status($vars) {
 }
  
 // hook_set_domain_status(array("a" => "abc"));
-add_hook("AfterRegistrarRegistration",1,"hook_set_domain_status");
+add_hook("AfterRegistrarRegistration", 1, "hook_set_domain_status");
 
 ?>

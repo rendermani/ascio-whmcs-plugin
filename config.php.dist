@@ -18,6 +18,7 @@ function getAscioConfig () {
 	);
 	return $cfg;
 }
+
 function getAscioCredentials () {
 	$config = getAscioConfig();
 	if($config["testMode"]=="on") {
@@ -48,4 +49,5 @@ function getAscioWsdl () {
 		return $config["live"]["wsdl"];
 	}
 }
+
 ?>
