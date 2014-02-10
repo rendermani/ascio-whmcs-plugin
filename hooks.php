@@ -1,4 +1,5 @@
 <?php
+
 require_once("config.php");
 
 function hook_set_domain_status($vars) {  

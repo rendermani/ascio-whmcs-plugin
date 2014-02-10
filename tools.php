@@ -1,6 +1,7 @@
 <?php 
 
 Class Tools {
+  
   public static function splitName($name) {
     $spacePos = strpos($name," ");
     $out = array();

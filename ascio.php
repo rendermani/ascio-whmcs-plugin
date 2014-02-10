@@ -32,8 +32,8 @@ function ascio_GetNameservers($params) {
 }
 
 function ascio_SaveNameservers($params) {
-	$ascioParams = Tools::mapToOrder($params,"Nameserver_Update");
-	return ASCIO::request("CreateOrder",$ascioParams);
+	$ascioParams = Tools::mapToOrder($params, "Nameserver_Update");
+	return ASCIO::request("CreateOrder", $ascioParams);
 }
 
 function ascio_GetRegistrarLock($params) {
@@ -59,7 +59,7 @@ function ascio_SaveRegistrarLock($params) {
 	}
 	$ascioParams = Tools::mapToOrder($params,"Change_Locks");
 	$ascioParams->Order->Domain->TransferLock = $lockstatus;
-	return ASCIO::request("CreateOrder",$ascioParams);
+	return ASCIO::request("CreateOrder", $ascioParams);
 }
 
 function ascio_RegisterDomain($params) {
@@ -68,7 +68,7 @@ function ascio_RegisterDomain($params) {
 	if (!$result) {
 	 	$values["domain"] =  $params["sld"] ."." . $params["tld"];
 	 	$values["status"] = "Pending";
-	 	ASCIO::callApi("updateclientdomain",$values);
+	 	ASCIO::callApi("updateclientdomain", $values);
 	}
 	return $result; 
 }
@@ -76,17 +76,17 @@ function ascio_RegisterDomain($params) {
 function ascio_TransferDomain($params) {
 	$ascioParams = Tools::mapToOrder($params,"Transfer_Domain");
 	//$ascioParams->Order->Domain->AuthInfo = $params["transfersecret"];
-	return ASCIO::request("CreateOrder",$ascioParams);
+	return ASCIO::request("CreateOrder", $ascioParams);
 }
 
 function ascio_RenewDomain($params) {
 	$ascioParams = Tools::mapToOrder($params,"Renew_Domain");
-	return ASCIO::request("CreateOrder",$ascioParams);
+	return ASCIO::request("CreateOrder", $ascioParams);
 }
 
 function ascio_ExpireDomain($params) {
 	$ascioParams = Tools::mapToOrder($params,"Expire_Domain");
-	return ASCIO::request("CreateOrder",$ascioParams);
+	return ASCIO::request("CreateOrder", $ascioParams);
 }
 
 function ascio_GetContactDetails($params) {
@@ -98,10 +98,10 @@ function ascio_GetContactDetails($params) {
 	$values["Registrant"]["First Name"] = $name["first"];
 	$values["Registrant"]["Last Name"]  = $name["last"];
 	
-	$values["Admin"]["First Name"] 		= $result->Admin->Firstname;
-	$values["Admin"]["Last Name"] 		= $result->Admin->Lastname;
-	$values["Tech"]["First Name"] 		= $result->Tech->Firstname;
-	$values["Tech"]["Last Name"] 		= $result->Tech->Lastname;
+	$values["Admin"]["First Name"] = $result->Admin->Firstname;
+	$values["Admin"]["Last Name"] = $result->Admin->Lastname;
+	$values["Tech"]["First Name"] = $result->Tech->Firstname;
+	$values["Tech"]["Last Name"] = $result->Tech->Lastname;
 	syslog(LOG_INFO, "GetContactDetails");
 	return $values;
 }
@@ -113,22 +113,22 @@ function ascio_SaveContactDetails($params) {
 	$newRegistrant = Tools::mapContactToAscio($params["contactdetails"]["Registrant"],"Registrant");
 	$newAdmin = Tools::mapContactToAscio($params["contactdetails"]["Admin"],"Contact");
 	$newTech = Tools::mapContactToAscio($params["contactdetails"]["Tech"],"Contact");
-	$updateRegistrant = Tools::compareRegistrant($newRegistrant,$old->Registrant);
-	$updateAdmin = Tools::compareContact($newAdmin,$old->AdminContact);
-	$updateTech = Tools::compareContact($newTech,$old->TechContact);	
+	$updateRegistrant = Tools::compareRegistrant($newRegistrant, $old->Registrant);
+	$updateAdmin = Tools::compareContact($newAdmin, $old->AdminContact);
+	$updateTech = Tools::compareContact($newTech, $old->TechContact);	
 
 	echo "<h2>$updateRegistrant</h2>";
 
 	if($updateRegistrant) {
 		syslog(LOG_INFO,"Update Registrant: ".$registrantResult);
-		$ascioParams = Tools::mapToOrder($params,$updateRegistrant);		
+		$ascioParams = Tools::mapToOrder($params, $updateRegistrant);		
 		$ascioParams["order"]["Domain"]["Registrant"] = $newRegistrant;
 		// Do the Adminchange within the owner-change
 		if($updateAdmin && $updateRegistrant=="Owner_Change") {
 			syslog(LOG_INFO,"Owner_Change + Admin_Change");
 			$ascioParams["order"]["Domain"]["AdminContact"] = $newAdmin;
 		}
-		$registrantResult = ASCIO::request("CreateOrder",$ascioParams);		
+		$registrantResult = ASCIO::request("CreateOrder", $ascioParams);		
 	} 
 	if($updateTech || $updateBilling || ($updateAdmin && $updateRegistrant != "Owner_Change")) {
 		syslog(LOG_INFO,"Contact_Update");
@@ -146,14 +146,14 @@ function ascio_SaveContactDetails($params) {
 			$ascioParams["order"]["Domain"]["TechContact"] = $old->TechContact;
 		}
 		$ascioParams["order"]["Domain"]["BillingContact"] = $old->BillingContact;
-		$contactResult = ASCIO::request("CreateOrder",$ascioParams);
+		$contactResult = ASCIO::request("CreateOrder", $ascioParams);
 	}
 }
 
 function ascio_GetEPPCode($params) {
   $ascioParams = Tools::mapToOrder($params,"Update_AuthInfo");
   // todo: set AuthInfo before order;	
-	$result = ASCIO::request("CreateOrder",$ascioParams,true);
+	$result = ASCIO::request("CreateOrder", $ascioParams, true);
 	if(is_array($result)) {
 		return $result;
 	} else {

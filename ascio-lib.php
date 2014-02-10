@@ -1,4 +1,5 @@
 <?php
+
 require_once("config.php");
 require_once("sessioncache.php");
 require_once("tools.php");
@@ -36,15 +37,15 @@ Class ASCIO {
   private static function sendRequest($functionName,$ascioParams) {
   	syslog(LOG_INFO, $functionName  );
   	$ascioParams = Tools::cleanAscioParams($ascioParams);
-    $client = new SoapClient(getAscioWsdl(),array( "trace" => 1 ));
+    $client = new SoapClient(getAscioWsdl(), array( "trace" => 1 ));
     $result = $client->__call($functionName, array('parameters' => $ascioParams));       
   	$resultName = $functionName . "Result";	
   	$status = $result->$resultName;
   	if ( $status->ResultCode==200) {
   		return $result;
   	} else {
-  		if (count($status->Values->string) > 1 ){
-  			$messages = join("<br/>\n",$status->Values->string);	
+  		if (count($status->Values->string) > 1){
+  			$messages = join("<br/>\n", $status->Values->string);	
   		} else {
   			$messages = $status->Values->string;
   		}
@@ -76,7 +77,7 @@ Class ASCIO {
   		'sessionId' => 'mySessionId',
   		'criteria' => $criteria
   	);
-  	$result = ASCIO::request("SearchDomain",$ascioParams,true);
+  	$result = ASCIO::request("SearchDomain", $ascioParams, true);
   	if(is_array($result)) return $result;
   	else return $result->domains->Domain;
   }
@@ -87,12 +88,12 @@ Class ASCIO {
   		'sessionId' => 'mySessionId',
   		'msgId' => $messageId
   	);
-  	$result = ASCIO::request("GetMessageQueue", $ascioParams,true);  
+  	$result = ASCIO::request("GetMessageQueue", $ascioParams, true);  
   	$domainName = $result->item->DomainName;
-  	if ($orderStatus=="Completed") {
+  	if ($orderStatus == "Completed") {
   		$status = "Active";
   	} else {
-  		$status =  ($orderStatus);
+  		$status = $orderStatus;
   	}
   	
   	// External WHMCS API: Set Status
@@ -110,7 +111,7 @@ Class ASCIO {
   	}
   	$postfields = array();
   	$postfields["customtype"] = "domain";
-  	$postfields["customsubject"] = $msgPart ." ". strtolower($status);
+  	$postfields["customsubject"] = $msgPart . " " . strtolower($status);
   	$postfields["custommessage"] = $message;
   	$postfields["id"] = $id;
   	ASCIO::callApi("sendemail", $postfields);
@@ -133,9 +134,10 @@ Class ASCIO {
 
   private static function sendAuthCode($order) {
   	if($order->Type != "Update_AuthInfo") return;
+
   	$domain = ASCIO::getDomain($order->Domain->DomainHandle);
-  	syslog(LOG_INFO,"EPP Code: ". $domain->domain->AuthInfo);
-  	$msg = "New AuthCode generated for ".$domain->domain->DomainName . ": ".$domain->domain->AuthInfo;
+  	syslog(LOG_INFO,"EPP Code: " . $domain->domain->AuthInfo);
+  	$msg = "New AuthCode generated for " . $domain->domain->DomainName . ": " . $domain->domain->AuthInfo;
   	$postfields = array();
   	$postfields["customtype"] = "domain";
   	$postfields["customsubject"] = $domain->domain->DomainName . ": New AuthCode generated";
@@ -150,7 +152,7 @@ Class ASCIO {
   		'sessionId' => 'mySessionId',
   		'msgType' 	=> 'Message_to_Partner'
   	);
-  	$result = ASCIO::request("PollMessage", $ascioParams,true);
+  	$result = ASCIO::request("PollMessage", $ascioParams, true);
   	return $result;
   }
 
@@ -159,7 +161,7 @@ Class ASCIO {
   		'sessionId' => 'mySessionId',
   		'msgId' 	=> $msgId
   	);
-  	$result = ASCIO::request("AckMessage", $ascioParams,true);
+  	$result = ASCIO::request("AckMessage", $ascioParams, true);
   	return $result;
   }
 
@@ -170,7 +172,7 @@ Class ASCIO {
   	   # Result was OK!
   	 } else {
   	   # An error occured	 	
-  	   echo "The following error occured: ".$results["message"];
+  	   echo "The following error occured: " . $results["message"];
   	 }
   	 return $results;
   }
