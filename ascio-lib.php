@@ -20,14 +20,15 @@ Class SessionCache {
 		SessionCache::put("false");
 	}
 }
+
 function login($params) {
 	$session = array(
-	             'Account'=> $params["Username"],
-	             'Password' =>  $params["Password"]
+    'Account'=> $params["Username"],
+    'Password' =>  $params["Password"]
 	);
 	return sendRequest('LogIn',array('session' => $session ));
-	 
-};
+}
+
 function request($functionName, $ascioParams, $outputResult=false)  {	
 	$sessionId = SessionCache::get();	
 	if (!$sessionId) {		
@@ -47,25 +48,27 @@ function request($functionName, $ascioParams, $outputResult=false)  {
 		
 	}	
 	return;
-};
+}
+
 function sendRequest($functionName,$ascioParams) {
-		syslog(LOG_INFO, $functionName  );
-		$ascioParams = cleanAscioParams($ascioParams);
-        $client = new SoapClient(getAscioWsdl(),array( "trace" => 1 ));
-        $result = $client->__call($functionName, array('parameters' => $ascioParams));        
-		$resultName = $functionName . "Result";	
-		$status = $result->$resultName;
-		if ( $status->ResultCode==200) {
-			return $result;
+	syslog(LOG_INFO, $functionName  );
+	$ascioParams = cleanAscioParams($ascioParams);
+  $client = new SoapClient(getAscioWsdl(),array( "trace" => 1 ));
+  $result = $client->__call($functionName, array('parameters' => $ascioParams));       
+	$resultName = $functionName . "Result";	
+	$status = $result->$resultName;
+	if ( $status->ResultCode==200) {
+		return $result;
+	} else {
+		if (count($status->Values->string) > 1 ){
+			$messages = join("<br/>\n",$status->Values->string);	
 		} else {
-			if (count($status->Values->string) > 1 ){
-				$messages = join("<br/>\n",$status->Values->string);	
-			} else {
-				$messages = $status->Values->string;
-			}
-			return array('error' => $status->Message . "<br/>\n" .$messages);
-		}     
-};
+			$messages = $status->Values->string;
+		}
+		return array('error' => $status->Message . "<br/>\n" .$messages);
+	}
+}
+
 function getDomain($handle) {
 	$ascioParams = array(
 		'sessionId' => 'mySessionId',
@@ -74,6 +77,7 @@ function getDomain($handle) {
 	$result = request("GetDomain", $ascioParams,true); 
 	return $result;
 }
+
 function searchDomain($params) {
 	$criteria= array(
 		'Mode' => 'Strict',
@@ -93,6 +97,7 @@ function searchDomain($params) {
 	if(is_array($result)) return $result;
 	else return $result->domains->Domain;
 }
+
 function splitName($name) {
 	$spacePos = strpos($name," ");
 	$out = array();
@@ -100,6 +105,7 @@ function splitName($name) {
 	$out["last"] = substr($name, $spacePos+1);
 	return $out;
 }
+
 function getCallbackData($orderStatus,$messageId,$orderId) {
 	global $config;
 	// get message
@@ -144,6 +150,7 @@ function getCallbackData($orderStatus,$messageId,$orderId) {
 	sendAuthCode($order->order);
 	$result = request("AckMessage", $ascioParams,true); 
 }
+
 function getOrder($orderId) {
 	$ascioParams = array(
 		'sessionId' => 'mySessionId',
@@ -152,6 +159,7 @@ function getOrder($orderId) {
 	$result = request("GetOrder", $ascioParams,true); 
 	return $result;
 }
+
 function sendAuthCode($order) {
 	if($order->Type != "Update_AuthInfo") return;
 	$domain = getDomain($order->Domain->DomainHandle);
@@ -164,6 +172,7 @@ function sendAuthCode($order) {
 	$postfields["id"] = $order->OrderId;
 	callApi("sendemail", $postfields);
 }
+
 function poll() {
 	$params = getAscioCredentials();
 	$ascioParams = array(
@@ -174,6 +183,7 @@ function poll() {
 	if(is_array($result)) return $result;
 	else return $result;
 }
+
 function ack($msgId) {
 	$ascioParams = array(
 		'sessionId' => 'mySessionId',
@@ -183,12 +193,12 @@ function ack($msgId) {
 	if(is_array($result)) return $result;
 	else return $result;
 }
+
 function mapToOrder ($params,$orderType) {
 	$domainName = $params["sld"] ."." . $params["tld"];
 	syslog(LOG_INFO,  $orderType . ": ".$domainName);
 	$registrant = mapToContact($params,"Registrant");
-	$order = 
-		array( 
+	$order = array( 
 		'Type' => $orderType, 
 		'Domain' => array( 
 			'DomainName' => $domainName,
@@ -201,15 +211,16 @@ function mapToOrder ($params,$orderType) {
 			'BillingContact'=> mapToContact($params,"Admin"),
 			'NameServers' 	=> mapToNameservers($params),
 			'Comment'		=> $params["userid"]
-			),
+		),
 		'Comments'	=>	$params["userid"]
-		); 
+	);
 	//echo(nl2br(print_r($order,1)));
 	return array(
-			'sessionId' => "set-it-later",
-			'order' => $order
-        );
+		'sessionId' => "set-it-later",
+		'order' => $order
+  );
 }
+
 // map contact from Ascio to WHMCS - admincompanyname
 function mapToContact($params,$type) {
 	$contactName = array();
@@ -237,49 +248,53 @@ function mapToContact($params,$type) {
 			
 	return array_merge($contactName,$contact);
 }
+
 // WHMCS has 2 contact structures. Flat and nested.
 // This function in converting from adminfirstname to Admin["First Name"]
 function mapContactToAscio($params,$type) {
 
 	$ascio = (object) array(
-		'OrgName'  				=> $params["Organisation Name"],
-		'Address1'  			=> $params["Address 1"],
-		'Address2'  			=> $params["Address 2"],
-		'PostalCode'  			=> $params["ZIP Code"],
-		'City'  				=> $params["City"],
-		'State'	  				=> $params["State"],
-		'CountryCode'  			=> $params["Country"],
-		'Email'  				=> $params["Email"],
-		'Phone'  				=> $params["Phone"],
-		'Fax'  					=> $params["Fax"]
+  	'OrgName'  				=> $params["Organisation Name"],
+  	'Address1'  			=> $params["Address 1"],
+  	'Address2'  			=> $params["Address 2"],
+  	'PostalCode'  			=> $params["ZIP Code"],
+  	'City'  				=> $params["City"],
+  	'State'	  				=> $params["State"],
+  	'CountryCode'  			=> $params["Country"],
+  	'Email'  				=> $params["Email"],
+  	'Phone'  				=> $params["Phone"],
+  	'Fax'  					=> $params["Fax"]
 	);
 	if($type=="Registrant") {
 		$ascio->Name = $params["First Name"]. " ". $params["Last Name"];		
 	} else {
-		$ascio->FirstName 	= $params["First Name"];
-		$ascio->LastName 	= $params["Last Name"];
+		$ascio->FirstName = $params["First Name"];
+		$ascio->LastName = $params["Last Name"];
 	}
 	return $ascio; 
 
 }
+
 function mapToNameservers($params) {
 	return array (
-				'NameServer1' => Array('HostName' => $params["ns1"]), 
-				'NameServer2' => Array('HostName' => $params["ns2"]),
-				'NameServer3' => Array('HostName' => $params["ns3"]),
-				'NameServer4' => Array('HostName' => $params["ns4"])
+		'NameServer1' => Array('HostName' => $params["ns1"]), 
+		'NameServer2' => Array('HostName' => $params["ns2"]),
+		'NameServer3' => Array('HostName' => $params["ns3"]),
+		'NameServer4' => Array('HostName' => $params["ns4"])
 	);
 }
+
 function cleanAscioParams($ascioParams) {
 	foreach ($ascioParams as $key => $value) {
 		if(is_array($value)) {
 			$ascioParams[$key] = cleanAscioParams($value);			
 		} elseif (strlen($value) > 0) {
-			$ascioParams[$key] =$value;	
+			$ascioParams[$key] = $value;	
 		}
 	}
 	return $ascioParams;
 }
+
 function callApi($command, $params) {
    $results = localAPI($command, $params, $getWHMCSCredentials());
 
@@ -291,6 +306,7 @@ function callApi($command, $params) {
 	 }
 	 return $results;
 }
+
 function formatError($items,$message) {
 	$html = "<h2>Following errors occurred in: ".$message."</h2><ul>";
 	if (!is_array($items)) $items = array($items);
@@ -300,10 +316,12 @@ function formatError($items,$message) {
 	$html .= "</ul><p>Please change your settings and resubmit the order.</p>";
 	return $html;	
 }
+
 function formatOK($message) {
 	$html = "<h2>Order completed:".$message.":</h2>";
 	return $html;	
 }
+
 function mapResult($status) {
 	$resultMap = array (
 		"Completed" => "Active",
@@ -317,6 +335,7 @@ function mapResult($status) {
 	);
 	return $resultMap[$status];
 }
+
 function diffContact($newContact,$oldContact) {
 	if($newContact->City == NULL) return array();
 	$diffs  = array();	
@@ -329,22 +348,26 @@ function diffContact($newContact,$oldContact) {
 	}	
 	return $diffs;
 }
+
 function compareRegistrant($newContact,$oldContact) {
 	$diffs = diffContact($newContact,$oldContact);
 	if($diffs["Name"] || $diffs["OrgName"] || $diffs["RegistrantNumber"]) return "Owner_Change";
 	elseif (count($diffs) > 0) return "Registrant_Details_Update";
 	else return false; 
 }
+
 function compareContact($newContact,$oldContact) {
 	$diffs = diffContact($newContact,$oldContact);
 	if (count($diffs) > 0) return "Contact_Update";
 	else return false;
 }
+
 function htmldump($variable, $height="9em") {
 	echo "<pre style=\"border: 1px solid #000; height: {$height}; overflow: auto; margin: 0.5em;\">";
 	var_dump($variable);
 	echo "</pre>\n";
 }
+
 function replaceSpecialCharacters($string) {
 	$string = str_replace("ü", "u", $string);
 	$string = str_replace("ä", "a", $string);
@@ -354,6 +377,6 @@ function replaceSpecialCharacters($string) {
 	$string = str_replace("Ä", "A", $string);
 	$string = str_replace("Ö", "O", $string);
 	return $string; 
-};
+}
 
 ?>
