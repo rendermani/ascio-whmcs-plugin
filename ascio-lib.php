@@ -1,6 +1,5 @@
 <?php
 require_once("config.php");
-//require_once("libphonenumber");
 
 Class SessionCache {
 	public static function get() {
@@ -118,10 +117,10 @@ function getCallbackData($orderStatus,$messageId,$orderId) {
 	
 	// External WHMCS API: Set Status
 	$postfields = array();
-	$postfields["action"] = "updateclientdomain";
 	$postfields["domain"] = $domainName;
 	$postfields["status"] = $status;
-	$id = callApi($postfields);
+	$results = callApi("updateclientdomain", $postfields);
+  $id = $results["domainid"];
 	// External WHMCS API: Send Mail
 	$msgPart = "Domain order ". $id . ", ".$domainName;
 	if ($orderStatus=="Completed") {
@@ -130,12 +129,11 @@ function getCallbackData($orderStatus,$messageId,$orderId) {
 		$message = formatError($result->item->StatusList->CallbackStatus,$msgPart);
 	}
 	$postfields = array();
-	$postfields["action"] = "sendemail";
 	$postfields["customtype"] = "domain";
 	$postfields["customsubject"] = $msgPart ." ". strtolower($status);
 	$postfields["custommessage"] = $message;
 	$postfields["id"] = $id;
-	callApi($postfields);
+	callApi("sendemail", $postfields);
 	// Ascio ACK Message
 	$ascioParams = array(
 		'sessionId' => 'mySessionId',
@@ -160,12 +158,11 @@ function sendAuthCode($order) {
 	syslog(LOG_INFO,"EPP Code: ". $domain->domain->AuthInfo);
 	$msg = "New AuthCode generated for ".$domain->domain->DomainName . ": ".$domain->domain->AuthInfo;
 	$postfields = array();
-	$postfields["action"] = "sendemail";
 	$postfields["customtype"] = "domain";
 	$postfields["customsubject"] = $domain->domain->DomainName . ": New AuthCode generated";
 	$postfields["custommessage"] = $msg;
 	$postfields["id"] = $order->OrderId;
-	callApi($postfields);
+	callApi("sendemail", $postfields);
 }
 function poll() {
 	$params = getAscioCredentials();
@@ -283,32 +280,16 @@ function cleanAscioParams($ascioParams) {
 	}
 	return $ascioParams;
 }
-function callApi( $params) {
-	 $config = getAscioConfig();
-	 $params = array_merge($params,getWHMCSCredentials());
-	 $ch = curl_init();
-	 curl_setopt($ch, CURLOPT_URL, $config["whmcs"]["api"]);
-	 curl_setopt($ch, CURLOPT_POST, 1);
-	 curl_setopt($ch, CURLOPT_TIMEOUT, 100);
-	 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-	 curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
-	 $data = curl_exec($ch);
-	 curl_close($ch);
-	 $data = explode(";",$data);
-	 foreach ($data AS $temp) {
-	   $temp = explode("=",$temp);
-	   if(count($temp)>1) $results[$temp[0]] = $temp[1];
-	 }
+function callApi($command, $params) {
+   $results = localAPI($command, $params, $getWHMCSCredentials());
+
 	 if ($results["result"]=="success") {
 	   # Result was OK!
 	 } else {
 	   # An error occured	 	
 	   echo "The following error occured: ".$results["message"];
 	 }
-	 if($data[1]) {
-	 	$id =  split ("=",$data[1]);
-	 	return $id[1];
-	 }
+	 return $results;
 }
 function formatError($items,$message) {
 	$html = "<h2>Following errors occurred in: ".$message."</h2><ul>";
