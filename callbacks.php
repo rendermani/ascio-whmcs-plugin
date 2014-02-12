@@ -1,4 +1,5 @@
 <?
+
 require("ascio-lib.php");
 require_once("config.php");
 
@@ -8,5 +9,4 @@ $messageId = $_GET["MessageId"];
 $orderStatus = $_GET["OrderStatus"];
 
 ASCIO::getCallbackData($orderStatus, $messageId, $orderId);
-
 ?>
