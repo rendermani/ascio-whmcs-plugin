@@ -27,6 +27,9 @@ Class ASCIO {
       $ascioParams["sessionId"] = $sessionId;
     }
     $result = ASCIO::sendRequest($functionName, $ascioParams);
+    
+    error_log(print_r($result, true));
+    
     if (is_array($result) && strpos($result["error"], "Invalid Session") > -1) {
       SessionCache::clear();
       return ASCIO::request($functionName, $ascioParams);

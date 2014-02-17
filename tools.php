@@ -187,15 +187,25 @@ Class Tools {
         'RegPeriod' => $params["regperiod"],
         'AuthInfo' => $params["eppcode"],
         'DomainPurpose' => $params["Application Purpose"],
-        'Registrant' => Tools::mapToContact($params, "Registrant"),
-        'AdminContact' => Tools::mapToContact($params, "Admin"),
-        'TechContact' => Tools::mapToContact($params, "Admin"),
-        'BillingContact' => Tools::mapToContact($params, "Admin"),
         'NameServers' => Tools::mapToNameservers($params),
         'Comment' => $params["userid"]
       ),
       'Comments' => $params["userid"]
     );
+
+    if (strpos($params["tld"], "xx") > 0) {
+      $order['Options'] = 'member';
+    }
+
+    if ($orderType != "Nameserver_Update") {
+      $order["Domain"]['Registrant'] = Tools::mapToContact($params, "Registrant");
+      $order["Domain"]['AdminContact'] = Tools::mapToContact($params, "Admin");
+      $order["Domain"]['TechContact'] = Tools::mapToContact($params, "Admin");
+      $order["Domain"]['BillingContact'] = Tools::mapToContact($params, "Admin");
+    }
+
+    error_log(print_r($order, true));
+
     //echo(nl2br(print_r($order,1)));
     return array(
       'sessionId' => "set-it-later",
