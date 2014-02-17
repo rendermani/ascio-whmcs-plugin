@@ -1,4 +1,4 @@
-<?
+<?php
 # Please rename this to config.php and customize parameters.
 
 function getAscioConfig () {
@@ -6,20 +6,21 @@ function getAscioConfig () {
 		"test" => array (
 			"user" 		=> "xxx",
 			"pw"   		=> "xxx",
-			"wsdl"   	=> "https://awstest.ascio.com/2012/01/01/AscioService.wsdl"), 
+			"wsdl"   	=> "https://awstest.ascio.com/2012/01/01/AscioService.wsdl"
+    ), 
 		"live" => array (
 			"user" 		=> "xxx",
 			"pw"   		=> "xxx",
-			"wsdl"   	=> "https://aws.ascio.com/2012/01/01/AscioService.wsdl"), 	
+			"wsdl"   	=> "https://aws.ascio.com/2012/01/01/AscioService.wsdl"
+    ), 	
 		"whmcs" => array (
-			"user" 		=> "xxx",
-			"pw"  		=> "xxx",
-			"api"		=> "http://localhost/whmcs/includes/api.php",
-			"moduleUri"	=> "/var/www/whmcs/modules/registrars/ascio"),
+			"adminuser" 		=> "admin"
+    ),
 		"testMode"   	=> "on"
 	);
 	return $cfg;
 }
+
 function getAscioCredentials () {
 	$config = getAscioConfig();
 	if($config["testMode"]=="on") {
@@ -39,12 +40,9 @@ function getAscioCredentials () {
 
 function getWHMCSCredentials () {
 	$config = getAscioConfig();
-	return array (
-		"username"	=>	$config["whmcs"]["user"],
-		"password"	=>	md5($config["whmcs"]["pw"])
-
-	);
+	return $config["whmcs"]["adminuser"];
 }
+
 function getAscioWsdl () {
 	$config = getAscioConfig();
 	if($config["testMode"]=="on") {
@@ -53,4 +51,5 @@ function getAscioWsdl () {
 		return $config["live"]["wsdl"];
 	}
 }
+
 ?>
