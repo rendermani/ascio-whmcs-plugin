@@ -1,6 +1,9 @@
 <?php
 require_once("config.php");
-//require_once("libphonenumber");
+require_once("libphonenumber-for-PHP/PhoneNumberUtil.php");
+use com\google\i18n\phonenumbers\PhoneNumberUtil;
+use com\google\i18n\phonenumbers\PhoneNumberFormat;
+use com\google\i18n\phonenumbers\NumberParseException;
 
 Class SessionCache {
 	public static function get() {
@@ -226,6 +229,7 @@ function mapToContact($params,$type) {
 		$contactName["FirstName"] = $params[$prefix . "firstname"];
 		$contactName["LastName"] = $params[$prefix . "lastname"];
 	}
+	$country =  $params[$prefix . "country"];
 	$contact = Array(
 		'OrgName' 		=>  $params[$prefix . "companyname"],
 		'Address1' 		=>  $params[$prefix . "address1"],	
@@ -233,10 +237,11 @@ function mapToContact($params,$type) {
 		'PostalCode' 	=>  $params[$prefix . "postcode"],
 		'City' 			=>  $params[$prefix . "city"],
 		'State' 		=>  $params[$prefix . "state"],		
-		'CountryCode' 	=>  $params[$prefix . "country"],
+		'CountryCode' 	=>  $country,
 		'Email' 		=>  $params[$prefix . "email"],
-		'Phone'			=>  $params[$prefix . "phonenumber"],
-		'Fax' 			=> 	$params[$prefix . "faxnumber"]);
+		'Phone'			=>  fixPhone($params[$prefix . "phonenumber"],$country),
+		'Fax' 			=> 	fixPhone($params[$prefix . "faxnumber"],$country)
+	);
 			
 	return array_merge($contactName,$contact);
 }
@@ -253,8 +258,8 @@ function mapContactToAscio($params,$type) {
 		'State'	  				=> $params["State"],
 		'CountryCode'  			=> $params["Country"],
 		'Email'  				=> $params["Email"],
-		'Phone'  				=> $params["Phone"],
-		'Fax'  					=> $params["Fax"]
+		'Phone'  				=> fixPhone($params["Phone"],$params["Country"]), 
+		'Fax'  					=> fixPhone($params["Fax"],$params["Country"]),
 	);
 	if($type=="Registrant") {
 		$ascio->Name = $params["First Name"]. " ". $params["Last Name"];		
@@ -374,5 +379,18 @@ function replaceSpecialCharacters($string) {
 	$string = str_replace("Ö", "O", $string);
 	return $string; 
 };
-
+function fixPhone($number,$country) {
+	if(!$number || strlen($number)<4) return;
+	if(!$country) $country = "DE";
+	$phoneUtil = PhoneNumberUtil::getInstance();
+	try {
+		$numberProto = $phoneUtil->parseAndKeepRawInput($number, "DE");
+	} catch (NumberParseException $e) {
+		echo $e;
+	}
+	if(!$phoneUtil->isValidNumber($numberProto)) return $number;
+	$newNumber = $phoneUtil->formatOutOfCountryCallingNumber($numberProto, "US");
+	//echo $newNumber;
+	return str_replace(" ",".",$newNumber) ;
+}
 ?>

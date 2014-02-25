@@ -1,0 +1,44 @@
+{
+    "name": "giggsey/libphonenumber-for-php",
+    "type": "library",
+    "description": "Unofficial PHP Port of Google's libphonenumber",
+    "keywords": ["phonenumber", "libphonenumber", "mobile", "validation", "geocoding", "geolocation"],
+    "homepage": "https://github.com/giggsey/libphonenumber-for-php",
+    "license": "Apache-2.0",
+    "support": {
+        "irc": "irc://irc.appliedirc.com/lobby",
+        "source": "https://github.com/giggsey/libphonenumber-for-php",
+        "issues": "https://github.com/giggsey/libphonenumber-for-php/issues"
+    },
+    "authors": [
+        {
+            "name": "Joshua Gigg",
+            "email": "giggsey@gmail.com",
+            "homepage": "http://giggsey.com/"
+        }
+    ],
+    "autoload": {
+        "psr-0": {
+            "libphonenumber": "src/"
+        }
+    },
+    "archive": {
+        "exclude": ["Tests/", "build/", "/.travis.yml", "/build.xml", "phpunit.xml.dist"]
+    },
+    "replace": {
+        "giggsey/libphonenumber-geocoder": "*"
+    },
+    "require": {
+        "ext-intl": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~3.7",
+        "symfony/console": "~2.3.5",
+        "satooshi/php-coveralls":  "~0.6"
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "5.x-dev"
+        }
+    }
+}
