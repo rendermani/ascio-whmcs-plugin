@@ -380,7 +380,7 @@ function replaceSpecialCharacters($string) {
 	return $string; 
 };
 function fixPhone($number,$country) {
-	if(!$number || strlen($number)<4) return;
+	if((!$number) || (strlen($number)<5)) return;
 	if(!$country) $country = "DE";
 	$phoneUtil = PhoneNumberUtil::getInstance();
 	try {
