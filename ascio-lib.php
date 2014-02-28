@@ -384,7 +384,7 @@ function fixPhone($number,$country) {
 	if(!$country) $country = "DE";
 	$phoneUtil = PhoneNumberUtil::getInstance();
 	try {
-		$numberProto = $phoneUtil->parseAndKeepRawInput($number, "DE");
+		$numberProto = $phoneUtil->parseAndKeepRawInput($number, $country);
 	} catch (NumberParseException $e) {
 		echo $e;
 	}
