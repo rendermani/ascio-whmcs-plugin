@@ -1,0 +1,47 @@
+{
+	"AuthCodeRequired"		:	true,
+	"Country"				: 	"DE",
+	"DeleteThreshold"		:	1,
+	"RenewThreshold"		:	1,
+	"Threshold"				:	1,
+	"DNSSEC"				:	true,
+	"DomainLegalCodePoints"		: "$E0-$F6,$F8-$FF,$101,$103,$105,$107,$109,$10B,$10D,$10F,$111,$115,$11B,$117,$119,$113,$11F,$11D,$121,$123,$125,$127,$12D,$129,$12F,$12B,$131,$135,$137,$138,$13A,$13E,$13C,$142,$144,$148,$146,$14B,$14F,$14D,$151,$153,$155,$159,$157,$15B,$15D,$15F,$161,$165,$163,$167,$16D,$16F,$169,$16B,$171,$173,$175,$177,$17A,$17E,$17C,$DF",
+	"SocialDataLegalCodePoints" : "$0000-$00FF",
+	"TRANSFER"				:  {
+			"enabled"		: 	true,
+			"periods"		: 	[1,2,3,4,5]
+	},
+	"REGISTER"				:  {
+			"enabled"		: 	true,
+			"periods"		: 	[1,2,3,4,5]
+	},
+	"RENEW"				:  {
+			"enabled"		: 	true,
+			"periods"		: 	[1,2,3,4,5]
+	},
+	"EXPIRE"				:  {
+			"enabled"		: 	true
+	},
+	"UPDATE AUTHINFO"		:  {
+			"enabled"		: 	true
+	},
+	"OWNER CHANGE"		:  {
+			"enabled"		: 	true
+	},		
+	"REGISTRANT DETAILS UPDATE"		:  {
+			"enabled"		: 	true
+	},	
+	"CONTACT UPDATE"		:  {
+			"enabled"		: 	true
+	},		
+	"NAMESERVER UPDATE"		:  {
+			"enabled"		: 	true
+	},			
+	"DELETE"				:  {
+			"enabled"		: 	true
+	},			
+	"RESTORE"				:  {
+			"enabled"		: 	true
+	},			
+	
+}
