@@ -8,6 +8,9 @@ use com\google\i18n\phonenumbers\PhoneNumberUtil;
 use com\google\i18n\phonenumbers\PhoneNumberFormat;
 use com\google\i18n\phonenumbers\NumberParseException;
 
+define("ASCIO_WSDL_LIVE","https://aws.ascio.com/2012/01/01/AscioService.wsdl");
+define("ASCIO_WSDL_TEST","https://awstest.ascio.com/2012/01/01/AscioService.wsdl");
+
 Class SessionCache {
 	public static function get($account) {
 		$filename = dirname(realpath ( __FILE__ ))."/tmp/ascio-session_".$account.".txt";
@@ -17,7 +20,7 @@ Class SessionCache {
 		if(trim($contents) == "false") $contents = false;
 		return $contents;
 	}
-	public static function put($sessionId,$account) {
+	public static function put($sessionId,$account) {		
 		$filename = dirname(realpath ( __FILE__ ))."/tmp/ascio-session_".$account.".txt";
 		$fp = fopen($filename,"w");		
 		fwrite($fp,$sessionId);
@@ -72,12 +75,14 @@ Class Request {
 		} else {		
 			return $result;
 			
-		}	
+		}	 
 	}
 	private function sendRequest($functionName,$ascioParams) {		
 		syslog(LOG_INFO, "WHMCS Request:".$functionName ."(". $this->account .")" );
+		$cfg = getRegistrarConfigOptions("ascio");
+		$wsdl = $cfg["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;
 		$ascioParams =  Tools::cleanAscioParams($ascioParams);
-        $client = new SoapClient(getAscioWsdl(),array( "trace" => 1 ));
+        $client = new SoapClient($wsdl,array( "trace" => 1 ));
         $result = $client->__call($functionName, array('parameters' => $ascioParams));      
 		$resultName = $functionName . "Result";	
 		$status = $result->$resultName;
@@ -207,7 +212,6 @@ Class Request {
 		$this->callApi($postfields);
 	}
 	public function poll() {
-		$params = getAscioCredentials();
 		$ascioParams = array(
 			'sessionId' => 'mySessionId',
 			'msgType' 	=> 'Message_to_Partner'
