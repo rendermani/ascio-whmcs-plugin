@@ -2,7 +2,6 @@
 require_once("../../../init.php");
 require_once "../../../includes/registrarfunctions.php";
 require_once("lib/Request.php");
-use \ascio; 
 
 $orderId = $_GET["OrderId"];
 $messageId = $_GET["MessageId"];
@@ -22,6 +21,6 @@ $path = pathinfo(__PATH__);
 $pathArr = split("/",$_SERVER['PHP_SELF']);
 $account = $pathArr[count($pathArr)-1] == "callbacks_usd.php" ? "ascio_usd" : "ascio";
 $cfg = getRegistrarConfigOptions($account);
-$request = new ascio\Request(array('Account'=> $cfg["Username"],'Password' =>  $cfg["Password"]));
+$request = new Request(array('Account'=> $cfg["Username"],'Password' =>  $cfg["Password"]));
 $request->getCallbackData($orderStatus,$messageId,$orderId);
 ?>

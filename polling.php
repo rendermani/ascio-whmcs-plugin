@@ -3,13 +3,11 @@ set_time_limit ( 6000 );
 require_once("../../../init.php");
 require_once "../../../includes/registrarfunctions.php";
 require_once("lib/Request.php");
-require_once("config.php");
-use \ascio as ascio; 
 
 $pathArr = split("/",$_SERVER['PHP_SELF']);
 $account = $pathArr[count($pathArr)-1] == "polling_usd.php" ? "ascio_usd" : "ascio";
 $cfg = getRegistrarConfigOptions($account);
-$request = new ascio\Request($cfg);
+$request = new Request($cfg);
 $result = $request->poll();
 while ($result->item && $result->item->MsgId) {
 	$item = $result->item;
