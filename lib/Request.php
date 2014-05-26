@@ -1,6 +1,4 @@
 <?php
-echo dirname(__FILE__);
-require_once dirname(__FILE__). "/../config.php";
 require_once  dirname(__FILE__)."/../libphonenumber-for-PHP/PhoneNumberUtil.php";
 
 use com\google\i18n\phonenumbers\PhoneNumberUtil;
