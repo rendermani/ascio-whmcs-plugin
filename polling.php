@@ -1,13 +1,20 @@
 <?
 set_time_limit ( 6000 );
-require_once("ascio-lib.php");
+require_once("../../../init.php");
+require_once "../../../includes/registrarfunctions.php";
+require_once("lib/Request.php");
 require_once("config.php");
+use \ascio as ascio; 
 
-$result = poll();
+$pathArr = split("/",$_SERVER['PHP_SELF']);
+$account = $pathArr[count($pathArr)-1] == "polling_usd.php" ? "ascio_usd" : "ascio";
+$cfg = getRegistrarConfigOptions($account);
+$request = new ascio\Request($cfg);
+$result = $request->poll();
 while ($result->item && $result->item->MsgId) {
 	$item = $result->item;
-	getCallbackData($item->OrderStatus,$item->MsgId,$item->OrderId);
+	$request->getCallbackData($item->OrderStatus,$item->MsgId,$item->OrderId);
 	syslog(LOG_INFO,"Acking: ".$result->item->MsgId);
-	$result = poll();
+	$result = $request->poll();
 }
 ?>
