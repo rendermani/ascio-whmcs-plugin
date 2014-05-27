@@ -26,3 +26,7 @@
 ##Known issues: 
 
 - Not all TLDs and fields are configured. But you can add your own TLD-Definition in ascio/tlds
+
+##Ascio DNS
+
+- AscioDNS is added. WHMCS has only a minimal DNS-management, but there are plugins. Please contact your account-manager for an AscioDNS account.
