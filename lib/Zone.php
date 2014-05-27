@@ -19,19 +19,19 @@ class DnsZone {
 	    # Put your code here to get the current DNS settings - the result should be an array of hostname, record type, and address
 		$zone = new GetZone();
 		$zone->zoneName = $this->name;
-		$result = $this->dnsService->GetZone($zone);		
+		$result = $this->dnsService->GetZone($zone);	
+		if($result->GetZoneResult->StatusCode == 404) return false;	
 		$this->records = array();
 		$usedTypes = array("A","CNAME","MX","AAAA","TXT");
 		foreach ($result->zone->Records->Record as $key => $record) {
 			if(!in_array(get_class($record), $usedTypes)) continue;
 			$this->records[] = $record;
 		}		
-		//Tools::dump($this->records,"DnsZone::get records"); 
 		return $this->records;
 	}
 	public function update($params) {
-		//Tools::dump($params,"DnsZone::update start");
 		$oldRecords = $this->get($params);
+		if(!$oldRecords) $this->createZone($params);	
 		$newRecords = $params["dnsrecords"];
 		for($i=0;$i < count($newRecords)-1; $i++) {		
 			//source
@@ -59,33 +59,26 @@ class DnsZone {
 		else {
 			$record->Source 	= $this->addZonename($newRecord["hostname"]);
 			$record->Target 	= $this->addZonename($newRecord["address"]);
-			//if($newRecord["priority"]) $record->Priority = $newRecord["priority"];
+			if($newRecord["priority"]) $record->Priority = $newRecord["priority"];
 		}
-		//Tools::dump($record,"DnsZone::updateRecord start");
 		$updateRecord = new UpdateRecord();
 		$updateRecord->zoneName   = $this->name;
 		$updateRecord->record = $record;
 		$result = $this->dnsService->updateRecord($updateRecord);
-		//Tools::dump($result,"DnsZone::updateRecord result");
 		return $result;
 	}
 	private function replaceRecord($record,$newRecord) {
-		//Tools::dump("start","DnsZone::updateRecord start");
 		$this->deleteRecord($record);
 		$result = $this->createRecord($newRecord);
-		//Tools::dump("end","DnsZone::updateRecord result");
 		return $result;
 	}
 	private function deleteRecord($record) {
-		//Tools::dump($record,"DnsZone::deleteRecord start");
 		$deleteRecord 		      = new DeleteRecord();
 		$deleteRecord->recordId   = $record->Id;
 		$result = $this->dnsService->deleteRecord($deleteRecord);
-		//Tools::dump($result,"DnsZone::deleteRecord result");
 		return $result;
 	}
 	private function createRecord($record) {
-		//Tools::dump($record,"DnsZone::createRecord start");
 		if(!$record["address"]) return ;
 		$type =  $record["type"];
 		$newRecord = new $type();	
@@ -97,13 +90,15 @@ class DnsZone {
 		$createRecord->record = $newRecord;
 		$createRecord->owner = $this->owner;
 		$result = $this->dnsService->createRecord($createRecord);
-		//Tools::dump($createRecord,"DnsZone::createRecord request");
-		/*Tools::dump($result,"DnsZone::createRecord result");*/
-
 		return $result;
 	}
+	private function createZone($records) {
+		$createZone = new CreateZone();
+		$createZone->zoneName = $this->name;
+		$createZone->owner 	  = $this->owner;
+		$this->dnsService->createZone($createZone);
+	}
 	public function createUser($params) { 	
-		//Tools::dump($params,"DnsZone::createUser result");
 		$getUser = new GetUser();
 		$getUser->userName = $this->owner;
 		$result = $dns->getUser($getUser);
@@ -117,7 +112,6 @@ class DnsZone {
 			$createUser = new CreateUser();
 			$createUser->user = $user; 
 			$result = $dns->CreateUser($createUser);
-			//Tools::dump($result,"DnsZone::createUser result");		
 		} else {
 			echo "user exists<br/>";
 		}
@@ -125,7 +119,6 @@ class DnsZone {
 	}
 	public function convertToWhmcs($result) {		
 		$records = array();
-		//Tools::dump($result,"convert to whmcs");
 		foreach ($result as $key => $record) {
 			$source = $this->removeZonename($record->Source);
 			$target = $this->removeZonename($record->Target);
@@ -153,7 +146,6 @@ class DnsZone {
 		return str_replace(".".$this->name, "", $record);
 	}
 	private function addZonename($record) {
-		//Tools::dump($record, "pos:".strpos($record, "."). " - ".$this->name);
 		if(!strpos($record, ".")) return $record. ".".$this->name;
 		else return $record;
 	}
