@@ -21,7 +21,7 @@ class DnsZone {
 		$zone->zoneName = $this->name;
 		$result = $this->dnsService->GetZone($zone);		
 		$this->records = array();
-		$usedTypes = ["A","CNAME","MX","AAAA","TXT"];
+		$usedTypes = array("A","CNAME","MX","AAAA","TXT");
 		foreach ($result->zone->Records->Record as $key => $record) {
 			if(!in_array(get_class($record), $usedTypes)) continue;
 			$this->records[] = $record;
