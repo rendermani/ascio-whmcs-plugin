@@ -10,7 +10,7 @@ define("ASCIO_WSDL_TEST","https://awstest.ascio.com/2012/01/01/AscioService.wsdl
 
 Class SessionCache {
 	public static function get($account) {
-		$filename = dirname(realpath ( __FILE__ ))."/tmp/ascio-session_".$account.".txt";
+		$filename = dirname(realpath ( __FILE__ ))."/../sessioncache/ascio-session_".$account.".txt";
 		$fp = fopen($filename,"r");
 		$contents = fread($fp, filesize($filename));
 		fclose($fp);
@@ -18,7 +18,8 @@ Class SessionCache {
 		return $contents;
 	}
 	public static function put($sessionId,$account) {		
-		$filename = dirname(realpath ( __FILE__ ))."/tmp/ascio-session_".$account.".txt";
+		$filename = dirname(realpath ( __FILE__ ))."/../sessioncache/ascio-session_".$account.".txt";
+		syslog(LOG_INFO,"write cache ".$filename);
 		$fp = fopen($filename,"w");		
 		fwrite($fp,$sessionId);
 		fclose($fp);
@@ -104,6 +105,12 @@ Class Request {
 		return $result;
 	}
 	public function searchDomain($params) {
+		global $lastAscioSearchResult,$lastAscioDomainName;
+		// All orders are asynchronous. One WHMCS request only works on one page.
+		// It's can't be that the wrong result is cached, but to be sure I store the domainName too.
+		//
+		if($lastAscioDomainName==$this->domainName && isset($lastAscioSearchResult)) return $lastAscioSearchResult;
+
 		$params = $this->setParams($params);
 		$criteria= array(
 			'Mode' => 'Strict',
@@ -120,6 +127,7 @@ Class Request {
 			'criteria' => $criteria
 		);
 		$result =  $this->request("SearchDomain",$ascioParams,true);
+		$lastAscioSearchResult = $result;
 		if(is_array($result)) return $result;
 		else {
 			$this->setWhmcsStatus($domain,$result->domains->Domain->Status);
@@ -316,13 +324,15 @@ Class Request {
 	}	
 	function saveRegistrarLock($params) {
 		$params = $this->setParams($params);
-		if ($params["lockenabled"]) {
+		if ($params["lockenabled"]=="locked") {
 			$lockstatus="Lock";
 		} else {
 			$lockstatus="Unlock";
 		}
 		$ascioParams = $this->mapToOrder($params,"Change_Locks");
-		$ascioParams->Order->Domain->TransferLock = $lockstatus;
+		$ascioParams["order"]["Domain"]["TransferLock"] = $lockstatus;
+		$ascioParams["order"]["Domain"]["UpdateLock"] = $lockstatus;
+		$ascioParams["order"]["Domain"]["DeleteLock"] = $lockstatus;
 		return $this->request("CreateOrder",$ascioParams);
 	}	
 	public function getEPPCode($params) {

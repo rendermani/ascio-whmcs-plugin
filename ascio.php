@@ -51,22 +51,15 @@ function ascio_SaveNameservers($params) {
 }
 
 function ascio_GetRegistrarLock($params) {
-	$request = createRequest($params);
-
-	//getDomain
-
-	# Put your code to get the lock status here
-	if ($lock=="1") {
-		$lockstatus="locked";
-	} else {
-		$lockstatus="unlocked";
-	}
+	global $lastAscioSearchResult;
+	$lock = strpos($lastAscioSearchResult->domains->Domain->Status,"LOCK") > -1 ;
+	$lockstatus = $lock ? "locked" : "unlocked";
 	return $lockstatus;
 }
 
-function saveRegistrarLock($params) {
+function ascio_saveRegistrarLock($params) {	
 	$request = createRequest($params);
-	return $request->saveNameservers();
+	return $request->saveRegistrarLock();
 }
 
 function ascio_GetEmailForwarding($params) {
@@ -175,7 +168,6 @@ function ascio_Sync($params) {
 	$values["active"] = true;
 	syslog(LOG_INFO, "Syncing ". $params["sld"].".".$params["tld"]);
 	echo "Syncing ". $params["sld"].".".$params["tld"];
-	var_dump($values);
 	return $values;
 }
 
