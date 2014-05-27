@@ -1,2 +1,0 @@
-Make this directory writeble to store the session-id.
-Otherwise whmcs will be very slow.
