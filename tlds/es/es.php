@@ -28,6 +28,7 @@ class es extends Request {
 			$contact["Type"]=0;
 		}
 		$contact["OrgName"] = null;
+		$contact["OrganisationNumber"] = $params["additionalfields"]["ID Form Number"];
 		return $contact;
 	}
 }
