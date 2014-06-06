@@ -15,7 +15,6 @@ class asia extends Request {
 			
 		}	
 		$ascioParams["order"]["Domain"]["DomainPurpose"] = "Registrant";
-		Tools::dump($ascioParams,"ok");	
 		$result = $this->request("CreateOrder",$ascioParams);
 		if (!$result) {
 			$this->setWhmcsStatus($domainName,"Pending","Register_Domain");

@@ -1,12 +1,26 @@
 <?php
-//todo make it perfect
-//need to extend additionaldomainfields.php
 
 class fr extends Request {	
-	protected function mapToRegistrant($params) {
+	protected function mapToTrademark($params) {
+		//Registrant is not a company
+		if(!$params["companyname"]) {
+			$tm = array();	
+			$tm["Name"] 	= $params["City of birth (Individual)"];
+			$tm["Country"] 	= $params["Country of birth (Individual)"];
+			$tm["Date"] 	= $params["Date of birth (Individual)"];
+			$tm["Number"]	 = $params["Postal code of city of birth (Individual)"];
+		}
+		return $tm; 
+	}
+	protected function mapToRegistrant($params) {		
 		$contact = parent::mapToRegistrant($params);
-		$contact["RegistrantType"] 		= "company";
-		$contact["RegistrantNumber"] 	= "123456789";
+		//Registrant is a company
+		if($params["companyname"]) {
+			$contact["RegistrantType"] 		= "company";
+			$contact["RegistrantNumber"] 	= $params["additionalfields"]["VAT (Company)"];
+		} else {
+			$contact["RegistrantType"] 		= "Individual";
+		}		
 		return $contact;
 	}
 

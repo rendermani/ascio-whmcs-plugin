@@ -51,15 +51,22 @@ function ascio_SaveNameservers($params) {
 }
 
 function ascio_GetRegistrarLock($params) {
-	global $lastAscioSearchResult;
-	$lock = strpos($lastAscioSearchResult->domains->Domain->Status,"LOCK") > -1 ;
-	$lockstatus = $lock ? "locked" : "unlocked";
+	$request = createRequest($params);
+
+	//getDomain
+
+	# Put your code to get the lock status here
+	if ($lock=="1") {
+		$lockstatus="locked";
+	} else {
+		$lockstatus="unlocked";
+	}
 	return $lockstatus;
 }
 
-function ascio_saveRegistrarLock($params) {	
+function saveRegistrarLock($params) {
 	$request = createRequest($params);
-	return $request->saveRegistrarLock();
+	return $request->saveNameservers();
 }
 
 function ascio_GetEmailForwarding($params) {
@@ -92,22 +99,22 @@ function ascio_SaveDNS($params) {
 }
 function ascio_RegisterDomain($params) {
 	$request = createRequest($params);
-	return $request->registerDomain(); 
+	return $request->registerDomain($params); 
 }
 
 function ascio_TransferDomain($params) {
 	$request = createRequest($params);
-	return $request->transferDomain(); 
+	return $request->transferDomain($params);  
 }
 
 function ascio_RenewDomain($params) {
 	$request = createRequest($params);
-	return $request->renewDomain(); 
+	return $request->renewDomain($params); 
 }
 
 function ascio_ExpireDomain($params) {
 	$request = createRequest($params);
-	return $request->expireDomain(); 
+	return $request->expireDomain($params); 
 }
 
 function ascio_GetContactDetails($params) {
@@ -126,12 +133,12 @@ function ascio_GetContactDetails($params) {
 
 function ascio_SaveContactDetails($params) {
 	$request = createRequest($params);
-	return $request->updateContacts();
+	return $request->updateContacts($params);
 }
 
 function ascio_GetEPPCode($params) {
 	$request = createRequest($params);
-	return $request->getEPPCode();
+	return $request->getEPPCode($params);
 }
 
 function ascio_RegisterNameserver($params) {
@@ -168,6 +175,7 @@ function ascio_Sync($params) {
 	$values["active"] = true;
 	syslog(LOG_INFO, "Syncing ". $params["sld"].".".$params["tld"]);
 	echo "Syncing ". $params["sld"].".".$params["tld"];
+	//var_dump($values);
 	return $values;
 }
 

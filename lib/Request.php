@@ -10,16 +10,15 @@ define("ASCIO_WSDL_TEST","https://awstest.ascio.com/2012/01/01/AscioService.wsdl
 
 Class SessionCache {
 	public static function get($account) {
-		$filename = dirname(realpath ( __FILE__ ))."/../sessioncache/ascio-session_".$account.".txt";
+		$filename = dirname(realpath ( __FILE__ ))."/tmp/ascio-session_".$account.".txt";
 		$fp = fopen($filename,"r");
 		$contents = fread($fp, filesize($filename));
 		fclose($fp);
 		if(trim($contents) == "false") $contents = false;
 		return $contents;
 	}
-	public static function put($sessionId,$account) {		
-		$filename = dirname(realpath ( __FILE__ ))."/../sessioncache/ascio-session_".$account.".txt";
-		syslog(LOG_INFO,"write cache ".$filename);
+	public static function put($sessionId,$account) {
+		$filename = dirname(realpath ( __FILE__ ))."/tmp/ascio-session_".$account.".txt";
 		$fp = fopen($filename,"w");		
 		fwrite($fp,$sessionId);
 		fclose($fp);
@@ -73,7 +72,7 @@ Class Request {
 		} else {		
 			return $result;
 			
-		}	 
+		}	
 	}
 	private function sendRequest($functionName,$ascioParams) {		
 		syslog(LOG_INFO, "WHMCS Request:".$functionName ."(". $this->account .")" );
@@ -105,12 +104,6 @@ Class Request {
 		return $result;
 	}
 	public function searchDomain($params) {
-		global $lastAscioSearchResult,$lastAscioDomainName;
-		// All orders are asynchronous. One WHMCS request only works on one page.
-		// It's can't be that the wrong result is cached, but to be sure I store the domainName too.
-		//
-		if($lastAscioDomainName==$this->domainName && isset($lastAscioSearchResult)) return $lastAscioSearchResult;
-
 		$params = $this->setParams($params);
 		$criteria= array(
 			'Mode' => 'Strict',
@@ -127,7 +120,6 @@ Class Request {
 			'criteria' => $criteria
 		);
 		$result =  $this->request("SearchDomain",$ascioParams,true);
-		$lastAscioSearchResult = $result;
 		if(is_array($result)) return $result;
 		else {
 			$this->setWhmcsStatus($domain,$result->domains->Domain->Status);
@@ -217,6 +209,7 @@ Class Request {
 		$this->callApi($postfields);
 	}
 	public function poll() {
+		$params = getAscioCredentials();
 		$ascioParams = array(
 			'sessionId' => 'mySessionId',
 			'msgType' 	=> 'Message_to_Partner'
@@ -243,10 +236,9 @@ Class Request {
 		}
 		return $result;
 	}
-	public function transferDomain ($params=false) {
+	public function transferDomain ($params=false) {		
 		$params = $this->setParams($params);
 		$ascioParams = $this->mapToOrder($params,"Transfer_Domain");
-		//$ascioParams->Order->Domain->AuthInfo = $params["transfersecret"];
 		$result = $this->request("CreateOrder",$ascioParams);
 		if (!$result) {
 			$this->setWhmcsStatus($domain,"Pending","Transfer_Domain");
@@ -324,15 +316,13 @@ Class Request {
 	}	
 	function saveRegistrarLock($params) {
 		$params = $this->setParams($params);
-		if ($params["lockenabled"]=="locked") {
+		if ($params["lockenabled"]) {
 			$lockstatus="Lock";
 		} else {
 			$lockstatus="Unlock";
 		}
 		$ascioParams = $this->mapToOrder($params,"Change_Locks");
-		$ascioParams["order"]["Domain"]["TransferLock"] = $lockstatus;
-		$ascioParams["order"]["Domain"]["UpdateLock"] = $lockstatus;
-		$ascioParams["order"]["Domain"]["DeleteLock"] = $lockstatus;
+		$ascioParams->Order->Domain->TransferLock = $lockstatus;
 		return $this->request("CreateOrder",$ascioParams);
 	}	
 	public function getEPPCode($params) {
@@ -358,6 +348,9 @@ Class Request {
 	protected function mapToBilling($params) {
 		return $this->mapToContact($params,"Admin");
 	}
+	protected function mapToTrademark($params) {
+		return null; 
+	}
 	public function mapToOrder ($params,$orderType) {
 		$params = $this->setParams($params);
 		$domainName = $params["sld"] ."." . $params["tld"];
@@ -373,6 +366,7 @@ Class Request {
 			'TechContact' 	=>  $this->mapToTech($params), 
 			'BillingContact'=>  $this->mapToBilling($params),
 			'NameServers' 	=>  $this->mapToNameservers($params),
+			'Trademark' 	=>  $this->mapToTrademark($params),
 			'Comment'		=>  $params["userid"]
 		);
 		$order = 
