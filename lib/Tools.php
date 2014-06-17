@@ -1,3 +1,4 @@
+
 <?
 require_once  dirname(__FILE__)."/../libphonenumber-for-PHP/PhoneNumberUtil.php";
 
@@ -71,17 +72,19 @@ class Tools {
 	}
 	public static function fixPhone($number,$country) {
 		if((!$number) || (strlen($number)<5)) return;
+		if(!preg_match("/^[0\+]/",$number)) $number = '+' . $number;
 		if(!$country) $country = "DE";
 		$phoneUtil = PhoneNumberUtil::getInstance();
 		try {
 			$numberProto = $phoneUtil->parseAndKeepRawInput($number, $country);
 		} catch (NumberParseException $e) {
-			echo $e;
+			return $number;
 		}
 		if(!$phoneUtil->isValidNumber($numberProto)) return $number;
-		$newNumber = $phoneUtil->formatOutOfCountryCallingNumber($numberProto, "US");
-		//echo $newNumber;
-		return str_replace(" ",".",$newNumber) ;
+		$newNumber = $phoneUtil->formatOutOfCountryCallingNumber($numberProto, PhoneNumberFormat::E164);	
+		$newNumber = preg_replace("/( )(.*)/", ".$2", $newNumber);
+		$newNumber = preg_replace("/ /", "", $newNumber);
+		return $newNumber;
 	}	
 	public static function cleanAscioParams($ascioParams) {
 		foreach ($ascioParams as $key => $value) {

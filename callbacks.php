@@ -10,10 +10,10 @@ $domain = $_GET["Object"];
 
 if(!($orderId && $messageId && $orderStatus)) throw new Exception("Please provide callback parameters", 1);
 
-syslog(LOG_INFO,"Callback reveived");
+syslog(LOG_INFO,"Callback received");
 syslog(LOG_INFO, print_r($_GET,1));
 
-
+ 
 
 // this is when usd and eur account is used. In this case a second registrar module can be installed.
 // please ask manuel.lautenschlager@ascio.com for the code
