@@ -146,7 +146,7 @@ Class Request {
 			$message =  Tools::formatError($result->item->StatusList->CallbackStatus,$msgPart);
 		}
  		$values = array( 'messagename' => 'Test Template', 'id' => '1', );
- 		$adminuser = 'mani';
+ 		$adminuser = 'admin';
 		$command = "sendemail";
 		$values["customtype"] = "domain";
 		$values["customsubject"] = $msgPart ." ". strtolower($orderStatus);
@@ -158,13 +158,10 @@ Class Request {
 			'sessionId' => 'mySessionId',
 			'msgId' => $messageId
 		);
-		syslog(LOG_INFO,"received callback",$domainName . ": ". $whmcsStatus);		
 		$this->sendAuthCode($order->order);
 		$result = $this->request("AckMessage", $ascioParams,true); 
 	}
 	public function setWhmcsStatus($domain,$ascioStatus,$orderType) {
-		syslog(LOG_INFO,"Set Status ".$domain . " (".$orderType.")");
-		Tools::dump($ascioStatus);
 		$statusMap = array (
 			"completed" => "Active",
 			"active" => "Active",
@@ -179,7 +176,6 @@ Class Request {
 			"pending_nic_processing" => "Pending"
 		);
 		$whmcsStatus = $statusMap[strtolower($ascioStatus)];
-		Tools::dump($whmcsStatus,"WHMCS Status");
 		if ($orderType=="Transfer_Domain" && $whmcsStatus == "Pending") {
 			$whmcsStatus = "Pending Transfer";
 		}
@@ -188,7 +184,6 @@ Class Request {
 		$values["domain"] =  $domain;
 		$values["status"] = $whmcsStatus;
 		$results = localAPI($command,$values,$adminuser); 
-		Tools::dump($results,"WHMCS Set-Status ".$domain);
 		return $whmcsStatus;
 	}
 	public function getOrder($orderId) {
