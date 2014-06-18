@@ -40,7 +40,7 @@ function createRequest($params) {
 	}
 }
 Class Request {
-	var $accout;
+	var $account;
 	var $password; 
 	var $params;
 
@@ -57,7 +57,7 @@ Class Request {
 	}
 	public function request($functionName, $ascioParams)  {	
 		$sessionId = SessionCache::get($this->account);	
-		if (!$sessionId) {	
+		if (!$sessionId) {				
 			$result = $this->login(); 
 			if(is_array($result)) return $result;
 			$ascioParams["sessionId"] = $result->sessionId; 		
@@ -69,7 +69,7 @@ Class Request {
 		if(is_array($result) && strpos($result["error"],"Invalid Session") > -1) {
 			SessionCache::clear($this->account);
 			return  $this->request($functionName, $ascioParams);		
-		} else {		
+		} else {	
 			return $result;
 			
 		}	
@@ -78,7 +78,6 @@ Class Request {
 		syslog(LOG_INFO, "WHMCS Request:".$functionName ."(". $this->account .")" );
 		$cfg = getRegistrarConfigOptions("ascio");
 		$wsdl = $cfg["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;
-		$ascioParams =  Tools::cleanAscioParams($ascioParams);
         $client = new SoapClient($wsdl,array( "trace" => 1 ));
         $result = $client->__call($functionName, array('parameters' => $ascioParams));      
 		$resultName = $functionName . "Result";	
@@ -208,7 +207,6 @@ Class Request {
 		$this->callApi($postfields);
 	}
 	public function poll() {
-		$params = getAscioCredentials();
 		$ascioParams = array(
 			'sessionId' => 'mySessionId',
 			'msgType' 	=> 'Message_to_Partner'
@@ -440,7 +438,6 @@ Class Request {
 		);
 	}
 	public function setParams($params) {
-		$e = new Exception;
 		if($params) {
 			$this->params = $params; 
 			$this->domainName = $params["sld"] ."." . $params["tld"];

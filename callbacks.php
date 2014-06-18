@@ -21,6 +21,7 @@ $path = pathinfo(__PATH__);
 $pathArr = split("/",$_SERVER['PHP_SELF']);
 $account = $pathArr[count($pathArr)-1] == "callbacks_usd.php" ? "ascio_usd" : "ascio";
 $cfg = getRegistrarConfigOptions($account);
-$request = new Request(array('Account'=> $cfg["Username"],'Password' =>  $cfg["Password"]));
+$request = new Request($cfg);
 $request->getCallbackData($orderStatus,$messageId,$orderId);
+echo "Callback received";
 ?>
