@@ -122,7 +122,7 @@ Class Request {
 		$result =  $this->request("SearchDomain",$ascioParams,true);
 		if(is_array($result)) return $result;
 		else {
-			$this->setWhmcsStatus($domain,$result->domains->Domain->Status);
+			$this->setWhmcsStatus($this->domainName,$result->domains->Domain->Status);
 			return $result->domains->Domain;
 		}
 	}
@@ -163,6 +163,8 @@ Class Request {
 		$result = $this->request("AckMessage", $ascioParams,true); 
 	}
 	public function setWhmcsStatus($domain,$ascioStatus,$orderType) {
+		syslog(LOG_INFO,"Set Status ".$domain . " (".$orderType.")");
+		Tools::dump($ascioStatus);
 		$statusMap = array (
 			"completed" => "Active",
 			"active" => "Active",
@@ -177,6 +179,7 @@ Class Request {
 			"pending_nic_processing" => "Pending"
 		);
 		$whmcsStatus = $statusMap[strtolower($ascioStatus)];
+		Tools::dump($whmcsStatus,"WHMCS Status");
 		if ($orderType=="Transfer_Domain" && $whmcsStatus == "Pending") {
 			$whmcsStatus = "Pending Transfer";
 		}
@@ -185,6 +188,7 @@ Class Request {
 		$values["domain"] =  $domain;
 		$values["status"] = $whmcsStatus;
 		$results = localAPI($command,$values,$adminuser); 
+		Tools::dump($results,"WHMCS Set-Status ".$domain);
 		return $whmcsStatus;
 	}
 	public function getOrder($orderId) {
