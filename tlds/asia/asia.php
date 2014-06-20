@@ -10,11 +10,9 @@ class asia extends Request {
 			"TK","TL","TM","TO","TR","TV","TW","UZ","VN","VU","WS","YE"];
 
 		if(!in_array($ascioParams["order"]["Domain"]["Registrant"]["CountryCode"],$asianCountries)) {			
-			$ascioParams["order"]["LocalPresense"] = "LocalPresenceAdmin ";
-
-			
+			$ascioParams["order"]["LocalPresence"] = "LocalPresenceAdmin";						
 		}	
-		$ascioParams["order"]["Domain"]["DomainPurpose"] = "Registrant";
+		$ascioParams["order"]["Domain"]["DomainPurpose"] = "Admin";
 		$result = $this->request("CreateOrder",$ascioParams);
 		if (!$result) {
 			$this->setWhmcsStatus($domainName,"Pending","Register_Domain");
