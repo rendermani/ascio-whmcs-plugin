@@ -17,6 +17,10 @@
 - Download ZIP - https://github.com/rendermani/ascio-whmcs-plugin/archive/master.zip
 - unpack the php-files to modules/registrars/ascio
 
+### Setting Directory Permissions
+
+- the directory sessioncache must be writeable for the webserver
+
 ###Configuring the plugin
 
 - activate the ascio plugin in the WHMCS settings and configure it
