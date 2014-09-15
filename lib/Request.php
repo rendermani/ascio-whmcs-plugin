@@ -222,7 +222,7 @@ Class Request {
 		);
 		$result =  $this->request("AckMessage",$ascioParams,true);
 		if(is_array($result)) return $result;
-		else return $result;
+		else return $result;  
 	}
 	public function registerDomain($params=false) {
 		$params = $this->setParams($params);
