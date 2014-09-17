@@ -71,20 +71,21 @@ class Tools {
 		return $string; 
 	}
 	public static function fixPhone($number,$country) {
-		if((!$number) || (strlen($number)<5)) return;
+		if((!$number) || (strlen($number)<5)) return $number;
+		if(!(substr($number,1,1) == "+" || substr($number,1,1) == "0")) return $number;
 		if(!preg_match("/^[0\+]/",$number)) $number = '+' . $number;
 		if(!$country) $country = "DE";
 		$phoneUtil = PhoneNumberUtil::getInstance();
 		try {
-			$numberProto = $phoneUtil->parseAndKeepRawInput($number, $country);
-		} catch (NumberParseException $e) {
+			$numberProto = $phoneUtil->parseAndKeepRawInput($number, $country);		
+			if(!$phoneUtil->isValidNumber($numberProto)) return $number;
+			$newNumber = $phoneUtil->formatOutOfCountryCallingNumber($numberProto, PhoneNumberFormat::E164);	
+			$newNumber = preg_replace("/( )(.*)/", ".$2", $newNumber);
+			$newNumber = preg_replace("/ /", "", $newNumber);			
+			return $newNumber;
+		} catch (Exception $e) {
 			return $number;
 		}
-		if(!$phoneUtil->isValidNumber($numberProto)) return $number;
-		$newNumber = $phoneUtil->formatOutOfCountryCallingNumber($numberProto, PhoneNumberFormat::E164);	
-		$newNumber = preg_replace("/( )(.*)/", ".$2", $newNumber);
-		$newNumber = preg_replace("/ /", "", $newNumber);
-		return $newNumber;
 	}	
 	public static function cleanAscioParams($ascioParams) {
 		foreach ($ascioParams as $key => $value) {
