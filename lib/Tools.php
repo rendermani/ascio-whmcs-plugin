@@ -94,7 +94,7 @@ class Tools {
 				$ascioParams[$key] =$value;	
 			}
 		}
-		return $ascioParams;
+		return $ascioParams; 
 	}	
 }
 class AscioException extends Exception { }
