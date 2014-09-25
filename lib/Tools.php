@@ -71,20 +71,20 @@ class Tools {
 		return $string; 
 	}
 	public static function fixPhone($number,$country) {
-		if((!$number) || (strlen($number)<5)) return;
+		if((!$number) || (strlen($number)<5)) throw new AscioException("Phone number too short: ".$number);
+		if(!(substr($number,0,1) == "+" || substr($number,0,1) == "0")) throw new AscioException("Phone numbers should start with 0 or +: ".$number);
 		if(!preg_match("/^[0\+]/",$number)) $number = '+' . $number;
-		if(!$country) $country = "DE";
 		$phoneUtil = PhoneNumberUtil::getInstance();
 		try {
-			$numberProto = $phoneUtil->parseAndKeepRawInput($number, $country);
-		} catch (NumberParseException $e) {
-			return $number;
+			$numberProto = $phoneUtil->parseAndKeepRawInput($number, $country);		
+			if(!$phoneUtil->isValidNumber($numberProto)) return $number;
+			$newNumber = $phoneUtil->formatOutOfCountryCallingNumber($numberProto, PhoneNumberFormat::E164);	
+			$newNumber = preg_replace("/( )(.*)/", ".$2", $newNumber);
+			$newNumber = preg_replace("/ /", "", $newNumber);
+			return $newNumber;
+		} catch (Exception $e) {
+			throw new AscioException("Error converting phone number: ".$number);
 		}
-		if(!$phoneUtil->isValidNumber($numberProto)) return $number;
-		$newNumber = $phoneUtil->formatOutOfCountryCallingNumber($numberProto, PhoneNumberFormat::E164);	
-		$newNumber = preg_replace("/( )(.*)/", ".$2", $newNumber);
-		$newNumber = preg_replace("/ /", "", $newNumber);
-		return $newNumber;
 	}	
 	public static function cleanAscioParams($ascioParams) {
 		foreach ($ascioParams as $key => $value) {
@@ -97,5 +97,5 @@ class Tools {
 		return $ascioParams;
 	}	
 }
-
+class AscioException extends Exception { }
 ?>

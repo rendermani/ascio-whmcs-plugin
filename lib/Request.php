@@ -226,7 +226,11 @@ Class Request {
 	}
 	public function registerDomain($params=false) {
 		$params = $this->setParams($params);
-		$ascioParams = $this->mapToOrder($params,"Register_Domain");
+		try {
+			$ascioParams = $this->mapToOrder($params,"Register_Domain");
+		} catch (AscioException $e) {
+			return array("error" => $e->getMessage());
+		}
 		$result = $this->request("CreateOrder",$ascioParams);
 		if (!$result) {
 			$this->setWhmcsStatus($domainName,"Pending","Register_Domain");
@@ -235,7 +239,11 @@ Class Request {
 	}
 	public function transferDomain ($params=false) {		
 		$params = $this->setParams($params);
-		$ascioParams = $this->mapToOrder($params,"Transfer_Domain");
+		try {
+			$ascioParams = $this->mapToOrder($params,"Transfer_Domain");
+		} catch (AscioException $e) {
+			return array("error" => $e->getMessage());
+		}
 		$result = $this->request("CreateOrder",$ascioParams);
 		if (!$result) {
 			$this->setWhmcsStatus($domain,"Pending","Transfer_Domain");
@@ -254,7 +262,11 @@ Class Request {
 
 		if($updateRegistrant) {
 			syslog(LOG_INFO,"Update Registrant: ".$registrantResult);
-			$ascioParams = $this->mapToOrder($params,$updateRegistrant);		
+			try {
+				$ascioParams = $this->mapToOrder($params,$updateRegistrant);		
+			} catch (AscioException $e) {
+				return array("error" => $e->getMessage());
+			}
 			$ascioParams["order"]["Domain"]["Registrant"] = $newRegistrant;
 			// Do the Adminchange within the owner-change
 			if($updateAdmin && $updateRegistrant=="Owner_Change") {
@@ -265,7 +277,11 @@ Class Request {
 		} 
 		if($updateTech || $updateBilling || ($updateAdmin && $updateRegistrant!="Owner_Change")) {
 			syslog(LOG_INFO,"Contact_Update");
-			$ascioParams = $this->mapToOrder($params,"Contact_Update");		
+			try {
+				$ascioParams = $this->mapToOrder($params,"Contact_Update");		
+			} catch (AscioException $e) {
+				return array("error" => $e->getMessage());
+			}
 			if($updateAdmin) {
 				syslog(LOG_INFO,"Update Tech");
 				$ascioParams["order"]["Domain"]["AdminContact"] = $newAdmin;
@@ -285,7 +301,11 @@ Class Request {
 	}
 	public function renewDomain($params) {
 		$params = $this->setParams($params);
-		$ascioParams = $this->mapToOrder($params,"Renew_Domain");
+		try {
+			$ascioParams = $this->mapToOrder($params,"Renew_Domain");
+		} catch (AscioException $e) {
+			return array("error" => $e->getMessage());
+		}
 		$result =  $this->request("CreateOrder",$ascioParams);
 		if (!$result) {
 			$this->setWhmcsStatus($domain,"Pending","Renew_Domain");
@@ -295,7 +315,11 @@ Class Request {
 
 	public function expireDomain($params) {
 		$params = $this->setParams($params);
-		$ascioParams = $this->mapToOrder($params,"Expire_Domain");
+		try {
+			$ascioParams = $this->mapToOrder($params,"Expire_Domain");
+		} catch (AscioException $e) {
+			return array("error" => $e->getMessage());
+		}
 		$result =  $this->request("CreateOrder",$ascioParams);
 		if (!$result) {
 			$this->setWhmcsStatus($domain,"Pending","Renew_Domain");
@@ -304,7 +328,11 @@ Class Request {
 	}	
 	function saveNameservers($params) {
 		$params = $this->setParams($params);
-		$ascioParams = $this->mapToOrder($params,"Nameserver_Update");
+		try {
+			$ascioParams = $this->mapToOrder($params,"Nameserver_Update");
+		} catch (AscioException $e) {
+			return array("error" => $e->getMessage());
+		}
 		$result =  $this->request("CreateOrder",$ascioParams);
 		if (!$result) {
 			$this->setWhmcsStatus($domain,"Pending","Nameserver_Update");
@@ -318,13 +346,21 @@ Class Request {
 		} else {
 			$lockstatus="Unlock";
 		}
-		$ascioParams = $this->mapToOrder($params,"Change_Locks");
+		try {
+			$ascioParams = $this->mapToOrder($params,"Change_Locks");
+		} catch (AscioException $e) {
+			return array("error" => $e->getMessage());
+		}
 		$ascioParams->Order->Domain->TransferLock = $lockstatus;
 		return $this->request("CreateOrder",$ascioParams);
 	}	
 	public function getEPPCode($params) {
 		$params = $this->setParams($params);
-	    $ascioParams = $this->mapToOrder($params,"Update_AuthInfo");
+	    try {
+	    	$ascioParams = $this->mapToOrder($params,"Update_AuthInfo");
+		} catch (AscioException $e) {
+			return array("error" => $e->getMessage());
+		}
 	    // todo: set AuthInfo before order;	
 		$result = $this->request("CreateOrder",$ascioParams,true);
 		if(is_array($result)) {
@@ -381,6 +417,7 @@ Class Request {
 	// map contact from Ascio to WHMCS - admincompanyname
 	public function mapToContact($params,$type) {
 		$contactName = array();
+		$errors = array();
 		$prefix = "";
 		if($type == "Registrant") {
 			$contactName["Name"] = $params["firstname"] . " " . $params["lastname"];
@@ -392,6 +429,16 @@ Class Request {
 			$contactName["LastName"] = $params[$prefix . "lastname"];
 		}
 		$country =  $params[$prefix . "country"];
+		try {
+			$phone = Tools::fixPhone($params[$prefix . "phonenumber"],$country);
+		} catch (AscioPhoneException $e) {
+			$errors[] =$type ." phone: ".$e->getMessage();
+		}
+		try {
+			$phone = Tools::fixPhone($params[$prefix . "faxnumber"],$country);
+		} catch (AscioPhoneException $e) {
+			$errors[] =$type ." fax: ".$e->getMessage();
+		}		
 		$contact = Array(
 			'OrgName' 		=>  $params[$prefix . "companyname"],
 			'Address1' 		=>  $params[$prefix . "address1"],	

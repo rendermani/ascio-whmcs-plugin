@@ -167,6 +167,7 @@ function ascio_DeleteNameserver($params) {
     $values["error"] = "Operation not allowed";
     return $values;
 }
+// this function is not needed if you have polling or callbacks
 function ascio_Sync($params) {
 	$request = createRequest($params);
 	$domain = $request->searchDomain($params);	
