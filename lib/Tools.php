@@ -71,6 +71,8 @@ class Tools {
 		return $string; 
 	}
 	public static function fixPhone($number,$country) {
+		if($number=="") return "";
+		if(preg_match("/^[\+][1-9]{2}\.[0-9]*/",$number)) return $number;
 		if((!$number) || (strlen($number)<5)) throw new AscioException("Phone number too short: ".$number);
 		if(!(substr($number,0,1) == "+" || substr($number,0,1) == "0")) throw new AscioException("Phone numbers should start with 0 or +: ".$number);
 		if(!preg_match("/^[0\+]/",$number)) $number = '+' . $number;

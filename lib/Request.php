@@ -85,14 +85,14 @@ Class Request {
 		syslog(LOG_INFO, "WHMCS ".$functionName  .": ".$status->Values->string . " ResultCode:" . $status->ResultCode);
 		if ( $status->ResultCode==200) {
 			return $result;
+		} else if( $status->ResultCode==554)  {
+			$messages = "Temporary error. Please try later or contact Ascio partner service.";
+		} elseif (count($status->Values->string) > 1 ){
+				$messages = join(", \r\n",$status->Values->string);	
 		} else {
-			if (count($status->Values->string) > 1 ){
-				$messages = join("<br/>\n",$status->Values->string);	
-			} else {
-				$messages = $status->Values->string;
-			}
-			return array('error' => $status->Message . "<br/>\n" .$messages);
-		}     
+			$messages = $status->Values->string;
+		}
+		return array('error' => $status->Message . ", \r\n" .$messages);     
 	}
 	public function getDomain($handle) {
 		$ascioParams = array(
@@ -226,9 +226,10 @@ Class Request {
 	}
 	public function registerDomain($params=false) {
 		$params = $this->setParams($params);
-		try {
+		try {			
 			$ascioParams = $this->mapToOrder($params,"Register_Domain");
 		} catch (AscioException $e) {
+			die( $e);
 			return array("error" => $e->getMessage());
 		}
 		$result = $this->request("CreateOrder",$ascioParams);
@@ -384,11 +385,10 @@ Class Request {
 	protected function mapToTrademark($params) {
 		return null; 
 	}
-	public function mapToOrder ($params,$orderType) {
+	public function mapToOrder ($params,$orderType) {		
 		$params = $this->setParams($params);
 		$domainName = $params["sld"] ."." . $params["tld"];
 		syslog(LOG_INFO, "WHMCS ". $orderType . ": ".$domainName);
-		$registrant =  $this->mapToContact($params,"Registrant");
 		$domain = array( 
 			'DomainName' => $domainName,
 			'RegPeriod' =>  $params["regperiod"],
@@ -428,29 +428,23 @@ Class Request {
 			$contactName["FirstName"] = $params[$prefix . "firstname"];
 			$contactName["LastName"] = $params[$prefix . "lastname"];
 		}
-		$country =  $params[$prefix . "country"];
+		$country =  $params[$prefix . "country"];	
 		try {
-			$phone = Tools::fixPhone($params[$prefix . "phonenumber"],$country);
-		} catch (AscioPhoneException $e) {
-			$errors[] =$type ." phone: ".$e->getMessage();
-		}
-		try {
-			$phone = Tools::fixPhone($params[$prefix . "faxnumber"],$country);
-		} catch (AscioPhoneException $e) {
-			$errors[] =$type ." fax: ".$e->getMessage();
+			$contact = Array(
+				'OrgName' 		=>  $params[$prefix . "companyname"],
+				'Address1' 		=>  $params[$prefix . "address1"],	
+				'Address2' 		=>  $params[$prefix . "address2"],
+				'PostalCode' 	=>  $params[$prefix . "postcode"],
+				'City' 			=>  $params[$prefix . "city"],
+				'State' 		=>  $params[$prefix . "state"],		
+				'CountryCode' 	=>  $country,
+				'Email' 		=>  $params[$prefix . "email"],
+				'Phone'			=>  Tools::fixPhone($params[$prexix . "phonenumberformatted"],$country),
+				'Fax' 			=> 	Tools::fixPhone($params[$prefix . "faxnumberformatted"],$country)
+			);
+		} catch (AscioException $e) {
+			throw new AscioException($type . ", ". $e->getMessage());			
 		}		
-		$contact = Array(
-			'OrgName' 		=>  $params[$prefix . "companyname"],
-			'Address1' 		=>  $params[$prefix . "address1"],	
-			'Address2' 		=>  $params[$prefix . "address2"],
-			'PostalCode' 	=>  $params[$prefix . "postcode"],
-			'City' 			=>  $params[$prefix . "city"],
-			'State' 		=>  $params[$prefix . "state"],		
-			'CountryCode' 	=>  $country,
-			'Email' 		=>  $params[$prefix . "email"],
-			'Phone'			=>  Tools::fixPhone($params[$prefix . "phonenumber"],$country),
-			'Fax' 			=> 	Tools::fixPhone($params[$prefix . "faxnumber"],$country)
-		);		
 		return array_merge($contactName,$contact);
 	}
 	// WHMCS has 2 contact structures. Flat and nested.
