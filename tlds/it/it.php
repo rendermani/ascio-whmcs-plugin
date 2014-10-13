@@ -12,7 +12,8 @@ class it extends Request {
 			"non natural foreigners" 				=> "7"
 		);
 		// 7 is for all non-italian complanies. Fix invalid user-inputs
-		if(($params["registrantcountry"] != "IT") && $contact["OrgName"]) {
+
+		if(($params["countrycode"] != "IT") && $contact["OrgName"]) {
 			$contact["RegistrantType"] = 7;	
 		} 
 		else {
