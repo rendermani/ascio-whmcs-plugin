@@ -1,6 +1,6 @@
 <?
 set_time_limit ( 6000 );
-//require_once("../../../init.php");
+require_once("../../../init.php");
 require_once "../../../includes/registrarfunctions.php";
 require_once("lib/Request.php");
 
