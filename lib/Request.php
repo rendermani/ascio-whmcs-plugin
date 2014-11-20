@@ -30,7 +30,7 @@ Class SessionCache {
 function createRequest($params) {
 	$tld = $params["tld"];
 	$filename = realpath(dirname(__FILE__))."/../tlds/$tld/$tld.php";
-	$defExists = file_exists($filename);
+	$defExists = file_exists($filename);	
 	if($tld && $defExists) {
 		require_once($filename);
 		$tldRequest = new $tld($params);
@@ -86,7 +86,7 @@ Class Request {
 		if ( $status->ResultCode==200) {
 			return $result;
 		} else if( $status->ResultCode==554)  {
-			$messages = "Temporary error. Please try later or contact Ascio partner service.";
+			$messages = "Temporary error. Please try later or contact your support.";
 		} elseif (count($status->Values->string) > 1 ){
 				$messages = join(", \r\n",$status->Values->string);	
 		} else {
@@ -130,37 +130,49 @@ Class Request {
 			'sessionId' => 'mySessionId',
 			'msgId' => $messageId
 		);
-
-		$result = $this->request("GetMessageQueue", $ascioParams,true);  
-		$domainName = $result->item->DomainName;
+		syslog(LOG_INFO,"Trying to get MessageID ".$messageId);
+		$result = $this->request("GetMessageQueue", $ascioParams,true);
+		syslog(LOG_INFO,"Trying to get Order ".$orderId);
 		$order =  $this->getOrder($orderId);
-
+		$domainName = $order->order->Domain->DomainName;
+		$domainId   = $this->getDomainId($domainName);
 		// External WHMCS API: Set Status
 		// External WHMCS API: Send Mail
-		$msgPart = "Domain order ". $id . ", ".$domainName;
-		$whmcsStatus = $this->setWhmcsStatus($domainName,$orderStatus,$order->order->Type);
+		$msgPart = "Domain order ". $domainId . ", ".$domainName;
+		$whmcsStatus = $this->setWhmcsStatus($domainName,$orderStatus,$order->order->Type,$domainId);
 		if ($orderStatus=="Completed") {
 			$message = Tools::formatOK($msgPart);
+			if($this->params["AutoExpire"] =="on" && $order->order->Type =="Register_Domain") {
+				$this->expireDomain(array ("domainname" => $domainName));	
+			}	
 		} else {
 			$message =  Tools::formatError($result->item->StatusList->CallbackStatus,$msgPart);
 		}
- 		$values = array( 'messagename' => 'Test Template', 'id' => '1', );
- 		$adminuser = 'admin';
-		$command = "sendemail";
-		$values["customtype"] = "domain";
-		$values["customsubject"] = $msgPart ." ". strtolower($orderStatus);
-		$values["custommessage"] = $message;
-		$values["id"] = $id;
-		localAPI($command,$values,$adminuser);
-		// Ascio ACK Message
-		$ascioParams = array(
-			'sessionId' => 'mySessionId',
-			'msgId' => $messageId
-		);
-		$this->sendAuthCode($order->order);
-		$result = $this->request("AckMessage", $ascioParams,true); 
+		if($this->params["DetailedOrderStatus"]) {
+			syslog(LOG_INFO, "DetailedOrderStatus ". $this->params["DetailedOrderStatus"]);
+		}
+ 		if($this->params["DetailedOrderStatus"] == "on") {
+ 		 	$values = array( 'messagename' => 'Test Template', 'id' => '1', );
+	 		$adminuser = 'admin';
+			$command = "sendemail";
+			$values["customtype"] = "domain";
+			$values["customsubject"] = $msgPart ." ". strtolower($orderStatus);
+			$values["custommessage"] = $message;
+			$values["id"] = $domainId;
+			localAPI($command,$values,$adminuser);
+			// Ascio ACK Message
+			$ascioParams = array(
+				'sessionId' => 'mySessionId',
+				'msgId' => $messageId
+			);	
+ 		}
+
+		$this->sendAuthCode($order->order,$domainId);		
+		$result = $this->request("AckMessage", $ascioParams,true); 	
 	}
-	public function setWhmcsStatus($domain,$ascioStatus,$orderType) {
+	public function setWhmcsStatus($domain,$ascioStatus,$orderType,$domainId) {	
+		if($ascioStatus==NULL) $ascioStatus = "failed";
+		
 		$statusMap = array (
 			"completed" => "Active",
 			"active" => "Active",
@@ -178,11 +190,14 @@ Class Request {
 		if ($orderType=="Transfer_Domain" && $whmcsStatus == "Pending") {
 			$whmcsStatus = "Pending Transfer";
 		}
+		if($ascioStatus=="Completed" && $orderType =="Transfer_Away") {
+			$whmcsStatus= "Cancelled";
+		}
 		$command = "updateclientdomain";
-		$adminuser = "mani";
 		$values["domain"] =  $domain;
 		$values["status"] = $whmcsStatus;
-		$results = localAPI($command,$values,$adminuser); 
+		$results = localAPI($command,$values,"mani"); 
+		syslog(LOG_INFO, "Set new status for ".$domain. ", ".$orderType . ", ".$whmcsStatus);
 		return $whmcsStatus;
 	}
 	public function getOrder($orderId) {
@@ -193,18 +208,25 @@ Class Request {
 		$result =  $this->request("GetOrder", $ascioParams,true); 
 		return $result;
 	}
-	public function sendAuthCode($order) {
+	public function sendAuthCode($order,$domainId) {
 		if($order->Type != "Update_AuthInfo") return;
 		$domain =  $this->getDomain($order->Domain->DomainHandle);
 		syslog(LOG_INFO,"EPP Code: ". $domain->domain->AuthInfo);
 		$msg = "New AuthCode generated for ".$domain->domain->DomainName . ": ".$domain->domain->AuthInfo;
-		$postfields = array();
-		$postfields["action"] = "sendemail";
-		$postfields["customtype"] = "domain";
-		$postfields["customsubject"] = $domain->domain->DomainName . ": New AuthCode generated";
-		$postfields["custommessage"] = $msg;
-		$postfields["id"] = $order->OrderId;
-		$this->callApi($postfields);
+		$values = array();
+		$values["customtype"] = "domain";
+		$values["customsubject"] = $domain->domain->DomainName . ": New AuthCode generated";
+		$values["custommessage"] = $msg;
+		$values["id"] = $domainId;
+		$results = localAPI("sendemail",$values,"admin");
+		return $results;
+	}
+	private function getDomainId($domain) {
+		$query = 'SELECT id FROM  `tbldomains` WHERE domain =  "'.$domain.'" LIMIT 0 , 1';
+		$result = mysql_query($query);
+		$row = mysql_fetch_assoc($result);		
+	    $id = $row["id"];
+	    return $id; 
 	}
 	public function poll() {
 		$ascioParams = array(
@@ -323,7 +345,7 @@ Class Request {
 		}
 		$result =  $this->request("CreateOrder",$ascioParams);
 		if (!$result) {
-			$this->setWhmcsStatus($domain,"Pending","Renew_Domain");
+			$this->setWhmcsStatus($domain,"Pending","Expire_Domain");
 		}
 		return $result;
 	}	
@@ -362,7 +384,6 @@ Class Request {
 		} catch (AscioException $e) {
 			return array("error" => $e->getMessage());
 		}
-	    // todo: set AuthInfo before order;	
 		$result = $this->request("CreateOrder",$ascioParams,true);
 		if(is_array($result)) {
 			return $result;
@@ -371,23 +392,49 @@ Class Request {
 		}
 	}	
 	protected function mapToRegistrant($params) {
-		return $this->mapToContact($params,"Registrant");
+		$result =  $this->mapToContact($params,"Registrant");
+		$result["Name"] = $params["firstname"] . " " . $params["lastname"];
+		$result["RegistrantType"] = $params["custom"]["RegistrantType"];
+		$result["VatNumber"] = $params["custom"]["VatNumber"];
+		$result["NexusCategory"] = $params["custom"]["NexusCategory"];
+		$result["RegistrantNumber"] = $params["custom"]["RegistrantNumber"];
+		$result["Details"] = $params["custom"]["Details"];
+		return $result;
+	}
+	protected function addContactFields($params,$type) {
+		$result =  $this->mapToContact($params,$type);
+		$result["FirstName"] = $params["firstname"] ;
+		$result["LastName"] = $params["lastname"];
+		$result["Type"] = $params["custom"]["Type"];
+		$result["Details"] = $params["custom"]["Details"];
+		$result["NexusCategory"] = $params["custom"]["NexusCategory"];
+		$result["OrganisationNumber"] = $params["custom"]["OrganisationNumber"];
+		return $result;
 	}
 	protected function mapToAdmin($params) {
-		return $this->mapToContact($params,"Admin");
+		return $this->addContactFields($params,"Admin");
 	}	
 	protected function mapToTech($params) {
-		return $this->mapToContact($params,"Admin");
+		return $this->addContactFields($params,"Admin");
 	}	
 	protected function mapToBilling($params) {
-		return $this->mapToContact($params,"Admin");
+		return $this->addContactFields($params,"Admin");
 	}
 	protected function mapToTrademark($params) {
 		return null; 
 	}
-	public function mapToOrder ($params,$orderType) {		
+	public function mapToOrder ($params,$orderType) {
+		//	get custom-field names. Params only has IDs but the names are needed
+		$fields = $customfields = $params["custom"] = array();
+ 		$result = mysql_query("select id,fieldname from tblcustomfields");
+ 		foreach ($params["customfields"] as $key => $value) {
+ 			$customFields[$value["id"]] = $value["value"];
+ 		}
+ 		while ($row = mysql_fetch_assoc($result)) {
+ 			$params["custom"][$row['fieldname']]=$customFields[$row['id']] ;
+		}
 		$params = $this->setParams($params);
-		$domainName = $params["sld"] ."." . $params["tld"];
+		$domainName = $params["domainname"];
 		syslog(LOG_INFO, "WHMCS ". $orderType . ": ".$domainName);
 		$domain = array( 
 			'DomainName' => $domainName,
@@ -400,15 +447,15 @@ Class Request {
 			'BillingContact'=>  $this->mapToBilling($params),
 			'NameServers' 	=>  $this->mapToNameservers($params),
 			'Trademark' 	=>  $this->mapToTrademark($params),
-			'Comment'		=>  $params["userid"]
+			'Comment'		=>  $params["Comment"]
 		);
 		$order = 
 			array( 
 			'Type' => $orderType, 
+			'TransactionComment' => "WHMCS", 
 			'Domain' => $domain,
 			'Comments'	=>	$params["userid"]
 			); 
-		//echo(nl2br(print_r($order,1)));
 		return array(
 				'sessionId' => "set-it-later",
 				'order' => $order
@@ -440,7 +487,7 @@ Class Request {
 				'CountryCode' 	=>  $country,
 				'Email' 		=>  $params[$prefix . "email"],
 				'Phone'			=>  Tools::fixPhone($params[$prexix . "phonenumberformatted"],$country),
-				'Fax' 			=> 	Tools::fixPhone($params[$prefix . "faxnumberformatted"],$country)
+				'Fax' 			=> 	Tools::fixPhone($params[$prefix . "custom"]["Fax"],$country)
 			);
 		} catch (AscioException $e) {
 			throw new AscioException($type . ", ". $e->getMessage());			
@@ -460,7 +507,8 @@ Class Request {
 			'CountryCode'  			=> $params["Country"],
 			'Email'  				=> $params["Email"],
 			'Phone'  				=> Tools::fixPhone($params["Phone"],$params["Country"]), 
-			'Fax'  					=> Tools::fixPhone($params["Fax"],$params["Country"]),
+			// todo test!
+			'Fax'  					=> Tools::fixPhone($params["custom"]["Fax"],$params["Country"]),
 		);
 		if($type=="Registrant") {
 			$ascio->Name = $params["First Name"]. " ". $params["Last Name"];		
@@ -482,8 +530,8 @@ Class Request {
 		if($params) {
 			$this->params = $params; 
 			$this->domainName = $params["sld"] ."." . $params["tld"];
-			$this->account = $this->params["Username"];
-			$this->password = $this->params["Password"];
+			if($this->params["Username"]) $this->account = $this->params["Username"];
+			if($this->params["Password"]) $this->password = $this->params["Password"];
 		} 
 		return $this->params;
 	}

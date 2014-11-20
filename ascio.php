@@ -19,9 +19,11 @@ require_once("lib/Zone.php");
 
 function ascio_getConfigArray() {
 	$configarray = array(
-	 "Username" => array( "Type" => "text", "Size" => "20", "Description" => "Enter your username here", ),
-	 "Password" => array( "Type" => "password", "Size" => "20", "Description" => "Enter your password here", ),
-	 "TestMode" => array( "Type" => "yesno", )
+	 "Username" => array( "Type" => "text", "Size" => "20", "Description" => "Enter your username here" ),
+	 "Password" => array( "Type" => "password", "Size" => "20", "Description" => "Enter your password here"),	 
+	 "TestMode" => array( "Type" => "yesno",  "Description" => "You will need a test-account for this"),
+	 "AutoExpire" => array( "Type" => "yesno", "Size" => "20", "Description" => "Do not use Ascio's auto-renew feature. Let WHMCS handle the renew"),
+	 "DetailedOrderStatus" => array( "Type" => "yesno", "Size" => "20", "Description" => "Send an detailed order status to the end-customer.", "Default" => "yes")
 	);
 	return $configarray;
 }
@@ -137,8 +139,10 @@ function ascio_SaveContactDetails($params) {
 }
 
 function ascio_GetEPPCode($params) {
-	$request = createRequest($params);
-	return $request->getEPPCode($params);
+	$request = createRequest($params);	
+	$params = $request->getEPPCode($params);
+	return $params;
+
 }
 
 function ascio_RegisterNameserver($params) {

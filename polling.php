@@ -10,6 +10,7 @@ $cfg = getRegistrarConfigOptions($account);
 $request = new Request($cfg);
 $result = $request->poll();
 while ($result->item && $result->item->MsgId) {
+	echo "getMessage ".$result->item->MsgId."\n";
 	$item = $result->item;
 	$request->getCallbackData($item->OrderStatus,$item->MsgId,$item->OrderId);
 	syslog(LOG_INFO,"Acking: ".$result->item->MsgId);
