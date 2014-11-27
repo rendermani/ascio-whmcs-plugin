@@ -438,7 +438,7 @@ Class Request {
 		syslog(LOG_INFO, "WHMCS ". $orderType . ": ".$domainName);
 		$domain = array( 
 			'DomainName' => $domainName,
-			'RegPeriod' =>  $params["regperiod"],
+			'RegPeriod' =>  $params["original"]["regperiod"],
 			'AuthInfo'	=> 	$params["eppcode"],
 			'DomainPurpose' =>  $params["Application Purpose"],
 			'Registrant' 	=>  $this->mapToRegistrant($params),
