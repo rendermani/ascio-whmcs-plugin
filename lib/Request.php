@@ -142,7 +142,10 @@ Class Request {
 		$whmcsStatus = $this->setWhmcsStatus($domainName,$orderStatus,$order->order->Type,$domainId);
 		if ($orderStatus=="Completed") {
 			$message = Tools::formatOK($msgPart);
-			if($this->params["AutoExpire"] =="on" && $order->order->Type =="Register_Domain") {
+			if(
+				$this->params["AutoExpire"] =="on" && 
+				($order->order->Type =="Register_Domain" || $order->order->Type =="Transfer_Domain")
+			) {
 				$this->expireDomain(array ("domainname" => $domainName));	
 			}	
 		} else {
@@ -165,14 +168,36 @@ Class Request {
 				'sessionId' => 'mySessionId',
 				'msgId' => $messageId
 			);	
- 		}
-
+ 		} 		
 		$this->sendAuthCode($order->order,$domainId);		
-		$result = $this->request("AckMessage", $ascioParams,true); 	
+		$result = $this->request("AckMessage", $ascioParams,true);
+		if( $order->order->Type=="Register_Domain" || $order->order->Type=="Transfer_Domain") {
+			$this->autoCreateZone($domainName);
+		}
+	}
+	public function autoCreateZone($domain) {
+		$params = $this->setParams();		
+		syslog(LOG_INFO, "Creating DNS zone ".$domain);	
+		$cfg = getRegistrarConfigOptions("ascio");		
+		if($cfg["AutoCreateDNS"]=="on") {
+			$dns = $cfg["DNS_Default_Zone"];
+			$mx1 = $cfg["DNS_Default_Mailserver"];
+			$mx2 = $cfg["DNS_Default_Mailserver_2"];
+			$zone = new DnsZone($params,$domain);
+			$params["dnsrecords"] = array(
+				array("hostname" => "@","type" => "A","address" => $dns),
+				array("hostname" => "www","type" => "A","address" => $dns),
+				array("hostname" => "mail","type" => "A","address" => $mx1),
+				array("hostname" => "mail2","type" => "A","address" => $mx2),
+				array("hostname" => "@", "type" => "MX","address" => "mail1", "priority" => 10),
+				array("hostname" => "@", "type" => "MX","address" => "mail2","priority" => 20)
+			);
+			$result = $zone->update($params);
+			echo ("Created DNS zone: ".$domain."\n");
+		}
 	}
 	public function setWhmcsStatus($domain,$ascioStatus,$orderType,$domainId) {	
 		if($ascioStatus==NULL) $ascioStatus = "failed";
-		
 		$statusMap = array (
 			"completed" => "Active",
 			"active" => "Active",
@@ -196,7 +221,9 @@ Class Request {
 		$command = "updateclientdomain";
 		$values["domain"] =  $domain;
 		$values["status"] = $whmcsStatus;
-		$results = localAPI($command,$values,"mani"); 
+		if($order->Type=="Register_Domain" ||$order->Type=="Transfer_Domain") {
+			$results = localAPI($command,$values,"admin"); 			
+		}
 		syslog(LOG_INFO, "Set new status for ".$domain. ", ".$orderType . ", ".$whmcsStatus);
 		return $whmcsStatus;
 	}
@@ -247,6 +274,7 @@ Class Request {
 		else return $result;  
 	}
 	public function registerDomain($params=false) {
+		// register domains
 		$params = $this->setParams($params);
 		try {			
 			$ascioParams = $this->mapToOrder($params,"Register_Domain");

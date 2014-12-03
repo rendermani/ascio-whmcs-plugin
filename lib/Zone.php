@@ -9,7 +9,6 @@ class DnsZone {
 	var $records;
 	var $owner;
 	public function __construct  ($params,$name=false) {
-
 		$this->dnsService = new DnsService($params["Username"],$params["Password"]);
 		if($name) $this->name = $name;
 		else $this->name = $params["sld"] . "." . $params["tld"];
@@ -73,7 +72,7 @@ class DnsZone {
 		return $result;
 	}
 	private function deleteRecord($record) {
-		$deleteRecord 		      = new DeleteRecord();
+		$deleteRecord = new DeleteRecord();
 		$deleteRecord->recordId   = $record->Id;
 		$result = $this->dnsService->deleteRecord($deleteRecord);
 		return $result;

@@ -72,20 +72,22 @@ class Tools {
 	}
 	public static function fixPhone($number,$country) {
 		if($number=="") return "";
+		$country = strtoupper($country);
 		if(preg_match("/^[\+][1-9]{2}\.[0-9]*/",$number)) return $number;
 		if((!$number) || (strlen($number)<5)) throw new AscioException("Phone number too short: ".$number);
 		if(!(substr($number,0,1) == "+" || substr($number,0,1) == "0")) throw new AscioException("Phone numbers should start with 0 or +: ".$number);
 		if(!preg_match("/^[0\+]/",$number)) $number = '+' . $number;
 		$phoneUtil = PhoneNumberUtil::getInstance();
-		try {
-			$numberProto = $phoneUtil->parseAndKeepRawInput($number, $country);		
+		try {	
+			$numberProto = $phoneUtil->parseAndKeepRawInput($number, $country);	
+
 			if(!$phoneUtil->isValidNumber($numberProto)) return $number;
 			$newNumber = $phoneUtil->formatOutOfCountryCallingNumber($numberProto, PhoneNumberFormat::E164);	
 			$newNumber = preg_replace("/( )(.*)/", ".$2", $newNumber);
-			$newNumber = preg_replace("/ /", "", $newNumber);
+			$newNumber = preg_replace("/[ \/]/", "", $newNumber);
 			return $newNumber;
 		} catch (Exception $e) {
-			throw new AscioException("Error converting phone number: ".$number);
+			throw new AscioException("Error converting phone number: ".$number.". ".$e);
 		}
 	}	
 	public static function cleanAscioParams($ascioParams) {
@@ -97,7 +99,15 @@ class Tools {
 			}
 		}
 		return $ascioParams; 
-	}	
+	}
+	public static function generateEppCode($nrOfCharacters, $specialCharaters) {
+		$code = "";
+		$length = strlen($specialCharaters) -1;
+		for ($i = 0; $i < $nrOfCharacters; $i++) {
+			$code .= substr($specialCharaters,rand(0,$length),1); 
+		}
+		return $code; 
+	}
 }
 class AscioException extends Exception { }
 ?>
