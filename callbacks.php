@@ -4,7 +4,11 @@ try {
 	require_once("../../../init.php");
 	require_once "../../../includes/registrarfunctions.php";
 	require_once("lib/Request.php");
-
+	$type = $_POST ? "POST" : "GET";
+	syslog(LOG_INFO,$type . ": Callback received");
+	syslog(LOG_INFO, print_r($_GET,1));
+	syslog(LOG_INFO, print_r($_POST,1));
+	
 	$orderId = $_GET["OrderId"];
 	$messageId = $_GET["MessageId"];
 	$orderStatus = $_GET["OrderStatus"];
@@ -12,8 +16,6 @@ try {
 
 	if(!($orderId && $messageId && $orderStatus)) throw new Exception("Please provide callback parameters", 1);
 
-	syslog(LOG_INFO,"Callback received");
-	syslog(LOG_INFO, print_r($_GET,1));
 	echo "Callback received, ";
 	echo "OrderId: ".$orderId. ", ";
 	echo "MessageId: ".$messageId. ", ";
