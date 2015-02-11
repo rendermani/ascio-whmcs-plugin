@@ -12,7 +12,7 @@ class DnsZone {
 		$this->dnsService = new DnsService($params["Username"],$params["Password"]);
 		if($name) $this->name = $name;
 		else $this->name = $params["sld"] . "." . $params["tld"];
-		$this->owner = $params["Username"] . "-whmcs";		
+		$this->owner = $params["Username"];		
 	}
 	public function get($params) {
 	    # Put your code here to get the current DNS settings - the result should be an array of hostname, record type, and address
@@ -30,7 +30,9 @@ class DnsZone {
 	}
 	public function update($params) {
 		$oldRecords = $this->get($params);
-		if(!$oldRecords) $this->createZone($params);	
+		if(!$oldRecords) {
+			$result = $this->createZone($params);	
+		} 
 		$newRecords = $params["dnsrecords"];
 		for($i=0;$i < count($newRecords)-1; $i++) {		
 			//source
@@ -42,11 +44,10 @@ class DnsZone {
 			$target = $this->removeZonename($record->Target);
 			$recordValues =  $source ."-".get_class($record)."-".$target."-".$record->Priority;
 			if($newRecordValues != $recordValues) {
-				$result[] = $this->updateRecord($record,$newRecord);
+				$result = $this->updateRecord($record,$newRecord);
 			} 
 		}
-		$result[] = $this->createRecord($newRecords[count($newRecords)-1]);
-			
+		$result = $this->createRecord($newRecords[count($newRecords)-1]);
 		return $result;
 	}
 	private function updateRecord($record,$newRecord) {		
@@ -95,7 +96,7 @@ class DnsZone {
 		$createZone = new CreateZone();
 		$createZone->zoneName = $this->name;
 		$createZone->owner 	  = $this->owner;
-		$this->dnsService->createZone($createZone);
+		return $this->dnsService->createZone($createZone);
 	}
 	public function createUser($params) { 	
 		$getUser = new GetUser();
@@ -111,9 +112,7 @@ class DnsZone {
 			$createUser = new CreateUser();
 			$createUser->user = $user; 
 			$result = $dns->CreateUser($createUser);
-		} else {
-			echo "user exists<br/>";
-		}
+		} 
 		return $userName;
 	}
 	public function convertToWhmcs($result) {		

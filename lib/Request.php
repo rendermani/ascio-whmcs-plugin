@@ -78,7 +78,7 @@ Class Request {
 		syslog(LOG_INFO, "WHMCS Request:".$functionName ."(". $this->account .")" );
 		$cfg = getRegistrarConfigOptions("ascio");
 		$wsdl = $cfg["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;
-        $client = new SoapClient($wsdl,array( "trace" => 1 ));
+        $client = new SoapClient($wsdl,array( "trace" => 1, 'cache_wsdl' => WSDL_CACHE_NONE ));
         $result = $client->__call($functionName, array('parameters' => $ascioParams));      
 		$resultName = $functionName . "Result";	
 		$status = $result->$resultName;
@@ -121,7 +121,8 @@ Class Request {
 		$result =  $this->request("SearchDomain",$ascioParams,true);
 		if(is_array($result)) return $result;
 		else {
-			$this->setWhmcsStatus($this->domainName,$result->domains->Domain->Status);
+			$status = !$result->domains->Domain->DomainName ? NULL : $result->domains->Domain->Status;
+			$this->setWhmcsStatus($this->domainName,$status);
 			return $result->domains->Domain;
 		}
 	}
@@ -130,16 +131,20 @@ Class Request {
 			'sessionId' => 'mySessionId',
 			'msgId' => $messageId
 		);
-		syslog(LOG_INFO,"Trying to get MessageID ".$messageId);
 		$result = $this->request("GetMessageQueue", $ascioParams,true);
-		syslog(LOG_INFO,"Trying to get Order ".$orderId);
 		$order =  $this->getOrder($orderId);
 		$domainName = $order->order->Domain->DomainName;
 		$domainId   = $this->getDomainId($domainName);
+		$domainResult = $this->getDomain($order->order->Domain->DomainHandle);
+		$domain = $domainResult->domain;
 		// External WHMCS API: Set Status
 		// External WHMCS API: Send Mail
 		$msgPart = "Domain order ". $domainId . ", ".$domainName;
-		$whmcsStatus = $this->setWhmcsStatus($domainName,$orderStatus,$order->order->Type,$domainId);
+		$whmcsStatus = $this->setWhmcsStatus($domainName,$domain->Status,$order->order->Type,$domainId);
+
+		syslog(LOG_INFO, json_encode($domain));
+		syslog(LOG_INFO, "Domain status ".$domainname. ": ".$domain->Status);
+		syslog(LOG_INFO, "Order status ".$domainname. ": ".$whmcsStatus);
 		if ($orderStatus=="Completed") {
 			$message = Tools::formatOK($msgPart);
 			if(
@@ -197,34 +202,27 @@ Class Request {
 		}
 	}
 	public function setWhmcsStatus($domain,$ascioStatus,$orderType,$domainId) {	
-		if($ascioStatus==NULL) $ascioStatus = "failed";
+		// set the status of the domain based on ascio's domain-data
+		if($ascioStatus==NULL) $ascioStatus = "deleted";
 		$statusMap = array (
-			"completed" => "Active",
-			"active" => "Active",
-			"failed"	=> "Cancelled",
-			"invalid"	=> "Cancelled",
-			"documentation_not_approved" => "Cancelled",
-			"pending_documentation" => "Pending",
-			"pending_end_user_action" => "Pending",
-			"pending_internal_processing" => "Pending",
 			"pending" => "Pending",
-			"pending_post_processing" => "Pending",
-			"pending_nic_processing" => "Pending"
+			"active"  => "Active",
+			"deleted" => "Cancelled",
+			"parked"  => "Cancelled",
+
 		);
 		$whmcsStatus = $statusMap[strtolower($ascioStatus)];
 		if ($orderType=="Transfer_Domain" && $whmcsStatus == "Pending") {
 			$whmcsStatus = "Pending Transfer";
 		}
-		if($ascioStatus=="Completed" && $orderType =="Transfer_Away") {
-			$whmcsStatus= "Cancelled";
+		if(strpos($ascioStatus,"pending")!==false) {
+			$whmcsStatus = "Pending";
 		}
 		$command = "updateclientdomain";
 		$values["domain"] =  $domain;
 		$values["status"] = $whmcsStatus;
-		if($order->Type=="Register_Domain" ||$order->Type=="Transfer_Domain") {
 			$results = localAPI($command,$values,"admin"); 			
-		}
-		syslog(LOG_INFO, "Set new status for ".$domain. ", ".$orderType . ", ".$whmcsStatus);
+		syslog(LOG_INFO, "Set new WHMCS status for ".$domain. ": ".$whmcsStatus);
 		return $whmcsStatus;
 	}
 	public function getOrder($orderId) {
@@ -238,7 +236,6 @@ Class Request {
 	public function sendAuthCode($order,$domainId) {
 		if($order->Type != "Update_AuthInfo") return;
 		$domain =  $this->getDomain($order->Domain->DomainHandle);
-		syslog(LOG_INFO,"EPP Code: ". $domain->domain->AuthInfo);
 		$msg = "New AuthCode generated for ".$domain->domain->DomainName . ": ".$domain->domain->AuthInfo;
 		$values = array();
 		$values["customtype"] = "domain";
