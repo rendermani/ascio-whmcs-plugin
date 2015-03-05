@@ -78,7 +78,7 @@ Class Request {
 		syslog(LOG_INFO, "WHMCS Request:".$functionName ."(". $this->account .")" );
 		$cfg = getRegistrarConfigOptions("ascio");
 		$wsdl = $cfg["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;
-        $client = new SoapClient($wsdl,array( "trace" => 1, 'cache_wsdl' => WSDL_CACHE_NONE ));
+        $client = new SoapClient($wsdl,array( "trace" => 1));
         $result = $client->__call($functionName, array('parameters' => $ascioParams));      
 		$resultName = $functionName . "Result";	
 		$status = $result->$resultName;
