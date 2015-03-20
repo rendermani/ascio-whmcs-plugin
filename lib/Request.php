@@ -350,13 +350,13 @@ Class Request {
 	public function renewDomain($params) {
 		$params = $this->setParams($params);
 		try {
-			$ascioParams = $this->mapToOrder($params,"Renew_Domain");
+			$ascioParams = $this->mapToOrder($params,"Unexpire_Domain");
 		} catch (AscioException $e) {
 			return array("error" => $e->getMessage());
 		}
 		$result =  $this->request("CreateOrder",$ascioParams);
 		if (!$result) {
-			$this->setWhmcsStatus($domain,"Pending","Renew_Domain");
+			$this->setWhmcsStatus($domain,"Pending","Unexpire_Domain");
 		}
 		return $result;
 	}
