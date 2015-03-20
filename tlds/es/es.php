@@ -31,5 +31,9 @@ class es extends Request {
 		$contact["OrganisationNumber"] = $params["additionalfields"]["ID Form Number"];
 		return $contact;
 	}
+	public function transferDomain($params=false) {
+		$params["regperiod"] = 0 ; 
+		parent::transferDomain($params);
+	}
 }
 ?>
