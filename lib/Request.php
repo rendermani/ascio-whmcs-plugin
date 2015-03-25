@@ -10,7 +10,7 @@ define("ASCIO_WSDL_TEST","https://awstest.ascio.com/2012/01/01/AscioService.wsdl
 
 Class SessionCache {
 	public static function get($account) {
-		$filename = dirname(realpath ( __FILE__ ))."/tmp/ascio-session_".$account.".txt";
+		$filename = dirname(realpath ( __FILE__ ))."/../sessioncache/ascio-session_".$account.".txt";
 		$fp = fopen($filename,"r");
 		$contents = fread($fp, filesize($filename));
 		fclose($fp);
@@ -18,7 +18,7 @@ Class SessionCache {
 		return $contents;
 	}
 	public static function put($sessionId,$account) {
-		$filename = dirname(realpath ( __FILE__ ))."/tmp/ascio-session_".$account.".txt";
+		$filename = dirname(realpath ( __FILE__ ))."/../sessioncache/ascio-session_".$account.".txt";
 		$fp = fopen($filename,"w");		
 		fwrite($fp,$sessionId);
 		fclose($fp);
