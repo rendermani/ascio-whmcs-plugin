@@ -4,15 +4,15 @@ class es extends Request {
 	protected function mapToRegistrant($params) {
 		$contact = parent::mapToRegistrant($params);
 		//company in spain
-		if($params["registrantcountry"]=="ES" && $params["registrantcompany"]) {
+		if($params["country"]=="ES" && $params["companyname"]) {
 			$contact["RegistrantType"]  = 612;
 		} 
 		// company outside spain
-		elseif( $params["registrantcompany"]) {
+		elseif( $params["companyname"]) {
 			$contact["RegistrantType"]  = 1;
 		} 
 		// individual in spain
-		elseif ($params["registrantcountry"] =="ES") {
+		elseif ($params["country"] =="ES") {
 			$contact["RegistrantType"]  = 1;
 		} 
 		// individual outside span
@@ -22,7 +22,7 @@ class es extends Request {
 	}
 	protected function mapToAdmin($params) {
 		$contact = parent::mapToAdmin($params);
-		if($params["registrantcountry"]=="ES") {
+		if($params["country"]=="ES") {
 			$contact["Type"]=1;			
 		} else {
 			$contact["Type"]=0;
