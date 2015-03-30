@@ -428,8 +428,6 @@ Class Request {
 	}
 	protected function addContactFields($params,$type) {
 		$result =  $this->mapToContact($params,$type);
-		$result["FirstName"] = $params["firstname"] ;
-		$result["LastName"] = $params["lastname"];
 		$result["Type"] = $params["custom"]["Type"];
 		$result["Details"] = $params["custom"]["Details"];
 		$result["NexusCategory"] = $params["custom"]["NexusCategory"];
