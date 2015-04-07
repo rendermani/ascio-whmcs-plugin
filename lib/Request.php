@@ -428,8 +428,6 @@ Class Request {
 	}
 	protected function addContactFields($params,$type) {
 		$result =  $this->mapToContact($params,$type);
-		$result["FirstName"] = $params["firstname"] ;
-		$result["LastName"] = $params["lastname"];
 		$result["Type"] = $params["custom"]["Type"];
 		$result["Details"] = $params["custom"]["Details"];
 		$result["NexusCategory"] = $params["custom"]["NexusCategory"];
@@ -511,7 +509,7 @@ Class Request {
 				'State' 		=>  $params[$prefix . "state"],		
 				'CountryCode' 	=>  $country,
 				'Email' 		=>  $params[$prefix . "email"],
-				'Phone'			=>  Tools::fixPhone($params[$prexix . "phonenumberformatted"],$country),
+				'Phone'			=>  Tools::fixPhone($params[$prefix . "fullphonenumber"],$country),
 				'Fax' 			=> 	Tools::fixPhone($params[$prefix . "custom"]["Fax"],$country)
 			);
 		} catch (AscioException $e) {
