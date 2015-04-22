@@ -394,14 +394,14 @@ Class Request {
 		if ($params["lockenabled"]) {
 			$lockstatus="Lock";
 		} else {
-			$lockstatus="Unlock";
+			$lockstatus="UnLock";
 		}
 		try {
 			$ascioParams = $this->mapToOrder($params,"Change_Locks");
 		} catch (AscioException $e) {
 			return array("error" => $e->getMessage());
 		}
-		$ascioParams->Order->Domain->TransferLock = $lockstatus;
+		$ascioParams["order"]["Domain"]["TransferLock"] = $lockstatus;
 		return $this->request("CreateOrder",$ascioParams);
 	}	
 	public function getEPPCode($params) {
