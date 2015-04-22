@@ -58,14 +58,13 @@ function ascio_SaveNameservers($params) {
 
 function ascio_GetRegistrarLock($params) {
 	$request = createRequest($params);
+	$domain = $request->searchDomain();
+	$status = $domain->Status;
 
-	//getDomain
-
-	# Put your code to get the lock status here
-	if ($lock=="1") {
-		$lockstatus="locked";
-	} else {
+	if (strpos($status,"TRANSFER_LOCK")===false) {
 		$lockstatus="unlocked";
+	} else {
+		$lockstatus="locked";
 	}
 	return $lockstatus;
 }
