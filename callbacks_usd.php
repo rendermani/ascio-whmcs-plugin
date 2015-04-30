@@ -12,7 +12,7 @@ try {
 
 	if(!($orderId && $messageId && $orderStatus)) throw new Exception("Please provide callback parameters", 1);
 
-	syslog(LOG_INFO,"Callback received");
+	syslog(LOG_INFO,$type . ": Callback received from ".$_SERVER['REMOTE_ADDR']);
 	syslog(LOG_INFO, print_r($_GET,1));
 
 	 

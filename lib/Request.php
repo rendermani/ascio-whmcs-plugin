@@ -234,6 +234,7 @@ Class Request {
 		return $result;
 	}
 	public function sendAuthCode($order,$domainId) {
+		console.log("Start send AuthCode");
 		if($order->Type != "Update_AuthInfo") return;
 		$domain =  $this->getDomain($order->Domain->DomainHandle);
 		$msg = "New AuthCode generated for ".$domain->domain->DomainName . ": ".$domain->domain->AuthInfo;
@@ -242,6 +243,7 @@ Class Request {
 		$values["customsubject"] = $domain->domain->DomainName . ": New AuthCode generated";
 		$values["custommessage"] = $msg;
 		$values["id"] = $domainId;
+		console.log("Send AuthCode to ???");
 		$results = localAPI("sendemail",$values,"admin");
 		return $results;
 	}

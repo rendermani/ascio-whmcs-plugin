@@ -5,7 +5,7 @@ try {
 	require_once "../../../includes/registrarfunctions.php";
 	require_once("lib/Request.php");
 	$type = $_POST ? "POST" : "GET";
-	syslog(LOG_INFO,$type . ": Callback received");
+	syslog(LOG_INFO,$type . ": Callback received from ".$_SERVER['REMOTE_ADDR']);
 	syslog(LOG_INFO, print_r($_GET,1));
 	syslog(LOG_INFO, print_r($_POST,1));
 	
@@ -19,7 +19,7 @@ try {
 	echo "Callback received, ";
 	echo "OrderId: ".$orderId. ", ";
 	echo "MessageId: ".$messageId. ", ";
-	echo "orderStatus: ".$orderStatus;	 
+	echo "OrderStatus: ".$orderStatus;	 
 
 	// this is when usd and eur account is used. In this case a second registrar module can be installed.
 	// please ask manuel.lautenschlager@ascio.com for the code
@@ -29,6 +29,7 @@ try {
 	$cfg = getRegistrarConfigOptions($account);
 	$request = new Request($cfg);
 	$request->getCallbackData($orderStatus,$messageId,$orderId);
+	echo "Callback received and processed by WHMCS";
 } catch (Exception $e) {
 	echo "Something unexpected happened: ";
 	syslog(LOG_INFO, "Error processing callback: ".$e);
