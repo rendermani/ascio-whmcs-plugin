@@ -3,7 +3,7 @@
 ##First version of the WHMCS domain registration plugin for the Ascio Webservice. 
 
 ###Requirements
-- php 5+
+- php 5.3+
 - PHP SoapClient module installed
 - The webserver needs write permissions for the file ascio-session.txt
 

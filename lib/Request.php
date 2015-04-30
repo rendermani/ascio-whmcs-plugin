@@ -10,7 +10,7 @@ define("ASCIO_WSDL_TEST","https://awstest.ascio.com/2012/01/01/AscioService.wsdl
 
 Class SessionCache {
 	public static function get($account) {
-		$filename = dirname(realpath ( __FILE__ ))."/tmp/ascio-session_".$account.".txt";
+		$filename = dirname(realpath ( __FILE__ ))."/../sessioncache/ascio-session_".$account.".txt";
 		$fp = fopen($filename,"r");
 		$contents = fread($fp, filesize($filename));
 		fclose($fp);
@@ -18,7 +18,7 @@ Class SessionCache {
 		return $contents;
 	}
 	public static function put($sessionId,$account) {
-		$filename = dirname(realpath ( __FILE__ ))."/tmp/ascio-session_".$account.".txt";
+		$filename = dirname(realpath ( __FILE__ ))."/../sessioncache/ascio-session_".$account.".txt";
 		$fp = fopen($filename,"w");		
 		fwrite($fp,$sessionId);
 		fclose($fp);
@@ -430,8 +430,6 @@ Class Request {
 	}
 	protected function addContactFields($params,$type) {
 		$result =  $this->mapToContact($params,$type);
-		$result["FirstName"] = $params["firstname"] ;
-		$result["LastName"] = $params["lastname"];
 		$result["Type"] = $params["custom"]["Type"];
 		$result["Details"] = $params["custom"]["Details"];
 		$result["NexusCategory"] = $params["custom"]["NexusCategory"];
@@ -513,7 +511,7 @@ Class Request {
 				'State' 		=>  $params[$prefix . "state"],		
 				'CountryCode' 	=>  $country,
 				'Email' 		=>  $params[$prefix . "email"],
-				'Phone'			=>  Tools::fixPhone($params[$prexix . "phonenumberformatted"],$country),
+				'Phone'			=>  Tools::fixPhone($params[$prefix . "fullphonenumber"],$country),
 				'Fax' 			=> 	Tools::fixPhone($params[$prefix . "custom"]["Fax"],$country)
 			);
 		} catch (AscioException $e) {
