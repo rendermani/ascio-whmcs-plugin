@@ -3,7 +3,7 @@ class it extends Request {
 	public function transferDomain($params=false) {		
 		$paramsNew = array(			
 			"eppcode"   => $params["eppcode"],
-			"regperiod"  => 1,
+			"regperiod"  =>  $params["regperiod"],
 			"domainname" => $params["domainname"]);
 		return parent::transferDomain($paramsNew); 
 	}
