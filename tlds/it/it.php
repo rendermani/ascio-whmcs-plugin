@@ -5,7 +5,7 @@ class it extends Request {
 			"DomainName" => $params["DomainName"],
 			"AuthInfo"   => $params["AuthInfo"],
 			"RegPeriod"  => 0);
-		return parent::transferDomain($params); 
+		return parent::transferDomain($paramsNew); 
 	}
 	protected function mapToRegistrant($params) {
 		$contact = parent::mapToRegistrant($params);
