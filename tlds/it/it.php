@@ -1,10 +1,10 @@
 <?php
 class it extends Request {	
-	public function transferDomain($params=false) {
-		$paramsNew = array(
-			"DomainName" => $params["DomainName"],
-			"AuthInfo"   => $params["AuthInfo"],
-			"RegPeriod"  => 0);
+	public function transferDomain($params=false) {		
+		$paramsNew = array(			
+			"eppcode"   => $params["eppcode"],
+			"regperiod"  => 0,
+			"domainname" => $params["domainname"]);
 		return parent::transferDomain($paramsNew); 
 	}
 	protected function mapToRegistrant($params) {
