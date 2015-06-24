@@ -149,7 +149,7 @@ Class Request {
 			$message = Tools::formatOK($msgPart);
 			if(
 				$this->params["AutoExpire"] =="on" && 
-				($order->order->Type =="Register_Domain" || $order->order->Type =="Transfer_Domain")
+				(($order->order->Type =="Register_Domain" || $order->order->Type =="Transfer_Domain") && strtolower($orderStatus) == "completed")
 			) {
 				$this->expireDomain(array ("domainname" => $domainName));	
 			}	
@@ -162,7 +162,7 @@ Class Request {
  		if($this->params["DetailedOrderStatus"] == "on") {
  		 	$values = array( 'messagename' => 'Test Template', 'id' => '1', );
 	 		$adminuser = 'admin';
-			$command = "sendemail";
+			$command = "sendemail";	
 			$values["customtype"] = "domain";
 			$values["customsubject"] = $msgPart ." ". strtolower($orderStatus);
 			$values["custommessage"] = $message;
@@ -176,7 +176,7 @@ Class Request {
  		} 		
 		$this->sendAuthCode($order->order,$domainId);		
 		$result = $this->request("AckMessage", $ascioParams,true);
-		if( $order->order->Type=="Register_Domain" || $order->order->Type=="Transfer_Domain") {
+		if(($order->order->Type=="Register_Domain" || $order->order->Type=="Transfer_Domain") && strtolower($orderStatus) == "completed") {
 			$this->autoCreateZone($domainName);
 		}
 	}
