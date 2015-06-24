@@ -149,8 +149,7 @@ Class Request {
 			$message = Tools::formatOK($msgPart);
 			if(
 				$this->params["AutoExpire"] =="on" && 
-				(($order->order->Type =="Register_Domain" || $order->order->Type =="Transfer_Domain") && strtolower($orderStatus) == "completed")
-			) {
+				(($order->order->Type =="Register_Domain" || $order->order->Type =="Transfer_Domain")) {
 				$this->expireDomain(array ("domainname" => $domainName));	
 			}	
 		} else {
