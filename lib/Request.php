@@ -175,7 +175,7 @@ Class Request {
  		} 		
 		$this->sendAuthCode($order->order,$domainId);		
 		$result = $this->request("AckMessage", $ascioParams,true);
-		if(($order->order->Type=="Register_Domain" || $order->order->Type=="Transfer_Domain") && strtolower($orderStatus) == "completed") {
+		if(($order->order->Type=="Register_Domain" || $order->order->Type=="Transfer_Domain") && $orderStatus=="Completed") {
 			$this->autoCreateZone($domainName);
 		}
 	}
