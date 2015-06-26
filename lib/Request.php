@@ -149,7 +149,7 @@ Class Request {
 			$message = Tools::formatOK($msgPart);
 			if(
 				$this->params["AutoExpire"] =="on" && 
-				(($order->order->Type =="Register_Domain" || $order->order->Type =="Transfer_Domain")) {
+				($order->order->Type =="Register_Domain" || $order->order->Type =="Transfer_Domain")) {
 				$this->expireDomain(array ("domainname" => $domainName));	
 			}	
 		} else {
@@ -277,9 +277,8 @@ Class Request {
 		try {			
 			$ascioParams = $this->mapToOrder($params,"Register_Domain");
 		} catch (AscioException $e) {
-			die( $e);
 			return array("error" => $e->getMessage());
-		}
+		}		
 		$result = $this->request("CreateOrder",$ascioParams);
 		if (!$result) {
 			$this->setWhmcsStatus($domainName,"Pending","Register_Domain");
@@ -465,13 +464,14 @@ Class Request {
 			'RegPeriod' =>  $params["original"]["regperiod"],
 			'AuthInfo'	=> 	$params["eppcode"],
 			'DomainPurpose' =>  $params["Application Purpose"],
+			'Comment'		=>  $params["Comment"],
 			'Registrant' 	=>  $this->mapToRegistrant($params),
 			'AdminContact' 	=>  $this->mapToAdmin($params), 
 			'TechContact' 	=>  $this->mapToTech($params), 
 			'BillingContact'=>  $this->mapToBilling($params),
 			'NameServers' 	=>  $this->mapToNameservers($params),
 			'Trademark' 	=>  $this->mapToTrademark($params),
-			'Comment'		=>  $params["Comment"]
+			'PrivacyProxy'  =>  array("Type" => $params["idprotection"] ? "Privacy" : "None")
 		);
 		$order = 
 			array( 
