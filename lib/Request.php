@@ -458,7 +458,8 @@ Class Request {
 		}
 		$params = $this->setParams($params);
 		$domainName = $params["domainname"];
-		syslog(LOG_INFO, "WHMCS ". $orderType . ": ".$domainName);
+
+		$proxy = $params["Proxy_Lite"] == "on" ? "Privacy" : "Proxy";
 		$domain = array( 
 			'DomainName' => $domainName,
 			'RegPeriod' =>  $params["original"]["regperiod"],
@@ -471,7 +472,7 @@ Class Request {
 			'BillingContact'=>  $this->mapToBilling($params),
 			'NameServers' 	=>  $this->mapToNameservers($params),
 			'Trademark' 	=>  $this->mapToTrademark($params),
-			'PrivacyProxy'  =>  array("Type" => $params["idprotection"] ? "Privacy" : "None")
+			'PrivacyProxy'  =>  array("Type" => $params["idprotection"] ? $proxy : "None")
 		);
 		$order = 
 			array( 
