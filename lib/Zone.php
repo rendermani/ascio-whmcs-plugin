@@ -1,4 +1,4 @@
-<?
+<?php
 require_once("DnsService.php");
 require_once("Tools.php");
 

@@ -1,4 +1,4 @@
-<?
+<?php
 
 try {
 	require_once("../../../init.php");
