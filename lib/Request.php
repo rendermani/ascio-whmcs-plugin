@@ -33,7 +33,8 @@ function createRequest($params) {
 	$defExists = file_exists($filename);	
 	if($tld && $defExists) {
 		require_once($filename);
-		$tldRequest = new $tld($params);
+		$className = str_replace(".", "_", $tld);
+		$tldRequest = new $className($params);
 		return $tldRequest;
 	} else {
 		return new Request($params);
