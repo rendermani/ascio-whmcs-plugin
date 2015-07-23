@@ -1,5 +1,5 @@
 <?php
-class ok_uk extends Request {	
+class co_uk extends Request {	
 	protected function mapToRegistrant($params) {
 		$contact = parent::mapToRegistrant($params);
 		$map = array(
@@ -15,7 +15,6 @@ class ok_uk extends Request {
 			"Other foreign organizations"  => "FOTHER"
 		);
 		$isCompany = isset($contact["OrgName"]);
-		// 7 is for all non-italian complanies. Fix invalid user-inputs
 
 		$contact["RegistrantType"] 			= $map[$params["additionalfields"]["Legal Type"]];
 		$contact["RegistrantNumber"] 		= $map[$params["additionalfields"]["Company ID Number"]];
