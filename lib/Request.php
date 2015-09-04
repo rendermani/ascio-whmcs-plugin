@@ -8,6 +8,7 @@ use com\google\i18n\phonenumbers\NumberParseException;
 define("ASCIO_WSDL_LIVE","https://aws.ascio.com/2012/01/01/AscioService.wsdl");
 define("ASCIO_WSDL_TEST","https://awstest.ascio.com/2012/01/01/AscioService.wsdl");
 
+
 Class SessionCache {
 	public static function get($account) {
 		$filename = dirname(realpath ( __FILE__ ))."/../sessioncache/ascio-session_".$account.".php";
@@ -53,12 +54,11 @@ Class Request {
 		             'Account'=> $this->account,
 		             'Password' =>  $this->password
 		);
-		return $this->sendRequest('LogIn',array('session' => $session ));
-		 
+		return $this->sendRequest('LogIn',array('session' => $session ));		 
 	}
 	public function request($functionName, $ascioParams)  {	
-		$sessionId = SessionCache::get($this->account);	
-		if (!$sessionId) {				
+		$sessionId = SessionCache::get($this->account);			
+		if (!$sessionId || $sessionId == "false") {		
 			$result = $this->login(); 
 			if(is_array($result)) return $result;
 			$ascioParams["sessionId"] = $result->sessionId; 		
@@ -234,7 +234,6 @@ Class Request {
 		return $result;
 	}
 	public function sendAuthCode($order,$domainId) {
-		console.log("Start send AuthCode");
 		if($order->Type != "Update_AuthInfo") return;
 		$domain =  $this->getDomain($order->Domain->DomainHandle);
 		$msg = "New AuthCode generated for ".$domain->domain->DomainName . ": ".$domain->domain->AuthInfo;
@@ -243,7 +242,6 @@ Class Request {
 		$values["customsubject"] = $domain->domain->DomainName . ": New AuthCode generated";
 		$values["custommessage"] = $msg;
 		$values["id"] = $domainId;
-		console.log("Send AuthCode to ???");
 		$results = localAPI("sendemail",$values,"admin");
 		return $results;
 	}
