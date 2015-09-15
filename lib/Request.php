@@ -203,6 +203,12 @@ Class Request {
 	}
 	public function setWhmcsStatus($domain,$ascioStatus,$orderType,$domainId) {	
 		// set the status of the domain based on ascio's domain-data
+		if(!(
+			$orderType == "Register_Domain" ||
+			$orderType == "Transfer_Domain")
+			) {
+			return false; 
+		}
 		if($ascioStatus==NULL) $ascioStatus = "deleted";
 		$statusMap = array (
 			"pending" => "Pending",
