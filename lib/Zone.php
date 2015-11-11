@@ -31,7 +31,7 @@ class DnsZone {
 	public function update($params) {
 		$oldRecords = $this->get($params);
 		if(!$oldRecords) {
-			$result = $this->createZone($params);	
+			$result = $this->createZone($params);
 		} 
 		$newRecords = $params["dnsrecords"];
 		for($i=0;$i < count($newRecords)-1; $i++) {		
@@ -48,6 +48,7 @@ class DnsZone {
 			} 
 		}
 		$result = $this->createRecord($newRecords[count($newRecords)-1]);
+		var_dump($params);
 		return $result;
 	}
 	private function updateRecord($record,$newRecord) {		
@@ -65,6 +66,9 @@ class DnsZone {
 		$updateRecord->zoneName   = $this->name;
 		$updateRecord->record = $record;
 		$result = $this->dnsService->updateRecord($updateRecord);
+		if($result->StatusCode != 200 ) {
+			Tools:log($result->StatusMessage);
+		}
 		return $result;
 	}
 	private function replaceRecord($record,$newRecord) {
@@ -76,6 +80,9 @@ class DnsZone {
 		$deleteRecord = new DeleteRecord();
 		$deleteRecord->recordId   = $record->Id;
 		$result = $this->dnsService->deleteRecord($deleteRecord);
+		if($result->StatusCode != 200 ) {
+			Tools:log($result->StatusMessage);
+		}
 		return $result;
 	}
 	private function createRecord($record) {
@@ -90,13 +97,21 @@ class DnsZone {
 		$createRecord->record = $newRecord;
 		$createRecord->owner = $this->owner;
 		$result = $this->dnsService->createRecord($createRecord);
+		if($result->StatusCode != 200 ) {
+				Tools:log($result->StatusMessage);
+		}
 		return $result;
 	}
-	private function createZone($records) {
+	private function createZone($records) {		
 		$createZone = new CreateZone();
 		$createZone->zoneName = $this->name;
 		$createZone->owner 	  = $this->owner;
-		return $this->dnsService->createZone($createZone);
+		$result = $this->dnsService->createZone($createZone);
+		if($result->StatusCode != 200 ) {
+			Tools:log($result->StatusMessage);
+		}
+		return $result;
+		
 	}
 	public function createUser($params) { 	
 		$getUser = new GetUser();

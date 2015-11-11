@@ -15,6 +15,7 @@ Class SessionCache {
 		$fp = fopen($filename,"r");
 		$contents = fread($fp, filesize($filename));
 		fclose($fp);
+		if(!$contents) return false;
 		if(trim($contents) == "false") $contents = false;		
 		return str_replace("<?php  \n//", "", $contents) ;
 	}
@@ -57,7 +58,7 @@ Class Request {
 		return $this->sendRequest('LogIn',array('session' => $session ));		 
 	}
 	public function request($functionName, $ascioParams)  {	
-		$sessionId = SessionCache::get($this->account);			
+		$sessionId = SessionCache::get($this->account);	
 		if (!$sessionId || $sessionId == "false") {		
 			$result = $this->login(); 
 			if(is_array($result)) return $result;
@@ -83,7 +84,7 @@ Class Request {
         $result = $client->__call($functionName, array('parameters' => $ascioParams));      
 		$resultName = $functionName . "Result";	
 		$status = $result->$resultName;
-		syslog(LOG_INFO, "WHMCS ".$functionName  .": ".$status->Values->string . " ResultCode:" . $status->ResultCode);
+		syslog(LOG_INFO, "WHMCS ".$functionName  .": ".$status->Values->string . " ResultCode:" . $status->ResultCode . " ResultMessage: ".$status->Message);
 		if ( $status->ResultCode==200) {
 			return $result;
 		} else if( $status->ResultCode==554)  {
@@ -135,17 +136,16 @@ Class Request {
 		$result = $this->request("GetMessageQueue", $ascioParams,true);
 		$order =  $this->getOrder($orderId);
 		$domainName = $order->order->Domain->DomainName;
-		$domainId   = $this->getDomainId($domainName);
+		$domainId   = Tools::getDomainId($domainName);
 		$domainResult = $this->getDomain($order->order->Domain->DomainHandle);
 		$domain = $domainResult->domain;
 		// External WHMCS API: Set Status
 		// External WHMCS API: Send Mail
-		$msgPart = "Domain order ". $domainId . ", ".$domainName;
-		$whmcsStatus = $this->setWhmcsStatus($domainName,$domain->Status,$order->order->Type,$domainId);
+		$msgPart = "Domain (". $domainId . "):,
+		 ".$domainName;
 
-		syslog(LOG_INFO, json_encode($domain));
-		syslog(LOG_INFO, "Domain status ".$domainname. ": ".$domain->Status);
-		syslog(LOG_INFO, "Order status ".$domainname. ": ".$whmcsStatus);
+		$whmcsStatus = $this->setWhmcsStatus($domainName,$domain->Status,$order->order->Type,$domainId,$orderStatus);
+	
 		if ($orderStatus=="Completed") {
 			$message = Tools::formatOK($msgPart);
 			if(
@@ -154,27 +154,20 @@ Class Request {
 				$this->expireDomain(array ("domainname" => $domainName));	
 			}	
 		} else {
-			$message =  Tools::formatError($result->item->StatusList->CallbackStatus,$msgPart);
+			$errors =  Tools::formatError($result->item->StatusList->CallbackStatus,$msgPart);
 		}
-		if($this->params["DetailedOrderStatus"]) {
-			syslog(LOG_INFO, "DetailedOrderStatus ". $this->params["DetailedOrderStatus"]);
+		Tools::log("Callback received from Ascio. Order: " .$order->order->Type. ", Domain: ".$domainName.", Order-Status: ".$orderStatus."\n ".$errors);
+		Tools::addNote($domainName, $orderStatus . $errors);
+		if($orderStatus == "Failed") {
+			// should send an email to the admin, but doesn't work like it should.
+			// where can I set the mail-from in WHMCS? 			
 		}
- 		if($this->params["DetailedOrderStatus"] == "on") {
- 		 	$values = array( 'messagename' => 'Test Template', 'id' => '1', );
-	 		$adminuser = 'admin';
-			$command = "sendemail";	
-			$values["customtype"] = "domain";
-			$values["customsubject"] = $msgPart ." ". strtolower($orderStatus);
-			$values["custommessage"] = $message;
-			$values["id"] = $domainId;
-			localAPI($command,$values,$adminuser);
-			// Ascio ACK Message
-			$ascioParams = array(
-				'sessionId' => 'mySessionId',
-				'msgId' => $messageId
-			);	
- 		} 		
 		$this->sendAuthCode($order->order,$domainId);		
+		// Ascio ACK Message
+		$ascioParams = array(
+			'sessionId' => 'mySessionId',
+			'msgId' => $messageId
+		);	
 		$result = $this->request("AckMessage", $ascioParams,true);
 		if(($order->order->Type=="Register_Domain" || $order->order->Type=="Transfer_Domain") && $orderStatus=="Completed") {
 			$this->autoCreateZone($domainName);
@@ -227,7 +220,7 @@ Class Request {
 		$command = "updateclientdomain";
 		$values["domain"] =  $domain;
 		$values["status"] = $whmcsStatus;
-			$results = localAPI($command,$values,"admin"); 			
+		$results = localAPI($command,$values,"admin"); 			
 		syslog(LOG_INFO, "Set new WHMCS status for ".$domain. ": ".$whmcsStatus);
 		return $whmcsStatus;
 	}
@@ -242,21 +235,12 @@ Class Request {
 	public function sendAuthCode($order,$domainId) {
 		if($order->Type != "Update_AuthInfo") return;
 		$domain =  $this->getDomain($order->Domain->DomainHandle);
-		$msg = "New AuthCode generated for ".$domain->domain->DomainName . ": ".$domain->domain->AuthInfo;
-		$values = array();
-		$values["customtype"] = "domain";
-		$values["customsubject"] = $domain->domain->DomainName . ": New AuthCode generated";
-		$values["custommessage"] = $msg;
+		$values = array();		
+ 		$values["messagename"] = "EPP Code";
+ 		$values["customvars"] = array("code"=> $domain->domain->AuthInfo);
 		$values["id"] = $domainId;
 		$results = localAPI("sendemail",$values,"admin");
 		return $results;
-	}
-	private function getDomainId($domain) {
-		$query = 'SELECT id FROM  `tbldomains` WHERE domain =  "'.$domain.'" LIMIT 0 , 1';
-		$result = mysql_query($query);
-		$row = mysql_fetch_assoc($result);		
-	    $id = $row["id"];
-	    return $id; 
 	}
 	public function poll() {
 		$ascioParams = array(

@@ -22,13 +22,16 @@ class Tools {
 		$out["last"] = substr($name, $spacePos+1);
 		return $out;
 	}	
-	public static function formatError($items,$message) {
-		$html = "<h2>Following errors occurred in: ".$message."</h2><ul>";
+	public static function formatError($items,$message) {		
+		if(!$items) return "";
 		if (!is_array($items)) $items = array($items);
+		$message = str_replace("$240D", ".", $message);
+		$message = str_replace("$240A", ":", $message);
+
+		$html = "";
 		foreach ($items as $nr => $item) {
-			$html .= "<li style='list-style-type: disc; color: red;'>".$item->Message."</li>";
+			$html .=  $item->Message."\n";
 		}
-		$html .= "</ul><p>Please change your settings and resubmit the order.</p>";
 		return $html;	
 	}
 	public static function formatOK($message) {
@@ -46,7 +49,13 @@ class Tools {
 			} 		
 		}	
 		return $diffs;
-
+	}
+	public static function log($message) {
+		$command 	= "logactivity";
+ 	 	$adminuser 	= "admin";
+ 		$values["description"] = $message;
+ 		$results 	= localAPI($command,$values,$adminuser);
+		return $results; 
 	}
 	public static function compareRegistrant($newContact,$oldContact) {
 		$diffs =  Tools::diffContact($newContact,$oldContact);
@@ -107,6 +116,50 @@ class Tools {
 		}
 		return $code; 
 	}
+	public static function createEmailTemplates() {
+		$usedTemplates = ["EPP Code","Ascio Status"];
+		$templates = array(
+			"EPP Code" => "INSERT INTO `whmcs`.`tblemailtemplates` (`id`, `type`, `name`, `subject`, `message`, `attachments`, `fromname`, `fromemail`, `disabled`, `custom`, `language`, `copyto`, `plaintext`, `created_at`, `updated_at`) VALUES (NULL, 'domain', 'EPP Code', 'New EPP Code for \{\$domain_name\}', '<p>Dear \{\$client_name\}, </p><p>A new EPP Code was generated for the domain \{\$domain_name\}: \{\$code}</p><p>You may transfer away your domain with the new EPP-Code.</p><p>\{\$signature\}</p>', '', '', '', '0', '1', '', '', '0', CURDATE(), CURDATE());",
+			"Ascio Status" => "INSERT INTO `whmcs`.`tblemailtemplates` (`id`, `type`, `name`, `subject`, `message`, `attachments`, `fromname`, `fromemail`, `disabled`, `custom`, `language`, `copyto`, `plaintext`, `created_at`, `updated_at`) VALUES (NULL, 'domain', 'Ascio Status', 'New Status for \{\$domain_name\}', '<p> Dear \{\$client_name\}, </p> <p>The status of the Domain \{\$domain_name\} has changed:  </p> <p> \{\$signature} </p>', '', '', '', '0', '1', '', '', '0', CURDATE(), CURDATE());"
+		);
+		$found = 0;
+		$command = "getemailtemplates";
+ 		$adminuser = "admin";
+ 		$values["type"] = "domain"; 
+		$results = localAPI($command,$values,$adminuser);
+ 		foreach($results["emailtemplates"]["emailtemplate"] as $key => $value) {
+ 			$existingTemplates[$value["name"]] = true;
+ 		}
+ 		foreach($usedTemplates as $key => $name) {
+ 			if(!$existingTemplates[$name]) {
+ 				mysql_query($templates[$name]);
+ 				if(mysql_error()) {
+ 					echo "error ". mysql_error()."\n";
+ 				}				
+ 			}
+ 		}
+	}
+	public static function addNote($domainName,$message) {
+		$adminuser = "admin";
+		$values["domain"] = $domainName;	
+		$command = "getclientsdomains";
+		$results = localAPI($command, $values, $adminuser);
+		$domains = $results["domains"]["domain"];
+		$domain  = $domains[count($domains)-1];
+		$adminuser = "admin";
+
+		$command = "updateclientdomain";
+		$values["domainId"] = $domain["id"];
+		$values["notes"] = $domain["notes"]."\n[".date("Y-m-d H:i:s")."] ". $message;
+		return  localAPI($command, $values, $adminuser);
+	}
+	public static function getDomainId($domain) {
+		$query = 'SELECT id FROM  `tbldomains` WHERE domain =  "'.$domain.'" LIMIT 0 , 1';
+		$result = mysql_query($query);
+		$row = mysql_fetch_assoc($result);		
+	    $id = $row["id"];
+	    return $id; 
+	}	
 }
 class AscioException extends Exception { }
 ?>
