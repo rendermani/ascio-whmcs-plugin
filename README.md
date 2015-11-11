@@ -25,7 +25,7 @@
 
 - activate the ascio plugin in the WHMCS settings and configure it
 - If you are in testmode, you need to add the testing-credentials
-
+- Please run create_email_templates.php to init all templates.
 
 ##Known issues: 
 
