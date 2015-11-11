@@ -1,10 +1,4 @@
 <?php
-require_once  dirname(__FILE__)."/../libphonenumber-for-PHP/PhoneNumberUtil.php";
-
-use com\google\i18n\phonenumbers\PhoneNumberUtil;
-use com\google\i18n\phonenumbers\PhoneNumberFormat;
-use com\google\i18n\phonenumbers\NumberParseException;
-
 define("ASCIO_WSDL_LIVE","https://aws.ascio.com/2012/01/01/AscioService.wsdl");
 define("ASCIO_WSDL_TEST","https://awstest.ascio.com/2012/01/01/AscioService.wsdl");
 

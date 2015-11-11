@@ -3,11 +3,11 @@ class asia extends Request {
 	public function registerDomain($params=false) {
 		$params = $this->setParams($params);
 		$ascioParams = $this->mapToOrder($params,"Register_Domain");
-		$asianCountries = [
+		$asianCountries = array(
 			"AE","AF","AM","AQ","AU","AZ","BD","BH","BN","BT","CC","CK","CN","CV","CX","CY","FJ","FM","GE","GU","HK",
 			"HM","ID", "IL","IN","IQ","IR","JO","JP","KG","KH","KI","KP","KR","KW","KZ","LA","LB","LK","MH","MM","MN",
 			"MO","MV","MY","NF","NP","NR","NU","NZ","OM","PG","PH","PK","PS","PW","QA","SA","SB","SG","SY","TH","TJ",
-			"TK","TL","TM","TO","TR","TV","TW","UZ","VN","VU","WS","YE"];
+			"TK","TL","TM","TO","TR","TV","TW","UZ","VN","VU","WS","YE");
 
 		if(!in_array($ascioParams["order"]["Domain"]["Registrant"]["CountryCode"],$asianCountries)) {			
 			$ascioParams["order"]["LocalPresence"] = "LocalPresenceAdmin";						
