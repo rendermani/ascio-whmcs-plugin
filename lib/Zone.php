@@ -48,7 +48,6 @@ class DnsZone {
 			} 
 		}
 		$result = $this->createRecord($newRecords[count($newRecords)-1]);
-		var_dump($params);
 		return $result;
 	}
 	private function updateRecord($record,$newRecord) {		
