@@ -397,6 +397,7 @@ class DnsService extends SoapClient {
         $options['classmap'][$key] = $value;
       }
     }
+    $options['trace'] = 1;
     parent::__construct($wsdl, $options);
   }
 

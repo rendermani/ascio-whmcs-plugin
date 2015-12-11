@@ -139,14 +139,18 @@ Class Request {
 		$domainId   = Tools::getDomainId($domainName);
 		$domainResult = $this->getDomain($order->order->Domain->DomainHandle);
 		$domain = $domainResult->domain;
+		$orderType = $order->order->Type;
 		// External WHMCS API: Set Status
 		// External WHMCS API: Send Mail
 		$msgPart = "Domain (". $domainId . "):,
 		 ".$domainName;
 
-		$whmcsStatus = $this->setWhmcsStatus($domainName,$domain->Status,$order->order->Type,$domainId,$orderStatus);
+		$whmcsStatus = $this->setWhmcsStatus($domainName,$domain->Status,$orderType,$domainId,$orderStatus);
 	
 		if ($orderStatus=="Completed") {
+			if($orderType == "Register_Domain" || $orderType = "Transfer_Domain") {
+				Tools::setExpireDate($domain);
+			}
 			$message = Tools::formatOK($msgPart);
 			if(
 				$this->params["AutoExpire"] =="on" && 

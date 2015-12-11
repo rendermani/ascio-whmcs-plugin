@@ -86,6 +86,7 @@ class DnsZone {
 	}
 	private function createRecord($record) {
 		if(!$record["address"]) return ;
+
 		$type =  $record["type"];
 		$newRecord = new $type();	
 		$newRecord->Source 	= $this->addZonename($record["hostname"]);
@@ -95,7 +96,8 @@ class DnsZone {
 		$createRecord->zoneName = $this->name;
 		$createRecord->record = $newRecord;
 		$createRecord->owner = $this->owner;
-		$result = $this->dnsService->createRecord($createRecord);
+
+		$result = $this->dnsService->createRecord($createRecord);	
 		if($result->StatusCode != 200 ) {
 				Tools:log($result->StatusMessage);
 		}
@@ -158,6 +160,7 @@ class DnsZone {
 		return str_replace(".".$this->name, "", $record);
 	}
 	private function addZonename($record) {
+		if($record == "@") return $record; 
 		if(!strpos($record, ".")) return $record. ".".$this->name;
 		else return $record;
 	}

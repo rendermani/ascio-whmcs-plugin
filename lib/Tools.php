@@ -160,6 +160,16 @@ class Tools {
 	    $id = $row["id"];
 	    return $id; 
 	}	
+	public static function setExpireDate($domain) {
+		$tmpDate = explode("T", $domain->ExpDate);
+		$expirydate = str_replace("-", "", $tmpDate[0]);
+		$command 	= "updateclientdomain";
+		$adminuser 	= "admin";
+		$values["domain"] = $domain->DomainName;
+		$values["expirydate"] = $expirydate;
+ 		$results 	= localAPI($command,$values,$adminuser);
+ 		return $results;
+	}
 }
 class AscioException extends Exception { }
 ?>
