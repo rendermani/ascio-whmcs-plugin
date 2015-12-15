@@ -161,7 +161,7 @@ Class Request {
 			$errors =  Tools::formatError($result->item->StatusList->CallbackStatus,$msgPart);
 		}
 		Tools::log("Callback received from Ascio. Order: " .$order->order->Type. ", Domain: ".$domainName.", Order-Status: ".$orderStatus."\n ".$errors);
-		Tools::addNote($domainName, $orderStatus . $errors);
+		Tools::addNote($domainName, $order->order->Type. ": ".$orderStatus . $errors);
 		if($orderStatus == "Failed") {
 			// should send an email to the admin, but doesn't work like it should.
 			// where can I set the mail-from in WHMCS? 			
