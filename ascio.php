@@ -12,9 +12,9 @@
 //
 //  WHMCS functions
 //
+require_once("lib/Tools.php");
 require_once("lib/Request.php");
 require_once("lib/DnsService.php");
-require_once("lib/Tools.php");
 require_once("lib/Zone.php");
 
 function ascio_getConfigArray() {
@@ -28,13 +28,19 @@ function ascio_getConfigArray() {
 	 "DNS_Default_Zone" => array( "Type" => "text", "Size" => "20", "Description" => "For AutoCreateDNS: Default IP-address for www and @"),
 	 "DNS_Default_Mailserver" => array( "Type" => "text", "Size" => "20", "Description" => "For AutoCreateDNS: Default IP-address for mx (mail-server)"),
 	 "DNS_Default_Mailserver_2" => array( "Type" => "text", "Size" => "20", "Description" => "For AutoCreateDNS: Default IP-address for mx2 (backup mail-server)"),	
-	 "Proxy Lite" => array( "Type" => "yesno",  "Description" => "Privacy. Don't hide the name when using ID-Protection. Only the address-data.")
+	 "Proxy_Lite" => array( "Type" => "yesno",  "Description" => "Privacy. Don't hide the name when using ID-Protection. Only the address-data.")
 	);
 	return $configarray;
 }
+function ascio_AdminCustomButtonArray() {
+    $buttonarray = array(
+	 "Update EPP Code" => "UpdateEPPCode"
+	);
+	return $buttonarray;
+}
 function ascio_ClientAreaCustomButtonArray() {
     $buttonarray = array(
-	 "Expire_Domain" => "ExpireDomain"
+	 "Update EPP Code" => "UpdateEPPCode"
 	);
 	return $buttonarray;
 }
@@ -50,6 +56,7 @@ function ascio_GetNameservers($params) {
 	$values["ns3"] = $ns->NameServer3->HostName;
 	$values["ns4"] = $ns->NameServer4->HostName;
 	$values["status"] = "Active";
+
 	return $values;
 }
 function ascio_SaveNameservers($params) {
@@ -73,6 +80,11 @@ function ascio_GetRegistrarLock($params) {
 function ascio_saveRegistrarLock($params) {
 	$request = createRequest($params);
 	return $request->saveRegistrarLock();
+}
+function ascio_IDProtectToggle($params) {
+	$params["idprotection"] = $params["protectenable"] == 1 ? true : false;
+	$request = createRequest($params);
+	return $request->updateDomain();
 }
 
 function ascio_GetEmailForwarding($params) {
@@ -99,9 +111,12 @@ function ascio_GetDNS($params) {
 	$result =  $zone->convertToWhmcs($zone->get());
 	return $result;
 }
-function ascio_SaveDNS($params) {	
+function ascio_SaveDNS($params) {		
+
 	$zone = new DnsZone($params);
-	return $zone->update($params);
+	$result = $zone->update($params);
+	var_dump($result);
+
 }
 function ascio_RegisterDomain($params) {
 	$request = createRequest($params);
@@ -146,7 +161,11 @@ function ascio_GetEPPCode($params) {
 	$request = createRequest($params);	
 	$params = $request->getEPPCode($params);
 	return $params;
-
+}
+function ascio_UpdateEPPCode($params) {
+	$request = createRequest($params);	
+	$params = $request->updateEPPCode($params);
+	return $params;
 }
 
 function ascio_RegisterNameserver($params) {

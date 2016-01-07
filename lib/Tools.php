@@ -25,14 +25,20 @@ class Tools {
 	public static function formatError($items,$message) {		
 		if(!$items) return "";
 		if (!is_array($items)) $items = array($items);
-		$message = str_replace("$240D", ".", $message);
-		$message = str_replace("$240A", ":", $message);
+		$message = Tools::cleanString($message);
 
 		$html = "";
 		foreach ($items as $nr => $item) {
-			$html .=  $item->Message."\n";
+			$html .=  Tools::cleanString($item->Message)."\n";
 		}
 		return $html;	
+	}
+	public static function cleanString($string) {		
+		$string = str_replace("$240A", ":", $string);
+		$string = str_replace("$240D", ".", $string);
+		$string = str_replace("$0A", ":", $string);
+		$string = str_replace("$0D", ".", $string);
+		return $string;	
 	}
 	public static function formatOK($message) {
 		$html = "<h2>Order completed:".$message.":</h2>";

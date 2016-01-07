@@ -5,10 +5,10 @@ class de extends Request {
 		$params["regperiod"] = 0 ;
 		return parent::transferDomain($params);
 	}
-	public function getEPPCode($params) {
+	public function updateEPPCode($params) {
 		$characters = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789+-/*";
 		$params["eppcode"] = Tools::generateEppCode(12, $characters);
-		parent::getEPPCode($params);
+		parent::updateEPPCode($params);
 		return $params;
 
 	}
@@ -29,5 +29,11 @@ class de extends Request {
 		if(!$contact["custom"]["Fax"]) $contact["Fax"] = $contact["Phone"];
 		return $contact;
 	}	
+	public function renewDomain($params) {
+		$domain = parent::searchDomain($params);
+		if($this->hasStatus($domain,"expiring")) {
+			return parent::unexpireDomain($params);
+		} else return array("error" => "Domain can't be renewed again.");		
+	}
 }
 ?>
