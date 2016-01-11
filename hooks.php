@@ -4,7 +4,8 @@
 	$request = new Request(array('Account'=> $vars["params"]["Username"],'Password' => $vars["params"]["Password"]));
 	$domain = $vars["params"]["sld"].".".$vars["params"]["tld"];
 	$type = $vars["params"]["regtype"] == "Transfer" ? "Transfer_Domain" : false;
-	$request->setWhmcsStatus($domain,"Pending",$type);
+	$domainObj = (Object) array ("DomainName" => $domain);
+	$request->setStatus($domainObj,"Pending",$type);
  }
  
 // hook_set_domain_status(array("a" => "abc"));
