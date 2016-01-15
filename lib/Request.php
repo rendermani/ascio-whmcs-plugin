@@ -1,9 +1,5 @@
 <?php
-require_once  dirname(__FILE__)."/../libphonenumber-for-PHP/PhoneNumberUtil.php";
 require_once("Queue.php");
-use com\google\i18n\phonenumbers\PhoneNumberUtil;
-use com\google\i18n\phonenumbers\PhoneNumberFormat;
-use com\google\i18n\phonenumbers\NumberParseException;
 
 define("ASCIO_WSDL_LIVE","https://aws.ascio.com/2012/01/01/AscioService.wsdl");
 define("ASCIO_WSDL_TEST","https://awstest.ascio.com/2012/01/01/AscioService.wsdl");
@@ -17,7 +13,6 @@ Class SessionCache {
 		fclose($fp);
 		if(!$contents) return false;
 		if(trim($contents) == "false") $contents = false;		
-
 		return str_replace("<?php  \n//", "", $contents) ;
 	}
 	public static function put($sessionId,$account) {
@@ -28,6 +23,16 @@ Class SessionCache {
 	}
 	public static function clear($account) {
 		SessionCache::put("false",$account);
+	}
+}
+Class DomainCache {
+	public static function get() {
+		GLOBAL $ascioDomainCache;
+		return $ascioDomainCache;
+	}
+	public static function put($domain) {
+		GLOBAL $ascioDomainCache;
+		$ascioDomainCache = $domain;
 	}
 }
 function createRequest($params) {
@@ -47,6 +52,7 @@ Class Request {
 	var $account;
 	var $password; 
 	var $params;
+	var $domain;
 
 	public function __construct($params) {
 		$this->setParams($params);
@@ -76,8 +82,7 @@ Class Request {
 			return $this->sendRequest($functionName,$ascioParams);			
 		}	
 	}
-	private function sendRequest($functionName,$ascioParams) {	
-
+	private function sendRequest($functionName,$ascioParams) {			
 		if($ascioParams->order) {
 			$orderType = " ".$ascioParams->order->Type ." "; 
 			var_dump($ascioParams->order);
@@ -87,7 +92,7 @@ Class Request {
 		$cfg = getRegistrarConfigOptions("ascio");
 		$wsdl = $cfg["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;
         $client = new SoapClient($wsdl,array( "trace" => 1));
-        $result = $client->__call($functionName, array('parameters' => $ascioParams));      
+        $result = $client->__call($functionName, array('parameters' => $ascioParams));    
 		$resultName = $functionName . "Result";	
 		$status = $result->$resultName;
 		$result->status = $status;
@@ -103,7 +108,7 @@ Class Request {
 			return $this->request($functionName, $ascioParams);
 		}else {
 			$messages = $status->Values->string;
-		}
+		}		
 		$message = Tools::cleanString($messages);
 		return array('error' => $message );     
 	}
@@ -113,9 +118,26 @@ Class Request {
 			'domainHandle' => $handle
 		);
 		$result =  $this->request("GetDomain", $ascioParams); 
+
+		if($result->error) return $result;
+		else {	
+
+			$status = !$result->domain->DomainName ? NULL : $result->domain->Status;
+			$this->setDomainStatus($result->domain);
+			DomainCache::put($result->domain);
+			$this->setHandle($result->domain);
+			return $result->domain;
+		}
 		return $result;
 	}
 	public function searchDomain($params) {
+		$domain = DomainCache::get();
+		if(isset($domain)) return $domain; 
+
+		$handle = $this->getHandle("domain",Tools::getDomainId($this->domainName));
+		if(isset($handle)) {
+			return $this->getDomain($handle);
+		}
 		$params = $this->setParams($params);
 		$criteria= array(
 			'Mode' => 'Strict',
@@ -136,6 +158,8 @@ Class Request {
 		else {						
 			$status = !$result->domains->Domain->DomainName ? NULL : $result->domains->Domain->Status;
 			$this->setDomainStatus($result->domains->Domain);
+			DomainCache::put($result->domains->Domain);
+			$this->setHandle($result->domains->Domain);
 			return $result->domains->Domain;
 		}
 	}
@@ -171,6 +195,7 @@ Class Request {
 			if(
 				$this->params["AutoExpire"] =="on" && 
 				($order->order->Type =="Register_Domain" || $order->order->Type =="Transfer_Domain")) {
+				sleep(5);
 				$this->expireDomain(array ("domainname" => $domainName));	
 			}	
 		} else {
@@ -283,8 +308,34 @@ Class Request {
 			return $this->setStatus($domain,"Active"); 
 		}		
 	}
+	public function setStatus($domain,$status) {	
+		$values["domain"] =  $domain->DomainName; 
+		if($domain->ExpDate) {
+			$expDate = $this->formatDate($domain->ExpDate);
+			$creDate = $this->formatDate($domain->CreDate);
+			$tldData = get_query_vals("tblasciotlds","Threshold",array("Tld" => $this->getTld($domain->DomainName)));
+			$dueDate = DateTime::createFromFormat(DateTime::ATOM,$domain->ExpDate."-01:00");
+			$dueDate->modify($tldData["Threshold"].' day');		
+			if(!$this->hasStatus($domain,"expiring")) {
+				$dueDate->modify('+1 year');	
+			} 
+			$values["nextduedate"] = $dueDate->format('Y-m-d');
+			if($expDate) {
+				$values["expirydate"] = $expDate;	
+				$values["registrationdate"] = $creDate;	
+			}
+		}
+		$values ["status"] = $status;
+		$results = localAPI("updateclientdomain",$values,"admin"); 					
+		syslog(LOG_INFO, "Set new WHMCS status for ".$domainName. ": ".$status.", ".$expDate);
+	}	
 	protected function hasStatus($domain,$search) {
 		return strpos($domain->Status, strtoupper($search)) > -1;
+	}
+	private function getTld($domainName) {
+		$tokens = explode(".", $domainName);
+		array_pop($tokens);
+		return join(".",$tokens);
 	}
 	private function formatDate($xsDateTime) {
 		if($domain->ExpDate == "0001-01-01T00:00:00") return false;
@@ -294,18 +345,6 @@ Class Request {
 		}
 		return false; 
 	}
-	public function setStatus($domain,$status) {	
-		$values["domain"] =  $domain->DomainName; 
-		$expDate = $this->formatDate($domain->ExpDate);
-		$creDate = $this->formatDate($domain->CreDate);
-		if($expDate) {
-			$values["expirydate"] = $expDate;	
-			$values["registrationdate"] = $creDate;	
-		}
-		$values ["status"] = $status;		
-		$results = localAPI("updateclientdomain",$values,"admin"); 					
-		syslog(LOG_INFO, "Set new WHMCS status for ".$domainName. ": ".$status.", ".$expDate);
-	}	
 	public function getOrder($orderId) {
 		$ascioParams = array(
 			'sessionId' => 'mySessionId',
@@ -626,7 +665,7 @@ Class Request {
 	public function setParams($params) {
 		if($params) {
 			$this->params = $params; 
-			$this->domainName = $params["sld"] ."." . $params["tld"];
+			$this->domainName = $params["sld"] ."." . $params["tld"];			
 			if($this->params["Username"]) $this->account = $this->params["Username"];
 			if($this->params["Password"]) $this->password = $this->params["Password"];
 		} 
@@ -634,17 +673,16 @@ Class Request {
 	}
 	public function getHandle($type,$whmcsId) {
 		$result = get_query_val("tblasciohandles","ascio_id", array("type" => $type, "whmcs_id" => $whmcsId));
-		syslog(LOG_INFO, "handle ".$type.": ".$result);
-		echo "get handle";
-		var_dump($result); 
 		return $result;
 	}
 	public function setHandle($domain) {
-		$this->storeHandle("domain",$domain->DomainHandle);
+		$this->storeHandle("domain",Tools::getDomainId($domain->DomainName),$domain->DomainHandle,$domain->DomainName);
+		/*
 		$this->storeHandle("registrant",$domain->Registrant->Handle);
 		$this->storeHandle("contact",$domain->AdminContact->Handle);
 		$this->storeHandle("contact",$domain->TechContact->Handle);
 		$this->storeHandle("contact",$domain->BillingContact->Handle);
+		*/
 	}
 	public function storeHandle($type,$whmcsId, $ascioId,$domain) {
 		$handle = $this->getHandle($type,$whmcsId);

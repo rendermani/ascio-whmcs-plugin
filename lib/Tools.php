@@ -1,9 +1,5 @@
 <?php
-require_once  dirname(__FILE__)."/../libphonenumber-for-PHP/PhoneNumberUtil.php";
-
-use com\google\i18n\phonenumbers\PhoneNumberUtil;
-use com\google\i18n\phonenumbers\PhoneNumberFormat;
-use com\google\i18n\phonenumbers\NumberParseException;
+require_once  __DIR__ . '/../vendor/autoload.php';
 
 class Tools {
 	public static function dump($variable, $title, $height="9em") {
@@ -91,19 +87,15 @@ class Tools {
 		if((!$number) || (strlen($number)<5)) throw new AscioException("Phone number too short: ".$number);
 		if(!(substr($number,0,1) == "+" || substr($number,0,1) == "0")) throw new AscioException("Phone numbers should start with 0 or +: ".$number);
 		if(!preg_match("/^[0\+]/",$number)) $number = '+' . $number;
-		$phoneUtil = PhoneNumberUtil::getInstance();
+		$phoneUtil = \libphonenumber\PhoneNumberUtil::getInstance();
 		try {	
 			$numberProto = $phoneUtil->parseAndKeepRawInput($number, $country);	
-
 			if(!$phoneUtil->isValidNumber($numberProto)) return $number;
-			$newNumber = $phoneUtil->formatOutOfCountryCallingNumber($numberProto, PhoneNumberFormat::E164);	
-			$newNumber = preg_replace("/( )(.*)/", ".$2", $newNumber);
-			$newNumber = preg_replace("/[ \/]/", "", $newNumber);
-			return $newNumber;
+			return "+".$numberProto->getCountryCode().".". $numberProto->getNationalNumber();
 		} catch (Exception $e) {
-			throw new AscioException("Error converting phone number: ".$number.". ".$e);
+			throw new AscioException("Error converting phone number: ".$number.". ".$e->getMessage());
 		}
-	}	
+	}
 	public static function cleanAscioParams($ascioParams) {
 		foreach ($ascioParams as $key => $value) {
 			if(is_array($value)) {
@@ -125,8 +117,8 @@ class Tools {
 	public static function createEmailTemplates() {
 		$usedTemplates = ["EPP Code","Ascio Status"];
 		$templates = array(
-			"EPP Code" => "INSERT INTO `whmcs`.`tblemailtemplates` (`id`, `type`, `name`, `subject`, `message`, `attachments`, `fromname`, `fromemail`, `disabled`, `custom`, `language`, `copyto`, `plaintext`, `created_at`, `updated_at`) VALUES (NULL, 'domain', 'EPP Code', 'New EPP Code for \{\$domain_name\}', '<p>Dear {$client_name},</p> <p>A new EPP Code was generated for the domain {$domain_name}: {$code}</p> <p>You may transfer away your domain with the new EPP-Code.</p> <p>{$signature}</p>', '', '', '', '0', '1', '', '', '0', CURDATE(), CURDATE());",
-			"Ascio Status" => "INSERT INTO `whmcs`.`tblemailtemplates` (`id`, `type`, `name`, `subject`, `message`, `attachments`, `fromname`, `fromemail`, `disabled`, `custom`, `language`, `copyto`, `plaintext`, `created_at`, `updated_at`) VALUES (NULL, 'domain', 'Ascio Status', '{$orderType} {$domain_name}: {$status}', '<p>Dear {$client_name},</p> <p>we received following status for your domain {$domain_name} ({$orderType}): {$status}</p> <p>{$errors}</p> <p> </p> <p>{$signature}</p>', '', '', '', '0', '1', '', '', '0', CURDATE(), CURDATE());"
+			"EPP Code" => "INSERT INTO `tblemailtemplates` (`id`, `type`, `name`, `subject`, `message`, `attachments`, `fromname`, `fromemail`, `disabled`, `custom`, `language`, `copyto`, `plaintext`, `created_at`, `updated_at`) VALUES (NULL, 'domain', 'EPP Code', 'New EPP Code for \{\$domain_name\}', '<p>Dear {$client_name},</p> <p>A new EPP Code was generated for the domain {$domain_name}: {$code}</p> <p>You may transfer away your domain with the new EPP-Code.</p> <p>{$signature}</p>', '', '', '', '0', '1', '', '', '0', CURDATE(), CURDATE());",
+			"Ascio Status" => "INSERT INTO `tblemailtemplates` (`id`, `type`, `name`, `subject`, `message`, `attachments`, `fromname`, `fromemail`, `disabled`, `custom`, `language`, `copyto`, `plaintext`, `created_at`, `updated_at`) VALUES (NULL, 'domain', 'Ascio Status', '{$orderType} {$domain_name}: {$status}', '<p>Dear {$client_name},</p> <p>we received following status for your domain {$domain_name} ({$orderType}): {$status}</p> <p>{$errors}</p> <p> </p> <p>{$signature}</p>', '', '', '', '0', '1', '', '', '0', CURDATE(), CURDATE());"
 		);
 		$found = 0;
 		$command = "getemailtemplates";
