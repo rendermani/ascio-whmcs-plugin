@@ -1,4 +1,5 @@
 <?php
+
 require_once  __DIR__ . '/../vendor/autoload.php';
 
 class Tools {
@@ -113,12 +114,12 @@ class Tools {
 			$code .= substr($specialCharaters,rand(0,$length),1); 
 		}
 		return $code; 
-	}
+	} 
 	public static function createEmailTemplates() {
-		$usedTemplates = ["EPP Code","Ascio Status"];
+		$usedTemplates = array('EPP Code','Ascio Status');
 		$templates = array(
-			"EPP Code" => "INSERT INTO `tblemailtemplates` (`id`, `type`, `name`, `subject`, `message`, `attachments`, `fromname`, `fromemail`, `disabled`, `custom`, `language`, `copyto`, `plaintext`, `created_at`, `updated_at`) VALUES (NULL, 'domain', 'EPP Code', 'New EPP Code for \{\$domain_name\}', '<p>Dear {$client_name},</p> <p>A new EPP Code was generated for the domain {$domain_name}: {$code}</p> <p>You may transfer away your domain with the new EPP-Code.</p> <p>{$signature}</p>', '', '', '', '0', '1', '', '', '0', CURDATE(), CURDATE());",
-			"Ascio Status" => "INSERT INTO `tblemailtemplates` (`id`, `type`, `name`, `subject`, `message`, `attachments`, `fromname`, `fromemail`, `disabled`, `custom`, `language`, `copyto`, `plaintext`, `created_at`, `updated_at`) VALUES (NULL, 'domain', 'Ascio Status', '{$orderType} {$domain_name}: {$status}', '<p>Dear {$client_name},</p> <p>we received following status for your domain {$domain_name} ({$orderType}): {$status}</p> <p>{$errors}</p> <p> </p> <p>{$signature}</p>', '', '', '', '0', '1', '', '', '0', CURDATE(), CURDATE());"
+			"EPP Code" => "INSERT INTO `tblemailtemplates` (`id`, `type`, `name`, `subject`, `message`, `attachments`, `fromname`, `fromemail`, `disabled`, `custom`, `language`, `copyto`, `plaintext`) VALUES (NULL, 'domain', 'EPP Code', 'New EPP Code for \{\$domain_name\}', '<p>Dear {$client_name},</p> <p>A new EPP Code was generated for the domain {$domain_name}: {$code}</p> <p>You may transfer away your domain with the new EPP-Code.</p> <p>{$signature}</p>', '', '', '', '0', '1', '', '', '0');",
+			"Ascio Status" => "INSERT INTO `tblemailtemplates` (`id`, `type`, `name`, `subject`, `message`, `attachments`, `fromname`, `fromemail`, `disabled`, `custom`, `language`, `copyto`, `plaintext`) VALUES (NULL, 'domain', 'Ascio Status', '{$orderType} {$domain_name}: {$status}', '<p>Dear {$client_name},</p> <p>we received following status for your domain {$domain_name} ({$orderType}): {$status}</p> <p>{$errors}</p> <p> </p> <p>{$signature}</p>', '', '', '', '0', '1', '', '', '0');"
 		);
 		$found = 0;
 		$command = "getemailtemplates";
@@ -132,7 +133,7 @@ class Tools {
  			if(!$existingTemplates[$name]) {
  				mysql_query($templates[$name]);
  				if(mysql_error()) {
- 					echo "error ". mysql_error()."\n";
+ 					echo "Error writing email-templates (".$name."): ". mysql_error()."\n";
  				}				
  			}
  		}
