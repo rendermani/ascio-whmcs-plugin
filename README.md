@@ -1,6 +1,6 @@
 #ascio-whmcs-plugin
 
-##First version of the WHMCS domain registration plugin for the Ascio Webservice. 
+##WHMCS domain registration plugin for the Ascio Webservice. 
 
 ###Requirements
 - php 5.3+
