@@ -5,12 +5,16 @@
 ###Requirements
 - php 5.3+
 - PHP SoapClient module installed
-- The webserver needs write permissions for the file ascio-session.txt
+- The webserver needs write permissions for the sessioncache directory
+- Composer for PHP needs to be installed (https://getcomposer.org/doc/00-intro.md)
 
 ### Commandline install
 
 - change to your modules/registrars directory
 - get plugin:  git clone https://github.com/rendermani/ascio-whmcs-plugin.git ascio
+- cd ascio
+- install dependicies: composer install (https://getcomposer.org/doc/00-intro.md)
+- run install.php
 
 ### FTP install (alternative)
 
@@ -25,7 +29,6 @@
 
 - activate the ascio plugin in the WHMCS settings and configure it
 - If you are in testmode, you need to add the testing-credentials
-- Please run create_email_templates.php to init all templates.
 
 ##Known issues: 
 
