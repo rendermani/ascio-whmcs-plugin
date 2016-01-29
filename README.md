@@ -7,6 +7,7 @@
 - PHP SoapClient module installed
 - The webserver needs write permissions for the sessioncache directory
 - Composer for PHP needs to be installed (https://getcomposer.org/doc/00-intro.md)
+- use check_requirements.php to see if your server-installation is compatible
 
 ### Commandline install
 
