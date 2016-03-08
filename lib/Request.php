@@ -451,7 +451,7 @@ Class Request {
 			}
 			if($updateTech) {
 				syslog(LOG_INFO,"Update Tech");
-				$ascioParams["order"]["Domain"]["AdminContact"] = $newTech;
+				$ascioParams["order"]["Domain"]["TechContact"] = $newTech;
 			} else {
 				$ascioParams["order"]["Domain"]["TechContact"] = $old->TechContact;
 			}
