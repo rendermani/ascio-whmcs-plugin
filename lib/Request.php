@@ -176,7 +176,10 @@ Class Request {
 		$ascioParams = array(
 			'sessionId' => 'mySessionId',
 			'msgId' => $messageId
-		);
+		);		
+		syslog(LOG_INFO, "*** params ***");
+		syslog(LOG_INFO, json_encode($this->params));
+
 		$result = $this->request("GetMessageQueue", $ascioParams);
 		$order =  $this->getOrder($orderId);
 		$domainName = $order->order->Domain->DomainName;
@@ -184,23 +187,27 @@ Class Request {
 		$domainResult = $this->getDomain($order->order->Domain->DomainHandle);
 		$domain = $domainResult->domain;
 		$orderType = $order->order->Type;
+		$this->params["domainname"] = $domainName;
 		// External WHMCS API: Set Status
 		// External WHMCS API: Send Mail
 		$msgPart = "Domain (". $domainId . "): ".$domainName;
 
 		$whmcsStatus = $this->setDomainStatus($domain);
-	
+		syslog(LOG_INFO, "*** params 1 ***");
+		syslog(LOG_INFO, json_encode($this->params));
 		if ($orderStatus=="Completed") {
 			if(
 				$this->params["AutoExpire"] =="on" && 
 				($order->order->Type =="Register_Domain" || $order->order->Type =="Transfer_Domain")) {
 				sleep(5);
-				$this->expireDomain(array ("domainname" => $domainName));	
+				$this->expireDomain($this->params);	
 			}	
 		} else {
 			$msgPart = "Domain (". $domainId . "): ".$domainName;
 			$errors =  Tools::formatError($result->item->StatusList->CallbackStatus,$msgPart);
-		}
+		}	
+		syslog(LOG_INFO, "*** params 2 ***");
+		syslog(LOG_INFO, json_encode($this->params));
 		Tools::log($type." received from Ascio. Order: " .$order->order->Type. ", Domain: ".$domainName.", Order-Status: ".$orderStatus."\n ".$errors);
 		Tools::addNote($domainName, $order->order->Type. ": ".$orderStatus . $errors);
 		$this->ackMessage($messageId);
@@ -219,8 +226,14 @@ Class Request {
 		}
 	}
 	public function sendStatus($order,$domainId,$orderStatus,$errors) {
+		syslog(LOG_INFO, json_encode($this->params));
+		syslog(LOG_INFO, "######## detailed status: ".$this->params["DetailedOrderStatus"]);
+		syslog(LOG_INFO, "######## order status: ".$orderStatus);
+		syslog(LOG_INFO, "######## order type: ".$order->order->Type);
 		if($this->params["DetailedOrderStatus"] != "on") return;
 		if(!(
+			$order->order->Type == "Register_Domain" ||
+			$order->order->Type == "Transfer_Domain" ||
 			$order->order->Type == "Nameserver_Update" ||
 			$order->order->Type == "Delete_Domain" ||
 			$order->order->Type == "Restore_Domain" ||
@@ -247,6 +260,7 @@ Class Request {
  				"status" => $orderStatus,
  				"errors" => $errors);
 			$values["id"] = $domainId;
+			syslog(LOG_INFO, "Send new WHMCS status --------> ------------>");
 			$results = localAPI("sendemail",$values,"admin");
 			return $results;
 		}
