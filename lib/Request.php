@@ -1,4 +1,5 @@
 <?php
+
 define("ASCIO_WSDL_LIVE","https://aws.ascio.com/2012/01/01/AscioService.wsdl");
 define("ASCIO_WSDL_TEST","https://awstest.ascio.com/2012/01/01/AscioService.wsdl");
 
@@ -9,6 +10,7 @@ Class SessionCache {
 		$fp = fopen($filename,"r");
 		$contents = fread($fp, filesize($filename));
 		fclose($fp);
+		if(!$contents) return false;
 		if(trim($contents) == "false") $contents = false;		
 		return str_replace("<?php  \n//", "", $contents) ;
 	}
@@ -20,6 +22,16 @@ Class SessionCache {
 	}
 	public static function clear($account) {
 		SessionCache::put("false",$account);
+	}
+}
+Class DomainCache {
+	public static function get() {
+		GLOBAL $ascioDomainCache;
+		return $ascioDomainCache;
+	}
+	public static function put($domain) {
+		GLOBAL $ascioDomainCache;
+		$ascioDomainCache = $domain;
 	}
 }
 function createRequest($params) {
@@ -39,6 +51,7 @@ Class Request {
 	var $account;
 	var $password; 
 	var $params;
+	var $domain;
 
 	public function __construct($params) {
 		$this->setParams($params);
@@ -48,56 +61,82 @@ Class Request {
 		             'Account'=> $this->account,
 		             'Password' =>  $this->password
 		);
-		return $this->sendRequest('LogIn',array('session' => $session ));		 
+		$result =  $this->sendRequest('LogIn',array('session' => $session ));		 
+		return $result;
 	}
 	public function request($functionName, $ascioParams)  {	
-		$sessionId = SessionCache::get($this->account);			
+		$sessionId = SessionCache::get($this->account);	
 		if (!$sessionId || $sessionId == "false") {		
-			$result = $this->login(); 
-			if(is_array($result)) return $result;
-			$ascioParams["sessionId"] = $result->sessionId; 		
-			SessionCache::put($result->sessionId, $this->account);
+			$loginResult = $this->login(); 
+			if(is_array($loginResult) && $loginResult["error"]) return $loginResult;
+			$ascioParams["sessionId"] = $loginResult->sessionId; 	
+			SessionCache::put($loginResult->sessionId, $this->account);
 		} else {		
 			$ascioParams["sessionId"] = $sessionId; 
 		}
-		$result = $this->sendRequest($functionName,$ascioParams);
-		if(is_array($result) && strpos($result["error"],"Invalid Session") > -1) {
+		if(is_array($loginResult) && strpos($loginResult["error"],"Invalid Session") > -1) {
 			SessionCache::clear($this->account);
 			return  $this->request($functionName, $ascioParams);		
 		} else {	
-			return $result;
-			
+			return $this->sendRequest($functionName,$ascioParams);			
 		}	
 	}
-	private function sendRequest($functionName,$ascioParams) {		
-		syslog(LOG_INFO, "WHMCS Request:".$functionName ."(". $this->account .")" );
+	private function sendRequest($functionName,$ascioParams) {			
+		if($ascioParams->order) {
+			$orderType = " ".$ascioParams->order->Type ." "; 
+			var_dump($ascioParams->order);
+			die();
+		} else $orderType ="";
+		syslog(LOG_INFO, "WHMCS Request:".$functionName .$orderType."(". $this->account .")" );
 		$cfg = getRegistrarConfigOptions("ascio");
 		$wsdl = $cfg["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;
         $client = new SoapClient($wsdl,array( "trace" => 1));
-        $result = $client->__call($functionName, array('parameters' => $ascioParams));      
+        $result = $client->__call($functionName, array('parameters' => $ascioParams));    
 		$resultName = $functionName . "Result";	
 		$status = $result->$resultName;
-		syslog(LOG_INFO, "WHMCS ".$functionName  .": ".$status->Values->string . " ResultCode:" . $status->ResultCode);
+		$result->status = $status;
+		syslog(LOG_INFO, "WHMCS ".$functionName  .$orderType.": ".$status->Values->string . " ResultCode:" . $status->ResultCode . " ResultMessage: ".$status->Message);
 		if ( $status->ResultCode==200) {
 			return $result;
 		} else if( $status->ResultCode==554)  {
 			$messages = "Temporary error. Please try later or contact your support.";
 		} elseif (count($status->Values->string) > 1 ){
-				$messages = join(", \r\n",$status->Values->string);	
-		} else {
+			$messages = join(", \r\n<br>",$status->Values->string);	
+		}  elseif ($status->ResultCode=="401" && $functionName != "LogIn") {
+			SessionCache::clear($this->account);
+			return $this->request($functionName, $ascioParams);
+		}else {
 			$messages = $status->Values->string;
-		}
-		return array('error' => $status->Message . ", \r\n" .$messages);     
+		}		
+		$message = Tools::cleanString($messages);
+		return array('error' => $message );     
 	}
 	public function getDomain($handle) {
 		$ascioParams = array(
 			'sessionId' => 'mySessionId',
 			'domainHandle' => $handle
 		);
-		$result =  $this->request("GetDomain", $ascioParams,true); 
+		$result =  $this->request("GetDomain", $ascioParams); 
+
+		if($result->error) return $result;
+		else {	
+
+			$status = !$result->domain->DomainName ? NULL : $result->domain->Status;
+			$this->setDomainStatus($result->domain);
+			DomainCache::put($result->domain);
+			$this->setHandle($result->domain);
+			return $result->domain;
+		}
 		return $result;
 	}
 	public function searchDomain($params) {
+		$domain = DomainCache::get();
+		if(isset($domain)) return $domain; 
+
+		$handle = $this->getHandle("domain",Tools::getDomainId($this->domainName));
+		if(isset($handle)) {
+			return $this->getDomain($handle);
+		}
 		$params = $this->setParams($params);
 		$criteria= array(
 			'Mode' => 'Strict',
@@ -113,67 +152,118 @@ Class Request {
 			'sessionId' => 'mySessionId',
 			'criteria' => $criteria
 		);
-		$result =  $this->request("SearchDomain",$ascioParams,true);
-		if(is_array($result)) return $result;
-		else {
+		$result =  $this->request("SearchDomain",$ascioParams);
+		if($result->error) return $result;
+		else {						
 			$status = !$result->domains->Domain->DomainName ? NULL : $result->domains->Domain->Status;
-			$this->setWhmcsStatus($this->domainName,$status);
+			$this->setDomainStatus($result->domains->Domain);
+			DomainCache::put($result->domains->Domain);
+			$this->setHandle($result->domains->Domain);
 			return $result->domains->Domain;
 		}
 	}
-	public function getCallbackData($orderStatus,$messageId,$orderId) {
+	public function ackMessage($messageId) {
 		$ascioParams = array(
-			'sessionId' => 'mySessionId',
+			'sessionId' => 'mySessionId', 
 			'msgId' => $messageId
-		);
-		$result = $this->request("GetMessageQueue", $ascioParams,true);
-		$order =  $this->getOrder($orderId);
-		$domainName = $order->order->Domain->DomainName;
-		$domainId   = $this->getDomainId($domainName);
-		$domainResult = $this->getDomain($order->order->Domain->DomainHandle);
-		$domain = $domainResult->domain;
-		// External WHMCS API: Set Status
-		// External WHMCS API: Send Mail
-		$msgPart = "Domain order ". $domainId . ", ".$domainName;
-		$whmcsStatus = $this->setWhmcsStatus($domainName,$domain->Status,$order->order->Type,$domainId);
-
-		syslog(LOG_INFO, json_encode($domain));
-		syslog(LOG_INFO, "Domain status ".$domainname. ": ".$domain->Status);
-		syslog(LOG_INFO, "Order status ".$domainname. ": ".$whmcsStatus);
-		if ($orderStatus=="Completed") {
-			$message = Tools::formatOK($msgPart);
-			if(
-				$this->params["AutoExpire"] =="on" && 
-				($order->order->Type =="Register_Domain" || $order->order->Type =="Transfer_Domain")) {
-				$this->expireDomain(array ("domainname" => $domainName));	
-			}	
-		} else {
-			$message =  Tools::formatError($result->item->StatusList->CallbackStatus,$msgPart);
-		}
-		if($this->params["DetailedOrderStatus"]) {
-			syslog(LOG_INFO, "DetailedOrderStatus ". $this->params["DetailedOrderStatus"]);
-		}
- 		if($this->params["DetailedOrderStatus"] == "on") {
- 		 	$values = array( 'messagename' => 'Test Template', 'id' => '1', );
-	 		$adminuser = 'admin';
-			$command = "sendemail";	
-			$values["customtype"] = "domain";
-			$values["customsubject"] = $msgPart ." ". strtolower($orderStatus);
-			$values["custommessage"] = $message;
-			$values["id"] = $domainId;
-			localAPI($command,$values,$adminuser);
-			// Ascio ACK Message
-			$ascioParams = array(
-				'sessionId' => 'mySessionId',
-				'msgId' => $messageId
-			);	
- 		} 		
-		$this->sendAuthCode($order->order,$domainId);		
-		$result = $this->request("AckMessage", $ascioParams,true);
+		);	
+		$result = $this->request("AckMessage", $ascioParams);
 		if(($order->order->Type=="Register_Domain" || $order->order->Type=="Transfer_Domain") && $orderStatus=="Completed") {
 			$this->autoCreateZone($domainName);
 		}
 	}
+	public function getCallbackData($orderStatus,$messageId,$orderId,$type) {
+		$ascioParams = array(
+			'sessionId' => 'mySessionId',
+			'msgId' => $messageId
+		);		
+		$result = $this->request("GetMessageQueue", $ascioParams);
+		$order =  $this->getOrder($orderId);
+		$domainName = $order->order->Domain->DomainName;
+		$domainId   = Tools::getDomainId($domainName);
+		$domainResult = $this->getDomain($order->order->Domain->DomainHandle);
+		$domain = $domainResult->domain;
+		$orderType = $order->order->Type;
+		$this->params["domainname"] = $domainName;
+		// External WHMCS API: Set Status
+		// External WHMCS API: Send Mail
+		$msgPart = "Domain (". $domainId . "): ".$domainName;
+
+		$whmcsStatus = $this->setDomainStatus($domain);
+		syslog(LOG_INFO, json_encode($this->params));
+		if ($orderStatus=="Completed") {
+			if(
+				$this->params["AutoExpire"] =="on" && 
+				($order->order->Type =="Register_Domain" || $order->order->Type =="Transfer_Domain")) {
+				sleep(5);
+				$this->expireDomain($this->params);	
+			}	
+		} else {
+			$msgPart = "Domain (". $domainId . "): ".$domainName;
+			$errors =  Tools::formatError($result->item->StatusList->CallbackStatus,$msgPart);
+		}	
+		Tools::log($type." received from Ascio. Order: " .$order->order->Type. ", Domain: ".$domainName.", Order-Status: ".$orderStatus."\n ".$errors);
+		Tools::addNote($domainName, $order->order->Type. ": ".$orderStatus . $errors);
+		$this->ackMessage($messageId);
+		$this->sendStatus($order,$domainId,$orderStatus,$errors); 
+		$this->sendAuthCode($order->order,$domainId);
+		$this->expireAfterRenew($order,$domain);				
+	}
+	protected function expireAfterRenew($order,$domain) {
+		if($this->params["AutoExpire"] != "on") return;
+		if(
+			$order->order->Type=="Autorenew_Domain" && 
+			$order->order->Status=="Completed" &&
+			!$this->hasStatus($domain,"expiring")
+			) {
+			$this->expireDomain($this->params);	
+		}
+	}
+	public function sendStatus($order,$domainId,$orderStatus,$errors) {
+		if($this->params["DetailedOrderStatus"] != "on") return;
+		if(!(
+			$order->order->Type == "Register_Domain" ||
+			$order->order->Type == "Transfer_Domain" ||
+			$order->order->Type == "Nameserver_Update" ||
+			$order->order->Type == "Delete_Domain" ||
+			$order->order->Type == "Restore_Domain" ||
+			$order->order->Type == "Queue_Domain" ||
+			$order->order->Type == "Renew_Domain" ||
+			$order->order->Type == "Unexpire_Domain" ||
+			$order->order->Type == "Contact_Update" ||
+			$order->order->Type == "Domain_Details_Update" ||
+			$order->order->Type == "Update_AuthInfo" ||
+			$order->order->Type == "Registrant_Details_Update" ||
+			$order->order->Type == "Change_Locks" ||
+			$order->order->Type == "Owner_Change" 
+		)) return;
+		if(
+			$orderStatus == "Completed" || 
+			$orderStatus == "Failed" || 
+			$orderStatus == "Pending End User Action" || 
+			$orderStatus == "Pending_Documentation"
+			) {
+			$values = array();		
+ 			$values["messagename"] = "Ascio Status";
+ 			$values["customvars"] = array(
+ 				"orderType"=> str_replace("_"," ",$order->order->Type),
+ 				"status" => $orderStatus,
+ 				"errors" => $errors);
+			$values["id"] = $domainId;
+			$results = localAPI("sendemail",$values,"admin");
+			return $results;
+		}
+	}
+	public function sendAuthCode($order,$domainId) {
+		if($order->Type != "Update_AuthInfo") return;
+		$domain =  $this->getDomain($order->Domain->DomainHandle);
+		$values = array();		
+ 		$values["messagename"] = "EPP Code";
+ 		$values["customvars"] = array("code"=> $domain->domain->AuthInfo);
+		$values["id"] = $domainId;
+		$results = localAPI("sendemail",$values,"admin");
+		return $results;
+	}	
 	public function autoCreateZone($domain) {
 		$params = $this->setParams();		
 		syslog(LOG_INFO, "Creating DNS zone ".$domain);	
@@ -195,35 +285,67 @@ Class Request {
 			echo ("Created DNS zone: ".$domain."\n");
 		}
 	}
-	public function setWhmcsStatus($domain,$ascioStatus,$orderType,$domainId) {	
-		// set the status of the domain based on ascio's domain-data
-		if(!(
-			$orderType == "Register_Domain" ||
-			$orderType == "Transfer_Domain")
-			) {
-			return false; 
-		}
-		if($ascioStatus==NULL) $ascioStatus = "deleted";
-		$statusMap = array (
-			"pending" => "Pending",
-			"active"  => "Active",
-			"deleted" => "Cancelled",
-			"parked"  => "Cancelled",
+	public function setOrderStatus($result) {
+		if($result->error) return;
+		$type = $result->order->Type;
+		$order = $result->order;
+		$pending =  strpos($order->Status, "Pending") > -1;
 
-		);
-		$whmcsStatus = $statusMap[strtolower($ascioStatus)];
-		if ($orderType=="Transfer_Domain" && $whmcsStatus == "Pending") {
-			$whmcsStatus = "Pending Transfer";
+		if($type == "Transfer_Domain" && $pending) {
+			return $this->setStatus($order->Domain,"Pending Transfer");
 		}
-		if(strpos($ascioStatus,"pending")!==false) {
-			$whmcsStatus = "Pending";
+
+		if($type == "Register_Domain" || $type =="Transfer_Domain") {
+			if($pending) {
+				$this->setStatus($order->Domain,"Pending");
+			} else $this->setDomainStatus($domain);
 		}
-		$command = "updateclientdomain";
-		$values["domain"] =  $domain;
-		$values["status"] = $whmcsStatus;
-			$results = localAPI($command,$values,"admin"); 			
-		syslog(LOG_INFO, "Set new WHMCS status for ".$domain. ": ".$whmcsStatus);
-		return $whmcsStatus;
+	}
+	public function setDomainStatus($domain) {		
+		if($this->hasStatus($domain,"deleted")) {
+			return $this->setStatus($domain,"Cancelled");
+		}
+		if($this->hasStatus($domain,"active") || $this->hasStatus($domain,"expiring")) {
+			syslog(LOG_INFO,"Status: ".$domain->Status);
+			return $this->setStatus($domain,"Active"); 
+		}		
+	}
+	public function setStatus($domain,$status) {	
+		$values["domain"] =  $domain->DomainName; 
+		if($domain->ExpDate) {
+			$expDate = $this->formatDate($domain->ExpDate);
+			$creDate = $this->formatDate($domain->CreDate);
+			$tldData = get_query_vals("tblasciotlds","Threshold",array("Tld" => $this->getTld($domain->DomainName)));
+			$dueDate = DateTime::createFromFormat(DateTime::ATOM,$domain->ExpDate."-01:00");
+			$dueDate->modify($tldData["Threshold"].' day');		
+			if(!$this->hasStatus($domain,"expiring")) {
+				$dueDate->modify('+1 year');	
+			} 
+			$values["nextduedate"] = $dueDate->format('Y-m-d');
+			if($expDate) {
+				$values["expirydate"] = $expDate;	
+				$values["registrationdate"] = $creDate;	
+			}
+		}
+		$values ["status"] = $status;
+		$results = localAPI("updateclientdomain",$values,"admin"); 					
+		syslog(LOG_INFO, "Set new WHMCS status for ".$domainName. ": ".$status.", ".$expDate);
+	}	
+	protected function hasStatus($domain,$search) {
+		return strpos($domain->Status, strtoupper($search)) > -1;
+	}
+	private function getTld($domainName) {
+		$tokens = explode(".", $domainName);
+		array_pop($tokens);
+		return join(".",$tokens);
+	}
+	private function formatDate($xsDateTime) {
+		if($domain->ExpDate == "0001-01-01T00:00:00") return false;
+		$dateTokens = explode("T", $xsDateTime);
+		if(count($dateTokens == 2)) {
+			return str_replace("-", "", $dateTokens[0]);
+		}
+		return false; 
 	}
 	public function getOrder($orderId) {
 		$ascioParams = array(
@@ -233,25 +355,7 @@ Class Request {
 		$result =  $this->request("GetOrder", $ascioParams,true); 
 		return $result;
 	}
-	public function sendAuthCode($order,$domainId) {
-		if($order->Type != "Update_AuthInfo") return;
-		$domain =  $this->getDomain($order->Domain->DomainHandle);
-		$msg = "New AuthCode generated for ".$domain->domain->DomainName . ": ".$domain->domain->AuthInfo;
-		$values = array();
-		$values["customtype"] = "domain";
-		$values["customsubject"] = $domain->domain->DomainName . ": New AuthCode generated";
-		$values["custommessage"] = $msg;
-		$values["id"] = $domainId;
-		$results = localAPI("sendemail",$values,"admin");
-		return $results;
-	}
-	private function getDomainId($domain) {
-		$query = 'SELECT id FROM  `tbldomains` WHERE domain =  "'.$domain.'" LIMIT 0 , 1';
-		$result = mysql_query($query);
-		$row = mysql_fetch_assoc($result);		
-	    $id = $row["id"];
-	    return $id; 
-	}
+
 	public function poll() {
 		$ascioParams = array(
 			'sessionId' => 'mySessionId',
@@ -278,10 +382,8 @@ Class Request {
 		} catch (AscioException $e) {
 			return array("error" => $e->getMessage());
 		}		
-		$result = $this->request("CreateOrder",$ascioParams);
-		if (!$result) {
-			$this->setWhmcsStatus($domainName,"Pending","Register_Domain");
-		}
+		$result = $this->request("CreateOrder",$ascioParams);		
+		$this->setOrderStatus($result,"Pending");
 		return $result;
 	}
 	public function transferDomain ($params=false) {		
@@ -291,10 +393,25 @@ Class Request {
 		} catch (AscioException $e) {
 			return array("error" => $e->getMessage());
 		}
-		$result = $this->request("CreateOrder",$ascioParams);
-		if (!$result) {
-			$this->setWhmcsStatus($domain,"Pending","Transfer_Domain");
+		$result = $this->request("CreateOrder",$ascioParams);		
+		$this->setOrderStatus($result,"Pending");
+		return $result;
+	}	
+	public function updateDomain ($params=false) {			
+		$params = $this->setParams($params);
+		try {
+			$ascioParams = $this->mapToOrder($params,"Domain_Details_Update");
+			logModuleCall(
+	            'asciodomains',
+	            __FUNCTION__,
+	            $params,
+	            $ascioParams	            
+        	);
+		} catch (AscioException $e) {
+			return array("error" => $e->getMessage());
 		}
+		$result = $this->request("CreateOrder",$ascioParams);		
+		$this->setOrderStatus($result,"Pending");
 		return $result;
 	}
 	public function updateContacts ($params=false) {
@@ -337,7 +454,7 @@ Class Request {
 			}
 			if($updateTech) {
 				syslog(LOG_INFO,"Update Tech");
-				$ascioParams["order"]["Domain"]["AdminContact"] = $newTech;
+				$ascioParams["order"]["Domain"]["TechContact"] = $newTech;
 			} else {
 				$ascioParams["order"]["Domain"]["TechContact"] = $old->TechContact;
 			}
@@ -349,17 +466,23 @@ Class Request {
 	public function renewDomain($params) {
 		$params = $this->setParams($params);
 		try {
+			$ascioParams = $this->mapToOrder($params,"Renew_Domain");
+		} catch (AscioException $e) {
+			return array("error" => $e->getMessage());
+		}
+		$result =  $this->request("CreateOrder",$ascioParams);
+		return $result;
+	}
+	public function unexpireDomain($params) {
+		$params = $this->setParams($params);
+		try {
 			$ascioParams = $this->mapToOrder($params,"Unexpire_Domain");
 		} catch (AscioException $e) {
 			return array("error" => $e->getMessage());
 		}
 		$result =  $this->request("CreateOrder",$ascioParams);
-		if (!$result) {
-			$this->setWhmcsStatus($domain,"Pending","Unexpire_Domain");
-		}
 		return $result;
 	}
-
 	public function expireDomain($params) {
 		$params = $this->setParams($params);
 		try {
@@ -368,9 +491,6 @@ Class Request {
 			return array("error" => $e->getMessage());
 		}
 		$result =  $this->request("CreateOrder",$ascioParams);
-		if (!$result) {
-			$this->setWhmcsStatus($domain,"Pending","Expire_Domain");
-		}
 		return $result;
 	}	
 	function saveNameservers($params) {
@@ -381,27 +501,21 @@ Class Request {
 			return array("error" => $e->getMessage());
 		}
 		$result =  $this->request("CreateOrder",$ascioParams);
-		if (!$result) {
-			$this->setWhmcsStatus($domain,"Pending","Nameserver_Update");
-		}
 		return $result;
 	}	
-	function saveRegistrarLock($params) {
+	public function saveRegistrarLock($params,$noRenewTld) {
+		syslog("LOG_INFO", "saveRegistrarLock");
 		$params = $this->setParams($params);
-		if ($params["lockenabled"]) {
-			$lockstatus="Lock";
-		} else {
-			$lockstatus="UnLock";
-		}
-		try {
-			$ascioParams = $this->mapToOrder($params,"Change_Locks");
-		} catch (AscioException $e) {
-			return array("error" => $e->getMessage());
-		}
-		$ascioParams["order"]["Domain"]["TransferLock"] = $lockstatus;
-		return $this->request("CreateOrder",$ascioParams);
+		$lockstatus = $params["lockenabled"] ? "Lock" : "UnLock";
+		$lockParams = $this->mapToOrder($params,"Change_Locks");
+		$lockParams["order"]["Domain"]["TransferLock"] = $lockstatus;
+		return $this->request("CreateOrder",$lockParams);
 	}	
 	public function getEPPCode($params) {
+		$domain = $this->searchDomain($params); 
+		return array("eppcode" => $domain->AuthInfo);
+	}		
+	public function updateEPPCode($params) {
 		$params = $this->setParams($params);
 	    try {
 	    	$ascioParams = $this->mapToOrder($params,"Update_AuthInfo");
@@ -409,7 +523,7 @@ Class Request {
 			return array("error" => $e->getMessage());
 		}
 		$result = $this->request("CreateOrder",$ascioParams,true);
-		if(is_array($result)) {
+		if($result->error) {
 			return $result;
 		} else {
 			return array("eppcode" => $ascioParams->Order->Domain->AuthInfo);
@@ -553,11 +667,35 @@ Class Request {
 	public function setParams($params) {
 		if($params) {
 			$this->params = $params; 
-			$this->domainName = $params["sld"] ."." . $params["tld"];
+			$this->domainName = $params["sld"] ."." . $params["tld"];			
 			if($this->params["Username"]) $this->account = $this->params["Username"];
 			if($this->params["Password"]) $this->password = $this->params["Password"];
 		} 
 		return $this->params;
+	}
+	public function getHandle($type,$whmcsId) {
+		$result = get_query_val("tblasciohandles","ascio_id", array("type" => $type, "whmcs_id" => $whmcsId));
+		return $result;
+	}
+	public function setHandle($domain) {
+		$this->storeHandle("domain",Tools::getDomainId($domain->DomainName),$domain->DomainHandle,$domain->DomainName);
+		/*
+		$this->storeHandle("registrant",$domain->Registrant->Handle);
+		$this->storeHandle("contact",$domain->AdminContact->Handle);
+		$this->storeHandle("contact",$domain->TechContact->Handle);
+		$this->storeHandle("contact",$domain->BillingContact->Handle);
+		*/
+	}
+	public function storeHandle($type,$whmcsId, $ascioId,$domain) {
+		$handle = $this->getHandle($type,$whmcsId);
+		if(!$handle) {
+			$query = array("type" => $type,"ascio_id" => $ascioId,"whmcs_id" => $whmcsId);
+			$result = insert_query("tblasciohandles",$query,array("whmcs_id" => $whmcsId,"type" => $type,"domain" => $domain));
+		} else {
+			$query = array("ascio_id" => $ascioId);
+			$result = update_query("tblasciohandles",$query,array("whmcs_id" => $whmcsId,"type" => $type));
+		}		
+		return $result; 
 	}
 }
 ?>

@@ -31,7 +31,7 @@ class DnsZone {
 	public function update($params) {
 		$oldRecords = $this->get($params);
 		if(!$oldRecords) {
-			$result = $this->createZone($params);	
+			$result = $this->createZone($params);
 		} 
 		$newRecords = $params["dnsrecords"];
 		for($i=0;$i < count($newRecords)-1; $i++) {		
@@ -65,6 +65,9 @@ class DnsZone {
 		$updateRecord->zoneName   = $this->name;
 		$updateRecord->record = $record;
 		$result = $this->dnsService->updateRecord($updateRecord);
+		if($result->StatusCode != 200 ) {
+			Tools:log($result->StatusMessage);
+		}
 		return $result;
 	}
 	private function replaceRecord($record,$newRecord) {
@@ -76,10 +79,14 @@ class DnsZone {
 		$deleteRecord = new DeleteRecord();
 		$deleteRecord->recordId   = $record->Id;
 		$result = $this->dnsService->deleteRecord($deleteRecord);
+		if($result->StatusCode != 200 ) {
+			Tools:log($result->StatusMessage);
+		}
 		return $result;
 	}
 	private function createRecord($record) {
 		if(!$record["address"]) return ;
+
 		$type =  $record["type"];
 		$newRecord = new $type();	
 		$newRecord->Source 	= $this->addZonename($record["hostname"]);
@@ -89,14 +96,23 @@ class DnsZone {
 		$createRecord->zoneName = $this->name;
 		$createRecord->record = $newRecord;
 		$createRecord->owner = $this->owner;
-		$result = $this->dnsService->createRecord($createRecord);
+
+		$result = $this->dnsService->createRecord($createRecord);	
+		if($result->StatusCode != 200 ) {
+				Tools:log($result->StatusMessage);
+		}
 		return $result;
 	}
-	private function createZone($records) {
+	private function createZone($records) {		
 		$createZone = new CreateZone();
 		$createZone->zoneName = $this->name;
 		$createZone->owner 	  = $this->owner;
-		return $this->dnsService->createZone($createZone);
+		$result = $this->dnsService->createZone($createZone);
+		if($result->StatusCode != 200 ) {
+			Tools:log($result->StatusMessage);
+		}
+		return $result;
+		
 	}
 	public function createUser($params) { 	
 		$getUser = new GetUser();
@@ -144,6 +160,7 @@ class DnsZone {
 		return str_replace(".".$this->name, "", $record);
 	}
 	private function addZonename($record) {
+		if($record == "@") return $record; 
 		if(!strpos($record, ".")) return $record. ".".$this->name;
 		else return $record;
 	}

@@ -1,16 +1,21 @@
 #ascio-whmcs-plugin
 
-##First version of the WHMCS domain registration plugin for the Ascio Webservice. 
+##WHMCS domain registration plugin for the Ascio Webservice. 
 
 ###Requirements
 - php 5.3+
 - PHP SoapClient module installed
-- The webserver needs write permissions for the file ascio-session.txt
+- The webserver needs write permissions for the sessioncache directory
+- Composer for PHP needs to be installed (https://getcomposer.org/doc/00-intro.md)
+- use check_requirements.php to see if your server-installation is compatible
 
 ### Commandline install
 
 - change to your modules/registrars directory
 - get plugin:  git clone https://github.com/rendermani/ascio-whmcs-plugin.git ascio
+- cd ascio
+- install dependicies: composer install (https://getcomposer.org/doc/00-intro.md)
+- run install.php
 
 ### FTP install (alternative)
 
@@ -25,7 +30,6 @@
 
 - activate the ascio plugin in the WHMCS settings and configure it
 - If you are in testmode, you need to add the testing-credentials
-
 
 ##Known issues: 
 

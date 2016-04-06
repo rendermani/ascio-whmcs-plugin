@@ -35,5 +35,11 @@ class it extends Request {
 			return array ("Country" => "DK");
 		} 
 	}	
+	public function renewDomain($params) {
+		$domain = parent::searchDomain($params);
+		if($this->hasStatus($domain,"expiring")) {
+			return parent::unexpireDomain($params);
+		} else return array("error" => "Domain can't be renewed again.");		
+	}
 }
 ?>
