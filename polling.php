@@ -1,8 +1,8 @@
 <?php
 set_time_limit ( 6000 );
-require_once("../../../init.php");
-require_once "../../../includes/registrarfunctions.php";
-require_once("lib/Request.php");
+require_once(realpath(dirname(__FILE__))."/../../../init.php");
+require_once realpath(dirname(__FILE__))."/../../../includes/registrarfunctions.php";
+require_once(realpath(dirname(__FILE__))."/lib/Request.php");
 
 $pathArr = explode("/",$_SERVER['PHP_SELF']);
 $account = $pathArr[count($pathArr)-1] == "polling_usd.php" ? "ascio_usd" : "ascio";
