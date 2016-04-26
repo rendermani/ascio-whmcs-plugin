@@ -1,4 +1,7 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 require_once("../../../init.php");
 require("lib/Tools.php");
 Tools::createEmailTemplates();
@@ -8,13 +11,14 @@ if(mysql_error()) echo mysql_error();
 $q = 'CREATE TABLE IF NOT EXISTS `tblasciojobs` (`id` int(11) NOT NULL AUTO_INCREMENT, `last_id` int(11) NOT NULL, `order_id` char(255) NOT NULL, `method` char(255) NOT NULL, `request` text NOT NULL, `response` text NOT NULL, `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (`id`), KEY `last_id` (`last_id`), KEY `order_id` (`order_id`) )';
 mysql_query($q);
 if(mysql_error()) echo mysql_error();
-'CREATE TABLE IF NOT EXISTS `tblasciohandles` (`type` varchar(256) NOT NULL, `whmcs_id` int(10) NOT NULL, `ascio_id` varchar(256) NOT NULL, PRIMARY KEY (`whmcs_id`), KEY `ascio_id` (`ascio_id`) )';
+$q = 'CREATE TABLE IF NOT EXISTS `tblasciohandles` (`type` varchar(256) NOT NULL, `whmcs_id` int(10) NOT NULL, `ascio_id` varchar(256) NOT NULL, PRIMARY KEY (`whmcs_id`), KEY `ascio_id` (`ascio_id`) )';
 mysql_query($q);
-if(mysql_error()) echo mysql_error();
 
 
-
-$tldsString = file_get_contents("http://aws.ascio.info/tldkit.xq");
+$s = curl_init(); 
+curl_setopt($s,CURLOPT_URL,"http://aws.ascio.info/tldkit.xq"); 
+curl_setopt($s,CURLOPT_RETURNTRANSFER,true);
+$tldsString = curl_exec($s);
 $tlds = json_decode($tldsString);
 
 foreach ($tlds->tld as $key => $tld) {	
