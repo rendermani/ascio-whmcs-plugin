@@ -1,5 +1,5 @@
 <?php
-
+use Illuminate\Database\Capsule\Manager as Capsule;
 require_once  __DIR__ . '/../vendor/autoload.php';
 
 class Tools {
@@ -55,7 +55,7 @@ class Tools {
 	}
 	public static function log($message) {
 		$command 	= "logactivity";
- 	 	$adminuser 	= "admin";
+ 	 	$adminuser 	= Tools::getApiUser();
  		$values["description"] = $message;
  		$results 	= localAPI($command,$values,$adminuser);
 		return $results; 
@@ -118,12 +118,12 @@ class Tools {
 	public static function createEmailTemplates() {
 		$usedTemplates = array('EPP Code','Ascio Status');
 		$templates = array(
-			"EPP Code" => "INSERT INTO `tblemailtemplates` (`id`, `type`, `name`, `subject`, `message`, `attachments`, `fromname`, `fromemail`, `disabled`, `custom`, `language`, `copyto`, `plaintext`) VALUES (NULL, 'domain', 'EPP Code', 'New EPP Code for \{\$domain_name\}', '<p>Dear {$client_name},</p> <p>A new EPP Code was generated for the domain {$domain_name}: {$code}</p> <p>You may transfer away your domain with the new EPP-Code.</p> <p>{$signature}</p>', '', '', '', '0', '1', '', '', '0');",
-			"Ascio Status" => "INSERT INTO `tblemailtemplates` (`id`, `type`, `name`, `subject`, `message`, `attachments`, `fromname`, `fromemail`, `disabled`, `custom`, `language`, `copyto`, `plaintext`) VALUES (NULL, 'domain', 'Ascio Status', '{$orderType} {$domain_name}: {$status}', '<p>Dear {$client_name},</p> <p>we received following status for your domain {$domain_name} ({$orderType}): {$status}</p> <p>{$errors}</p> <p> </p> <p>{$signature}</p>', '', '', '', '0', '1', '', '', '0');"
+			"EPP Code" => "INSERT INTO `tblemailtemplates` (`id`, `type`, `name`, `subject`, `message`, `attachments`, `fromname`, `fromemail`, `disabled`, `custom`, `language`, `copyto`, `plaintext`) VALUES (NULL, 'domain', 'EPP Code', 'New EPP Code for \{\$domain_name\}', '<p>Dear {\$client_name},</p> <p>A new EPP Code was generated for the domain {\$domain_name}: {\$code}</p> <p>You may transfer away your domain with the new EPP-Code.</p> <p>{\$signature}</p>', '', '', '', '0', '1', '', '', '0');",
+			"Ascio Status" => "INSERT INTO `tblemailtemplates` (`id`, `type`, `name`, `subject`, `message`, `attachments`, `fromname`, `fromemail`, `disabled`, `custom`, `language`, `copyto`, `plaintext`) VALUES (NULL, 'domain', 'Ascio Status', '{\$orderType} {\$domain_name}: {\$status}', '<p>Dear {\$client_name},</p> <p>we received following status for your domain {\$domain_name} (\{\$orderType}): {\$status}</p> <p>{\$errors}</p> <p> </p> <p>{\$signature}</p>', '', '', '', '0', '1', '', '', '0');"
 		);
 		$found = 0;
 		$command = "getemailtemplates";
- 		$adminuser = "admin";
+ 		$adminuser = Tools::getApiUser();
  		$values["type"] = "domain"; 
 		$results = localAPI($command,$values,$adminuser);
  		foreach($results["emailtemplates"]["emailtemplate"] as $key => $value) {
@@ -139,13 +139,13 @@ class Tools {
  		}
 	}
 	public static function addNote($domainName,$message) {
-		$adminuser = "admin";
+		$adminuser = Tools::getApiUser();
 		$values["domain"] = $domainName;	
 		$command = "getclientsdomains";
 		$results = localAPI($command, $values, $adminuser);
 		$domains = $results["domains"]["domain"];
 		$domain  = $domains[count($domains)-1];
-		$adminuser = "admin";
+		$adminuser = Tools::getApiUser();
 
 		$command = "updateclientdomain";
 		$values["domainId"] = $domain["id"];
@@ -163,11 +163,22 @@ class Tools {
 		$tmpDate = explode("T", $domain->ExpDate);
 		$expirydate = str_replace("-", "", $tmpDate[0]);
 		$command 	= "updateclientdomain";
-		$adminuser 	= "admin";
+		$adminuser 	= Tools::getApiUser();
 		$values["domain"] = $domain->DomainName;
 		$values["expirydate"] = $expirydate;
  		$results 	= localAPI($command,$values,$adminuser);
  		return $results;
+	}
+	public static function getApiUser() {
+		global $cachedAdminUser; 
+		if($cachedAdminUser) return $cachedAdminUser;
+		$result = Capsule::select("select username,notes from tbladmins");
+		foreach ($result as $key => $user) {
+			if($user->notes=="apiuser") return $user->username;
+			$admin = $user->username;
+		}	
+		$cachedAdminUser = $admin; 
+		return $admin;
 	}
 }
 class AscioException extends Exception { }

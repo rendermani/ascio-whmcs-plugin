@@ -1,26 +1,25 @@
 <?php
-
+use Illuminate\Database\Capsule\Manager as Capsule;
 define("ASCIO_WSDL_LIVE","https://aws.ascio.com/2012/01/01/AscioService.wsdl");
 define("ASCIO_WSDL_TEST","https://awstest.ascio.com/2012/01/01/AscioService.wsdl");
 
 
 Class SessionCache {
 	public static function get($account) {
-		$filename = dirname(realpath ( __FILE__ ))."/../sessioncache/ascio-session_".$account.".php";
-		$fp = fopen($filename,"r");
-		$contents = fread($fp, filesize($filename));
-		fclose($fp);
-		if(!$contents) return false;
-		if(trim($contents) == "false") $contents = false;		
-		return str_replace("<?php  \n//", "", $contents) ;
+		$result = Capsule::select("select sessionId from mod_asciosession where account='$account'");
+		return  $result[0]->sessionId;
 	}
 	public static function put($sessionId,$account) {
-		$filename = dirname(realpath ( __FILE__ ))."/../sessioncache/ascio-session_".$account.".php";
-		$fp = fopen($filename,"w");		
-		fwrite($fp,"<?php  \n//".$sessionId);
-		fclose($fp);
+		$query = "	INSERT INTO  mod_asciosession (account, sessionId) 
+					VALUES('$account', '$sessionId') 
+					ON DUPLICATE KEY UPDATE account='$account', sessionId='$sessionId'";
+		mysql_query($query); 
+		if(mysql_error()) {
+			Tools::log("Error writing session: ".mysql_error());
+		}		
 	}
 	public static function clear($account) {
+		syslog(LOG_INFO, "clear session");
 		SessionCache::put("false",$account);
 	}
 }
@@ -69,7 +68,7 @@ Class Request {
 		if (!$sessionId || $sessionId == "false") {		
 			$loginResult = $this->login(); 
 			if(is_array($loginResult) && $loginResult["error"]) return $loginResult;
-			$ascioParams["sessionId"] = $loginResult->sessionId; 	
+			$ascioParams["sessionId"] = $loginResult->sessionId; 				
 			SessionCache::put($loginResult->sessionId, $this->account);
 		} else {		
 			$ascioParams["sessionId"] = $sessionId; 
@@ -84,8 +83,6 @@ Class Request {
 	private function sendRequest($functionName,$ascioParams) {			
 		if($ascioParams->order) {
 			$orderType = " ".$ascioParams->order->Type ." "; 
-			var_dump($ascioParams->order);
-			die();
 		} else $orderType ="";
 		syslog(LOG_INFO, "WHMCS Request:".$functionName .$orderType."(". $this->account .")" );
 		$cfg = getRegistrarConfigOptions("ascio");
@@ -190,7 +187,6 @@ Class Request {
 		$msgPart = "Domain (". $domainId . "): ".$domainName;
 
 		$whmcsStatus = $this->setDomainStatus($domain);
-		syslog(LOG_INFO, json_encode($this->params));
 		if ($orderStatus=="Completed") {
 			if(
 				$this->params["AutoExpire"] =="on" && 
@@ -250,7 +246,7 @@ Class Request {
  				"status" => $orderStatus,
  				"errors" => $errors);
 			$values["id"] = $domainId;
-			$results = localAPI("sendemail",$values,"admin");
+			$results = localAPI("sendemail",$values,Tools::getApiUser());
 			return $results;
 		}
 	}
@@ -261,7 +257,7 @@ Class Request {
  		$values["messagename"] = "EPP Code";
  		$values["customvars"] = array("code"=> $domain->domain->AuthInfo);
 		$values["id"] = $domainId;
-		$results = localAPI("sendemail",$values,"admin");
+		$results = localAPI("sendemail",$values,Tools::getApiUser());
 		return $results;
 	}	
 	public function autoCreateZone($domain) {
@@ -328,7 +324,7 @@ Class Request {
 			}
 		}
 		$values ["status"] = $status;
-		$results = localAPI("updateclientdomain",$values,"admin"); 					
+		$results = localAPI("updateclientdomain",$values,Tools::getApiUser()); 	
 		syslog(LOG_INFO, "Set new WHMCS status for ".$domainName. ": ".$status.", ".$expDate);
 	}	
 	protected function hasStatus($domain,$search) {
@@ -697,5 +693,6 @@ Class Request {
 		}		
 		return $result; 
 	}
+
 }
 ?>
