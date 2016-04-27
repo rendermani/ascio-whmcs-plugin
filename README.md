@@ -2,6 +2,8 @@
 
 ##WHMCS domain registration plugin for the Ascio Webservice. 
 
+Please visit this link for details: http://aws.ascio.info/whmcs.html
+
 ###Requirements
 - php 5.3+
 - PHP SoapClient module installed
@@ -28,3 +30,4 @@
 ##Ascio DNS
 
 - AscioDNS is added. WHMCS has only a minimal DNS-management, but there are plugins. Please contact your account-manager for an AscioDNS account.
+
