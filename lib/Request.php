@@ -178,6 +178,9 @@ Class Request {
 		$order =  $this->getOrder($orderId);
 		$domainName = $order->order->Domain->DomainName;
 		$domainId   = Tools::getDomainId($domainName);
+		if(!isset($domainId)) {
+			echo "Domain ".$domainName." is not in this WHMCS database";
+		}
 		$domainResult = $this->getDomain($order->order->Domain->DomainHandle);
 		$domain = $domainResult->domain;
 		$orderType = $order->order->Type;
