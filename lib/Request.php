@@ -85,8 +85,7 @@ Class Request {
 			$orderType = " ".$ascioParams->order->Type ." "; 
 		} else $orderType ="";
 		syslog(LOG_INFO, "WHMCS Request:".$functionName .$orderType."(". $this->account .")" );
-		$cfg = getRegistrarConfigOptions("ascio");
-		$wsdl = $cfg["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;
+		$wsdl = $this->params["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;
         $client = new SoapClient($wsdl,array( "trace" => 1));
         $result = $client->__call($functionName, array('parameters' => $ascioParams));    
 		$resultName = $functionName . "Result";	
@@ -266,11 +265,10 @@ Class Request {
 	public function autoCreateZone($domain) {
 		$params = $this->setParams();		
 		syslog(LOG_INFO, "Creating DNS zone ".$domain);	
-		$cfg = getRegistrarConfigOptions("ascio");		
-		if($cfg["AutoCreateDNS"]=="on") {
-			$dns = $cfg["DNS_Default_Zone"];
-			$mx1 = $cfg["DNS_Default_Mailserver"];
-			$mx2 = $cfg["DNS_Default_Mailserver_2"];
+		if($this->params["AutoCreateDNS"]=="on") {
+			$dns = $this->params["DNS_Default_Zone"];
+			$mx1 = $this->params["DNS_Default_Mailserver"];
+			$mx2 = $this->params["DNS_Default_Mailserver_2"];
 			$zone = new DnsZone($params,$domain);
 			$params["dnsrecords"] = array(
 				array("hostname" => "@","type" => "A","address" => $dns),
@@ -310,7 +308,6 @@ Class Request {
 		}		
 	}
 	public function setStatus($domain,$status) {	
-		$cfg = getRegistrarConfigOptions("ascio");
 		$values["domain"] =  $domain->DomainName; 
 		if($domain->ExpDate) {
 			$expDate = $this->formatDate($domain->ExpDate);
@@ -321,7 +318,7 @@ Class Request {
 			if(!$this->hasStatus($domain,"expiring")) {
 				$dueDate->modify('+1 year');	
 			} 
-			if(!isset($cfg["Sync_Due_Date"]) || $cfg["Sync_Due_Date"]=="on") {
+			if(!isset($this->params["Sync_Due_Date"]) || $this->params["Sync_Due_Date"]=="on") {
 				syslog(LOG_INFO, "WHMCS sync due date");
 				$values["nextduedate"] = $dueDate->format('Y-m-d');	
 			} 
