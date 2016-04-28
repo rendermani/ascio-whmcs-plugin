@@ -310,6 +310,7 @@ Class Request {
 		}		
 	}
 	public function setStatus($domain,$status) {	
+		$cfg = getRegistrarConfigOptions("ascio");
 		$values["domain"] =  $domain->DomainName; 
 		if($domain->ExpDate) {
 			$expDate = $this->formatDate($domain->ExpDate);
@@ -320,7 +321,10 @@ Class Request {
 			if(!$this->hasStatus($domain,"expiring")) {
 				$dueDate->modify('+1 year');	
 			} 
-			$values["nextduedate"] = $dueDate->format('Y-m-d');
+			if(!isset($cfg["Sync_Due_Date"]) || $cfg["Sync_Due_Date"]=="on") {
+				syslog(LOG_INFO, "WHMCS sync due date");
+				$values["nextduedate"] = $dueDate->format('Y-m-d');	
+			} 
 			if($expDate) {
 				$values["expirydate"] = $expDate;	
 				$values["registrationdate"] = $creDate;	
