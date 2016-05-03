@@ -14,6 +14,7 @@ Class SessionCache {
 					VALUES('$account', '$sessionId') 
 					ON DUPLICATE KEY UPDATE account='$account', sessionId='$sessionId'";
 		mysql_query($query); 
+		echo mysql_error();
 		if(mysql_error()) {
 			Tools::log("Error writing session: ".mysql_error());
 		}		
@@ -24,13 +25,16 @@ Class SessionCache {
 	}
 }
 Class DomainCache {
-	public static function get() {
+	public static function get($domainName) {
 		GLOBAL $ascioDomainCache;
-		return $ascioDomainCache;
+		if(!$ascioDomainCache) $ascioDomainCache = array();
+		return $ascioDomainCache[$domainName];
 	}
 	public static function put($domain) {
 		GLOBAL $ascioDomainCache;
-		$ascioDomainCache = $domain;
+		if(!$ascioDomainCache) $ascioDomainCache = array();
+		$ascioDomainCache[$domain->DomainName];
+		$ascioDomainCache[$domain->DomainName] = $domain;
 	}
 }
 function createRequest($params) {
@@ -60,25 +64,22 @@ Class Request {
 		             'Account'=> $this->account,
 		             'Password' =>  $this->password
 		);
-		$result =  $this->sendRequest('LogIn',array('session' => $session ));		 
+		$result =  $this->sendRequest('LogIn',array('session' => $session ));
 		return $result;
 	}
 	public function request($functionName, $ascioParams)  {	
 		$sessionId = SessionCache::get($this->account);	
 		if (!$sessionId || $sessionId == "false") {		
 			$loginResult = $this->login(); 
+			var_dump($loginResult);
 			if(is_array($loginResult) && $loginResult["error"]) return $loginResult;
 			$ascioParams["sessionId"] = $loginResult->sessionId; 				
 			SessionCache::put($loginResult->sessionId, $this->account);
+			return $loginResult;
 		} else {		
 			$ascioParams["sessionId"] = $sessionId; 
 		}
-		if(is_array($loginResult) && strpos($loginResult["error"],"Invalid Session") > -1) {
-			SessionCache::clear($this->account);
-			return  $this->request($functionName, $ascioParams);		
-		} else {	
-			return $this->sendRequest($functionName,$ascioParams);			
-		}	
+		return $this->sendRequest($functionName,$ascioParams);
 	}
 	private function sendRequest($functionName,$ascioParams) {			
 		if($ascioParams->order) {
@@ -96,13 +97,20 @@ Class Request {
 			return $result;
 		} else if( $status->ResultCode==554)  {
 			$messages = "Temporary error. Please try later or contact your support.";
-		} elseif (count($status->Values->string) > 1 ){
-			$messages = join(", \r\n<br>",$status->Values->string);	
-		}  elseif ($status->ResultCode=="401" && $functionName != "LogIn") {
+		} elseif ($status->ResultCode=="401" && $functionName != "LogIn") {
 			SessionCache::clear($this->account);
+			$this->login();
+			die("clear session ".$this->account);
 			return $this->request($functionName, $ascioParams);
-		}else {
+		} elseif ($status->ResultCode=="401") {
+			die("401");
+			return array('error' => $status->Message );     
+		} else if (count($status->Values->string) > 1 ){
+			$messages = join(", \r\n<br>",$status->Values->string);	
+		}  else {
 			$messages = $status->Values->string;
+			var_dump($messages);
+			var_dump($status);
 		}		
 		$message = Tools::cleanString($messages);
 		return array('error' => $message );     
@@ -126,21 +134,19 @@ Class Request {
 		return $result;
 	}
 	public function searchDomain($params) {
-		$domain = DomainCache::get();
+		$domain = DomainCache::get($this->domainName);
 		if(isset($domain)) return $domain; 
-
 		$handle = $this->getHandle("domain",Tools::getDomainId($this->domainName));
-		if(isset($handle)) {
+		if($handle) {
 			return $this->getDomain($handle);
-		}
-		$params = $this->setParams($params);
+		}				
 		$criteria= array(
 			'Mode' => 'Strict',
 			'Clauses' => Array(
 				'Clause' => Array(
 					'Attribute' => 'DomainName', 
-					'Value' => $this->domainName , '
-					Operator' => 'Is'
+					'Value' => $this->domainName , 
+					'Operator' => 'Is'
 				)
 			)
 		);
@@ -279,7 +285,7 @@ Class Request {
 				array("hostname" => "@", "type" => "MX","address" => "mail2","priority" => 20)
 			);
 			$result = $zone->update($params);
-			echo ("Created DNS zone: ".$domain."\n");
+			Tools::log ("Created DNS zone: ".$domain."\n");
 		}
 	}
 	public function setOrderStatus($result) {
@@ -298,14 +304,17 @@ Class Request {
 			} else $this->setDomainStatus($domain);
 		}
 	}
-	public function setDomainStatus($domain) {		
+	public function getDomainStatus($domain) {		
 		if($this->hasStatus($domain,"deleted")) {
-			return $this->setStatus($domain,"Cancelled");
+			return "Cancelled";
 		}
-		if($this->hasStatus($domain,"active") || $this->hasStatus($domain,"expiring")) {
-			syslog(LOG_INFO,"Status: ".$domain->Status);
-			return $this->setStatus($domain,"Active"); 
+		if($this->hasStatus($domain,"active") || $this->hasStatus($domain,"expiring")) {			
+			return "Active"; 
 		}		
+	}
+	public function setDomainStatus($domain) {		
+		syslog(LOG_INFO,"Status: ".$domain->Status);
+		$this->setStatus($domain,$this->getDomainStatus($domain));			
 	}
 	public function setStatus($domain,$status) {	
 		$values["domain"] =  $domain->DomainName; 
@@ -532,6 +541,7 @@ Class Request {
 	protected function mapToRegistrant($params) {
 		$result =  $this->mapToContact($params,"Registrant");
 		$result["Name"] = $params["firstname"] . " " . $params["lastname"];
+		$result["Name"] = $result["Name"] ==" " ? null : $result["Name"];
 		$result["RegistrantType"] = $params["custom"]["RegistrantType"];
 		$result["VatNumber"] = $params["custom"]["VatNumber"];
 		$result["NexusCategory"] = $params["custom"]["NexusCategory"];
@@ -584,9 +594,11 @@ Class Request {
 			'TechContact' 	=>  $this->mapToTech($params), 
 			'BillingContact'=>  $this->mapToBilling($params),
 			'NameServers' 	=>  $this->mapToNameservers($params),
-			'Trademark' 	=>  $this->mapToTrademark($params),
-			'PrivacyProxy'  =>  array("Type" => $params["idprotection"] ? $proxy : "None")
+			'Trademark' 	=>  $this->mapToTrademark($params)
 		);
+		if(!($orderType == "Transfer_Domain" &! $domain["AdminContact"]["FirstName"])) {
+			$domain["PrivacyProxy"] = array("Type" => $params["idprotection"] ? $proxy : "None");
+		}
 		$order = 
 			array( 
 			'Type' => $orderType, 
@@ -675,6 +687,7 @@ Class Request {
 	}
 	public function getHandle($type,$whmcsId) {
 		$result = get_query_val("tblasciohandles","ascio_id", array("type" => $type, "whmcs_id" => $whmcsId));
+		$result = $result == ""  ? false : $result;
 		return $result;
 	}
 	public function setHandle($domain) {

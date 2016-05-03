@@ -196,15 +196,16 @@ function ascio_DeleteNameserver($params) {
     return $values;
 }
 // this function is not needed if you have polling or callbacks
+
 function ascio_Sync($params) {
 	$request = createRequest($params);
 	$domain = $request->searchDomain($params);	
+	if(!$domain) return array("error" => "Domain ".$params["sld"].".".$params["tld"]." not found.");
 	$d = new DateTime($domain->ExpDate);
 	$values["expirydate"] = $d->format("Y-m-d");
-	$values["active"] = true;
+	$values["active"] = $request->getDomainStatus($domain);
 	syslog(LOG_INFO, "Syncing ". $params["sld"].".".$params["tld"]);
 	echo "Syncing ". $params["sld"].".".$params["tld"];
-	//var_dump($values);
 	return $values;
 }
 
