@@ -20,7 +20,6 @@ Class SessionCache {
 		}		
 	}
 	public static function clear($account) {
-		syslog(LOG_INFO, "clear session");
 		SessionCache::put("false",$account);
 	}
 }
@@ -100,7 +99,6 @@ Class Request {
 		} elseif ($status->ResultCode=="401" && $functionName != "LogIn") {
 			SessionCache::clear($this->account);
 			$this->login();
-			die("clear session ".$this->account);
 			return $this->request($functionName, $ascioParams);
 		} elseif ($status->ResultCode=="401") {
 			die("401");
