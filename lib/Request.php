@@ -70,7 +70,6 @@ Class Request {
 		$sessionId = SessionCache::get($this->account);	
 		if (!$sessionId || $sessionId == "false") {		
 			$loginResult = $this->login(); 
-			var_dump($loginResult);
 			if(is_array($loginResult) && $loginResult["error"]) return $loginResult;
 			$ascioParams["sessionId"] = $loginResult->sessionId; 				
 			SessionCache::put($loginResult->sessionId, $this->account);
@@ -107,8 +106,6 @@ Class Request {
 			$messages = join(", \r\n<br>",$status->Values->string);	
 		}  else {
 			$messages = $status->Values->string;
-			var_dump($messages);
-			var_dump($status);
 		}		
 		$message = Tools::cleanString($messages);
 		return array('error' => $message );     
