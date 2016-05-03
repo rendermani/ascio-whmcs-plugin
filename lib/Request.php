@@ -324,6 +324,8 @@ Class Request {
 			$tldData = get_query_vals("tblasciotlds","Threshold",array("Tld" => $this->getTld($domain->DomainName)));
 			$dueDate = DateTime::createFromFormat(DateTime::ATOM,$domain->ExpDate."-01:00");
 			$dueDate->modify($tldData["Threshold"].' day');		
+			// this is only if the renew command doesn't exist, and the domain is not expiring. 
+			// in this case 1x paid means unexpire, then expire with the next autorenew. 			
 			if(!$this->hasStatus($domain,"expiring")) {
 				$dueDate->modify('+1 year');	
 			} 
