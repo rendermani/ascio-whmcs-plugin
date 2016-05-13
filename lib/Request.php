@@ -132,9 +132,9 @@ Class Request {
 		$domain = DomainCache::get($this->domainName);
 		if(isset($domain)) return $domain; 
 		$handle = $this->getHandle("domain",Tools::getDomainId($this->domainName));
-		if($handle) {
-			return $this->getDomain($handle);
-		}				
+		if($handle) {	
+			return  $this->getDomain($handle);		
+		}	
 		$criteria= array(
 			'Mode' => 'Strict',
 			'Clauses' => Array(
@@ -300,6 +300,7 @@ Class Request {
 		}
 	}
 	public function getDomainStatus($domain) {		
+		if($domain == NULL) return "Cancelled";
 		if($this->hasStatus($domain,"deleted")) {
 			return "Cancelled";
 		}
@@ -312,16 +313,19 @@ Class Request {
 		$this->setStatus($domain,$this->getDomainStatus($domain));			
 	}
 	public function setStatus($domain,$status) {	
-		$values["domain"] =  $domain->DomainName; 
+		$values["domain"] =  $this->params["domainname"]; 
 		if($domain->ExpDate) {
 			$expDate = $this->formatDate($domain->ExpDate);
 			$creDate = $this->formatDate($domain->CreDate);
 			$tldData = get_query_vals("tblasciotlds","Threshold",array("Tld" => $this->getTld($domain->DomainName)));
+			$result = Capsule::select("select Threshold, Renew from tblasciotlds where Tld = '".$this->getTld($domain->DomainName)."'");	
+			$hasRenew = $result->Renew == 1 ? true : false; 	
+			$threshold = $result->Threshold; 	
 			$dueDate = DateTime::createFromFormat(DateTime::ATOM,$domain->ExpDate."-01:00");
-			$dueDate->modify($tldData["Threshold"].' day');		
+			$dueDate->modify($threshold.' day');		
 			// this is only if the renew command doesn't exist, and the domain is not expiring. 
 			// in this case 1x paid means unexpire, then expire with the next autorenew. 			
-			if(!$this->hasStatus($domain,"expiring")) {
+			if(!$this->hasStatus($domain,"expiring") && $hasRenew) {
 				$dueDate->modify('+1 year');	
 			} 
 			if(!isset($this->params["Sync_Due_Date"]) || $this->params["Sync_Due_Date"]=="on") {
@@ -341,9 +345,10 @@ Class Request {
 		return strpos($domain->Status, strtoupper($search)) > -1;
 	}
 	private function getTld($domainName) {
-		$tokens = explode(".", $domainName);
+		$tokens = explode(".", $domainName);	
 		array_pop($tokens);
-		return join(".",$tokens);
+		$result = str_replace(join(".",$tokens).".","", $domainName);
+		return $result;
 	}
 	private function formatDate($xsDateTime) {
 		if($domain->ExpDate == "0001-01-01T00:00:00") return false;
