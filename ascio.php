@@ -26,6 +26,8 @@ function ascio_getConfigArray() {
 	 "Sync_Due_Date" => array( "Type" => "yesno", "Size" => "20", "Description" => "Sync the due-date with thresholds","Default" => "yes","FriendlyName" =>"Sync Due Date"),
 	 "DetailedOrderStatus" => array( "Type" => "yesno", "Size" => "20", "Description" => "Send an detailed order status to the end-customer.", "Default" => "yes","FriendlyName" =>"Detailed order status"),
 	 "AutoCreateDNS" => array( "Type" => "yesno", "Size" => "20", "Description" => "Automaticly create a zone in AscioDNS before registering and transfering a domain", "Default" => "no","FriendlyName" =>"Auto create DNS records"),
+	  "NameserverRegex" => array( "Type" => "text", "Size" => "20", "Description" => "Only create DNS Zones, when DNS server matches this expression", "Default" => "","FriendlyName" =>"Namerserver Regular Expression"),
+	  "DatalessTransfer" => array( "Type" => "yesno", "Size" => "20", "Description" => "Use dataless transfer when Possible", "Default" => "","FriendlyName" =>"Dataless Transfer"),
 	 "DNS_Default_Zone" => array( "Type" => "text", "Size" => "20", "Description" => "For AutoCreateDNS: Default IP-address for www and @","FriendlyName" =>"Default A Record"),
 	 "DNS_Default_Mailserver" => array( "Type" => "text", "Size" => "20", "Description" => "For AutoCreateDNS: Default IP-address for mx (mail-server)","FriendlyName" =>"Default MX Record"),
 	 "DNS_Default_Mailserver_2" => array( "Type" => "text", "Size" => "20", "Description" => "For AutoCreateDNS: Default IP-address for mx2 (backup mail-server)","FriendlyName" =>"Default MX Record 2"),	
@@ -199,13 +201,14 @@ function ascio_DeleteNameserver($params) {
 
 function ascio_Sync($params) {
 	$request = createRequest($params);
-	$domain = $request->searchDomain($params);	
+	$domain = $request->searchDomain($params);
+	echo "Syncing ". $params["sld"].".".$params["tld"]. " :".$domain->Status. "\n";
 	if(!$domain) return array("error" => "Domain ".$params["sld"].".".$params["tld"]." not found.");
 	$d = new DateTime($domain->ExpDate);
 	$values["expirydate"] = $d->format("Y-m-d");
 	$values["active"] = $request->getDomainStatus($domain);
 	syslog(LOG_INFO, "Syncing ". $params["sld"].".".$params["tld"]);
-	echo "Syncing ". $params["sld"].".".$params["tld"];
+	
 	return $values;
 }
 
