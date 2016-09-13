@@ -21,12 +21,15 @@ class it extends Request {
 		// 7 is for all non-italian complanies. Fix invalid user-inputs
 
 		if(($params["countrycode"] != "IT") && $contact["OrgName"]) {
-			$contact["RegistrantType"] = 7;	
+			$contact["RegistrantType"] = "7";	
 		} 
 		else {
 			$contact["RegistrantType"] 		= $map[$params["additionalfields"]["Legal Type"]];
 		}
 		$contact["RegistrantNumber"]  	= $params["additionalfields"]["Tax ID"];
+		//var_dump($contact);
+		//var_dump($params);
+		
 		return $contact;
 	}
 	protected function mapToTrademark($params) {		
