@@ -119,11 +119,11 @@ Class Request {
 			'domainHandle' => $handle
 		);
 		$result =  $this->request("GetDomain", $ascioParams); 
-
 		if($result->error) return $result;
 		else {	
 
 			$status = !$result->domain->DomainName ? NULL : $result->domain->Status;
+			
 			$this->setDomainStatus($result->domain);
 			DomainCache::put($result->domain);
 			$this->setHandle($result->domain);
@@ -310,6 +310,7 @@ Class Request {
 		}
 	}
 	public function getDomainStatus($domain) {	
+		if(!$domain) return "Cancelled";
 		//syslog(LOG_INFO,"WHMCS getDomainStatus domain ".json_encode($domain));	
 		if($this->hasStatus($domain,"deleted")) {
 			syslog(LOG_INFO,"WHMCS Domain has Status deleted: ".$domain->Status);
@@ -325,9 +326,14 @@ Class Request {
 	public function setDomainStatus($domain) {		
 		syslog(LOG_INFO,"WHMCS SetDomainStatus JSON: ".json_encode($domain));
 		syslog(LOG_INFO,"WHMCS SetDomainStatus Status: ".$domain->Status);
-		$this->setStatus($domain,$this->getDomainStatus($domain));			
+		if($domain) {
+			$this->setStatus($domain,$this->getDomainStatus($domain));				
+		} else {
+			$this->setStatus($domain,"Cancelled");	
+		}		
 	}
-	public function setStatus($domain,$status) {	
+	public function setStatus($domain,$status) {
+
 		if(!status) return false; 
 		$values["domain"] =  $domain->DomainName ? $domain->DomainName : $this->params["domainname"]; 
 		if(isset($domain->ExpDate) && $domain->ExpDate != "0001-01-01T00:00:00") {
@@ -680,7 +686,7 @@ Class Request {
 			);
 		} catch (AscioException $e) {
 			throw new AscioException($type . ", ". $e->getMessage());			
-		}		
+		}	
 		return array_merge($contactName,$contact);
 	}
 	// WHMCS has 2 contact structures. Flat and nested.
