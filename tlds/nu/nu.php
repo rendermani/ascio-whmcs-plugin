@@ -1,6 +1,6 @@
 <?php
 use Illuminate\Database\Capsule\Manager as Capsule;
-class se extends Request {	
+class nu extends Request {	
 	protected function mapToRegistrant($params) {
 		$contact = parent::mapToRegistrant($params);
 		$contact["RegistrantNumber"] = $params["additionalfields"]["Identification Number"];
