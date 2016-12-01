@@ -1,6 +1,6 @@
 <?php
 use Illuminate\Database\Capsule\Manager as Capsule;
-require("Tools.php");
+require_once("Tools.php");
 define("ASCIO_WSDL_LIVE","https://aws.ascio.com/2012/01/01/AscioService.wsdl");
 define("ASCIO_WSDL_TEST","https://awstest.ascio.com/2012/01/01/AscioService.wsdl");
 
