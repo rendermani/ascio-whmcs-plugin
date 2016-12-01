@@ -1,5 +1,6 @@
 <?php
 use Illuminate\Database\Capsule\Manager as Capsule;
+require("Tools.php");
 define("ASCIO_WSDL_LIVE","https://aws.ascio.com/2012/01/01/AscioService.wsdl");
 define("ASCIO_WSDL_TEST","https://awstest.ascio.com/2012/01/01/AscioService.wsdl");
 
@@ -340,7 +341,7 @@ Class Request {
 			$expDate = $this->formatDate($domain->ExpDate);
 			$creDate = $this->formatDate($domain->CreDate);
 			$result = Capsule::select("select Threshold, Renew from tblasciotlds where Tld = '".$this->getTld($domain->DomainName)."'")[0];	
-			$hasRenew = $result->Renew == "true" ? true : false; 	
+			$hasRenew = $result->Renew == 1 ? true : false; 	
 			$threshold = $result->Threshold; 	
 			$dueDate = DateTime::createFromFormat(DateTime::ATOM,$domain->ExpDate."-01:00");
 			$dueDate->modify($threshold.' day');		
@@ -510,9 +511,9 @@ Class Request {
 	}
 	public function renewDomain($params) {
 		$result = Capsule::select("select Threshold, Renew from tblasciotlds where Tld = '".$params["tld"]."'")[0];				
-	    $hasRenew = $result->Renew == "true" ? true : false; 	
+	    $hasRenew = $result->Renew == 1 ? true : false; 	
 		$params = $this->setParams($params);
-		if($result->Renew == "true") {
+		if($result->Renew == 1) {
 			try {
 				$ascioParams = $this->mapToOrder($params,"Renew_Domain");
 			} catch (AscioException $e) {
