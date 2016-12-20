@@ -347,7 +347,7 @@ Class Request {
 			$dueDate->modify($threshold.' day');		
 			// this is only if the renew command doesn't exist, and the domain is not expiring. 
 			// in this case 1x paid means unexpire, then expire with the next autorenew. 			
-			if(!$this->hasStatus($domain,"expiring") && $hasRenew) {
+			if(!($this->hasStatus($domain,"expiring") && $hasRenew)) {
 				$dueDate->modify('+1 year');	
 			} 
 			if(!isset($this->params["Sync_Due_Date"]) || $this->params["Sync_Due_Date"]=="on") {
