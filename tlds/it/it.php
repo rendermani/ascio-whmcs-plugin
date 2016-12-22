@@ -1,11 +1,8 @@
 <?php
 class it extends Request {	
 	public function transferDomain($params=false) {		
-		$paramsNew = array(			
-			"eppcode"   => $params["eppcode"],
-			"regperiod"  =>  $params["regperiod"],
-			"domainname" => $params["domainname"]);
-		return parent::transferDomain($paramsNew); 
+		$params["options"] = "NewRegistrant";
+		return parent::transferDomain($params); 
 	}
 	protected function mapToRegistrant($params) {
 		$contact = parent::mapToRegistrant($params);

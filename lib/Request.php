@@ -425,8 +425,7 @@ Class Request {
 		$params = $this->setParams($params);
 		try {
 			$ascioParams = $this->mapToOrder($params,"Transfer_Domain");
-			$datalessTlds = array("com","net","org","biz","info","us","cc","cn","com.cn","net.cn","org.cn","tv");
-
+			$datalessTlds = array("com","net","org","biz","info","us","cc","cn","com.cn","net.cn","org.cn","tv","it");
 			if(in_array($params["tld"], $datalessTlds) && $this->params["DatalessTransfer"]=="on") {
 				syslog(LOG_INFO,"Do dataless transfer");
 				unset($ascioParams["order"]["Domain"]["Registrant"]);
@@ -435,10 +434,13 @@ Class Request {
 				unset($ascioParams["order"]["Domain"]["BillingContact"]);
 				unset($ascioParams["order"]["Domain"]["NameServers"]);
 				unset($ascioParams["order"]["Domain"]["DnsSecKeys"]);
+				unset($ascioParams["order"]["Options"]);
 			}
 		} catch (AscioException $e) {
 			return array("error" => $e->getMessage());
 		}
+		var_dump($ascioParams);
+		die();
 		$result = $this->request("CreateOrder",$ascioParams);		
 		$this->setOrderStatus($result,"Pending");
 		return $result;
@@ -650,7 +652,8 @@ Class Request {
 			'Type' => $orderType, 
 			'TransactionComment' => "WHMCS", 
 			'Domain' => $domain,
-			'Comments'	=>	$params["userid"]
+			'Comments'	=>	$params["userid"],
+			'Options' => $params["options"]
 			); 
 		return array(
 				'sessionId' => "set-it-later",
