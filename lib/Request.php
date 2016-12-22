@@ -439,8 +439,6 @@ Class Request {
 		} catch (AscioException $e) {
 			return array("error" => $e->getMessage());
 		}
-		var_dump($ascioParams);
-		die();
 		$result = $this->request("CreateOrder",$ascioParams);		
 		$this->setOrderStatus($result,"Pending");
 		return $result;
