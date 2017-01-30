@@ -758,5 +758,22 @@ Class Request {
 		return $result; 
 	}
 
+	public function availabilityCheck($params) {
+		$domain = array($params['searchTerm']);
+			$tlds = array();
+			foreach ( $params['tldsToInclude'] as $ext ){
+				// Delete starting dot
+				$tlds[] = ltrim($ext,'.');
+			}
+                $ascioParams = array(
+                        'sessionId' => 'mySessionId',
+                        'domains'       => array('string' => $domain),
+                        'tlds'      => array('string' => $tlds),
+                        'quality'   => 'Live'
+                );
+                $result =  $this->request("AvailabilityCheck",$ascioParams,true);
+                return $result;
+	}
+
 }
 ?>
