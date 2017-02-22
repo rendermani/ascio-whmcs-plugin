@@ -8,11 +8,6 @@ class com_au extends Request {
 		}
 		$contact["RegistrantType"]   = $params["additionalfields"]["Registrant ID Type"];
 		$contact["RegistrantNumber"] = $params["additionalfields"]["Registrant ID"];
-
-		echo "<pre>";
-		var_dump($params["additionalfields"]);
-		var_dump($contact);
-		echo "</pre>";
 		return $contact;
 	}
 	public function registerDomain ($params=false) {
@@ -20,6 +15,11 @@ class com_au extends Request {
 		return parent::registerDomain($params); 
 		
 	}
+	public function transferDomain($params=false) {
+		if($params["regperiod"] == 1) $params["regperiod"] = 0 ;
+		else if($params["regperiod "] > 1 ) return array("error" => "Invalid RegPeriod. Allowed: 1");
+		return parent::transferDomain($params);
+	}	
 	protected function mapToTrademark ($params) {
 		$typeMap = array(
 			"Australian Company Number (ACN)" 	=> "ACN",
@@ -41,8 +41,6 @@ class com_au extends Request {
 			$tm["Number"] =  $params["additionalfields"]["Eligibility ID"];	
 			$tm["Type"]	  =  $typeMap[ $params["additionalfields"]["Eligibility ID Type"]];
 		}	
-		echo "trademark";
-		var_dump($tm);
 		return $tm;	
 	}
 }
