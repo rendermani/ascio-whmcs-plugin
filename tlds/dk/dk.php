@@ -28,7 +28,7 @@ class dk extends Request {
 		$params = $this->setParams($params);
 		try {
 			$ascioParams = parent::mapToOrder($params,"Expire_Domain");
-			$ascioParams["order"]["Comments"]="Unconfirmed"
+			$ascioParams["order"]["Comments"]="Unconfirmed";
 		} catch (AscioException $e) {
 			return array("error" => $e->getMessage());
 		}
