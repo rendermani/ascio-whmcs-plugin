@@ -22,10 +22,18 @@ class dk extends Request {
 		return $contact;
 	}
 	public function renewDomain($params) {
-		array("error" => "This TLD cannot be renewed or expired. Please contact support for further information.");		
+		array("error" => "This TLD is renewed through DK-Hostmaster. Please contact the support for further questions.");		
 	}
 	public function expireDomain($params) {
-		array("error" => "This TLD cannot be renewed or expired. Please contact support for further information.");			
+		$params = $this->setParams($params);
+		try {
+			$ascioParams = parent::mapToOrder($params,"Expire_Domain");
+			$ascioParams["order"]["Comments"]="Unconfirmed"
+		} catch (AscioException $e) {
+			return array("error" => $e->getMessage());
+		}
+		$result =  $this->request("CreateOrder",$ascioParams);
+		return $result;
 	}	
 
 }
