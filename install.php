@@ -1,6 +1,6 @@
 <?php
 require_once("../../../init.php");
-require("lib/Tools.php");
+require_once("lib/Tools.php");
 error_reporting(E_ALL);
 ini_set('error_reporting', E_ERROR);
 ini_set('display_errors', "on");
