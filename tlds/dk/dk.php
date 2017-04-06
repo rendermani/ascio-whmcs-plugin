@@ -9,9 +9,10 @@ class dk extends Request {
 		} else {
 			$contact["RegistrantType"] = "P";
 		}
-		return $contact;
+		$contact["Details"] = $params["additionalfields"]["Registrant DK-Hostmaster-ID"];
+		return $contact;		
 	}
-		protected function mapToAdmin($params) {
+	protected function mapToAdmin($params) {
 		$contact = parent::mapToAdmin($params);
 		$contact["OrganisationNumber"] = $params["additionalfields"]["Administrator CVR nr."];
 		if($contact["OrgName"]) {
