@@ -4,10 +4,7 @@ class sg extends Request {
 		$ascioParams = parent::mapToOrder($params,$orderType);
 		if($params["additionalfields"]["Local Presence"]=="on"){
 			$ascioParams["order"]["LocalPresence"] = "LocalPresenceAdmin";		
-		} else {
-			var_dump($params["additionalfields"]);
-			die();	
-		}
+		} 
 		
 		return $ascioParams;
 	}
