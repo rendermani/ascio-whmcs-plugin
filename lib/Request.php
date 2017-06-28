@@ -2,8 +2,7 @@
 use Illuminate\Database\Capsule\Manager as Capsule;
 require_once("Tools.php");
 define("ASCIO_WSDL_LIVE","https://aws.ascio.com/2012/01/01/AscioService.wsdl");
-define("ASCIO_WSDL_TEST","https://awstest.ascio.com/2012/01/01/AscioService.wsdl");
-
+define("ASCIO_WSDL_TEST","https://aws.ascio.info/debug/v2-wsdl.xq?token=d258d53c-ccae-4f71-9000-4fab5339fe70");
 
 Class SessionCache {
 	public static function get($account) {
@@ -189,7 +188,15 @@ Class Request {
 		$domainName = $order->order->Domain->DomainName;
 		$domainId   = Tools::getDomainId($domainName);
 		if(!isset($domainId)) {
-			die("Domain ".$domainName." is not in this WHMCS database");
+			 $ascioParams = array(
+				'sessionId' => 'mySessionId', 
+				'msgId' => $messageId
+			);			
+			if($orderStatus == "Completed" && ($orderType=="Register_Domain" || $orderType =="Transfer_Domain")) {
+				$this->expireDommain($this->params);
+			}
+			$this->request("AckMessage", $ascioParams);
+			return;	
 		}
 		$domain = $this->getDomain($order->order->Domain->DomainHandle);
 		$orderType = $order->order->Type;
@@ -250,7 +257,7 @@ Class Request {
 		if(
 			$orderStatus == "Completed" || 
 			$orderStatus == "Failed" || 
-			$orderStatus == "Pending End User Action" || 
+			$orderStatus == "Pending_End_User_Action" || 
 			$orderStatus == "Pending_Documentation"
 			) {
 			$values = array();		
@@ -349,7 +356,7 @@ Class Request {
 			// in this case 1x paid means unexpire, then expire with the next autorenew. 			
 			if(!($this->hasStatus($domain,"expiring") && $hasRenew)) {
 				$dueDate->modify('+1 year');	
-			} 
+			}
 			if(!isset($this->params["Sync_Due_Date"]) || $this->params["Sync_Due_Date"]=="on") {
 				syslog(LOG_INFO, "WHMCS sync due date");
 				$values["nextduedate"] = $dueDate->format('Y-m-d');	
@@ -560,8 +567,9 @@ Class Request {
 	}	
 	public function saveRegistrarLock($params,$noRenewTld) {
 		syslog("LOG_INFO", "WHMCS saveRegistrarLock");
+
 		$params = $this->setParams($params);
-		$lockstatus = $params["lockenabled"] ? "Lock" : "UnLock";
+		$lockstatus = $params["lockenabled"]=="unlocked" ? "UnLock" : "Lock";
 		$lockParams = $this->mapToOrder($params,"Change_Locks");
 		$lockParams["order"]["Domain"]["TransferLock"] = $lockstatus;
 		return $this->request("CreateOrder",$lockParams);
