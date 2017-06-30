@@ -1,7 +1,7 @@
 <?php
  require_once("lib/Request.php");
  function hook_set_domain_status($vars) {  
-	if(strpos($vars["params"]["registrar"], "ascio") == -1) return;	
+	if(strpos($vars["params"]["registrar"], "ascio") == false) return;	
 	$request = new Request(array('Account'=> $vars["params"]["Username"],'Password' => $vars["params"]["Password"]));
 	$domain = $vars["params"]["sld"].".".$vars["params"]["tld"];
 	logActivity("Calling hook for domain ".$domain);
