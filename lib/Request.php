@@ -6,7 +6,11 @@ define("ASCIO_WSDL_TEST","https://aws.ascio.info/debug/v2-wsdl.xq?token=d258d53c
 
 Class SessionCache {
 	public static function get($account) {
-		$result = Capsule::select("select sessionId from mod_asciosession where account='$account'");
+		try {
+			$result = Capsule::select("select sessionId from mod_asciosession where account='$account'");
+		} catch (Exception $e) {
+			logActivity("Error session-cache query: ". $e);	
+		}
 		return  $result[0]->sessionId;
 	}
 	public static function put($sessionId,$account) {
@@ -64,6 +68,7 @@ Class Request {
 		             'Password' =>  $this->password
 		);
 		$result =  $this->sendRequest('LogIn',array('session' => $session ));
+		logActivity("login-result: ".json_encode($result));
 		SessionCache::put($result->sessionId,$this->account);
 		return $result;
 	}
@@ -84,7 +89,7 @@ Class Request {
 		if($ascioParams->order) {
 			$orderType = " ".$ascioParams->order->Type ." "; 
 		} else $orderType ="";
-		syslog(LOG_INFO, "WHMCS Request:".$functionName .$orderType."(". $this->account .")" );
+		logActivity("WHMCS Request:".$functionName .$orderType."(". $this->account .")" );
 		$wsdl = $this->params["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;
         $client = new SoapClient($wsdl,array( "trace" => 1));
         $result = $client->__call($functionName, array('parameters' => $ascioParams));    
@@ -92,14 +97,14 @@ Class Request {
 		$status = $result->$resultName;
 		$result->status = $status;
 		$ot = $orderType ? " [".$orderType."] " : ""; 
-		syslog(LOG_INFO, "WHMCS ".$functionName  .$ot.$status->Values->string . " ResultCode:" . $status->ResultCode . " ResultMessage: ".$status->Message);
+		logActivity("WHMCS ".$functionName  .$ot.$status->Values->string . " ResultCode:" . $status->ResultCode . " ResultMessage: ".$status->Message);
 		if ( $status->ResultCode==200) {
 			return $result;
 		} else if( $status->ResultCode==554)  {
 			$messages = "Temporary error. Please try later or contact your support.";
 		} elseif ($status->ResultCode==401 && $functionName != "LogIn") {
 			SessionCache::clear($this->account);
-			syslog(LOG_INFO, "WHMCS Invalid Session, redoing Login");
+			logActivity("WHMCS Invalid Session, redoing Login");
 			$this->login();
 			return $this->request($functionName, $ascioParams);
 		} elseif ($status->ResultCode==401) {
@@ -206,7 +211,7 @@ Class Request {
 		$msgPart = "Domain (". $domainId . "): ".$domainName;
 
 		//$whmcsStatus = $this->setDomainStatus($domain);
-		syslog(LOG_INFO,"WHMCS getCallbackData -> setOrderStatus");
+		logActivity("WHMCS getCallbackData -> setOrderStatus");
 		$whmcsStatus = $this->setOrderStatus($order);
 		if ($orderStatus=="Completed") {
 			if(
@@ -283,7 +288,7 @@ Class Request {
 	}
 	public function autoCreateZone($domain) {
 		$params = $this->setParams();		
-		syslog(LOG_INFO, "WHMCS Creating DNS zone ".$domain);	
+		logActivity("WHMCS Creating DNS zone ".$domain);	
 		if($this->params["AutoCreateDNS"]=="on") {
 			$dns = $this->params["DNS_Default_Zone"];
 			$mx1 = $this->params["DNS_Default_Mailserver"];
@@ -306,7 +311,7 @@ Class Request {
 		$type = $result->order->Type;
 		$order = $result->order;
 		$pending =  strpos($order->Status, "Pending") > -1 || strpos($order->Status, "NotSet") > -1;
-		syslog(LOG_INFO,"WHMCS SetOrderStatus, order->Status: ".$order->Status);
+		logActivity("WHMCS SetOrderStatus, order->Status: ".$order->Status);
 		if($type == "Transfer_Domain" && $pending) {
 			return $this->setStatus($order->Domain,"Pending Transfer");
 		}
@@ -319,21 +324,24 @@ Class Request {
 	}
 	public function getDomainStatus($domain) {	
 		if(!$domain) return "Cancelled";
-		//syslog(LOG_INFO,"WHMCS getDomainStatus domain ".json_encode($domain));	
+		//logActivity("WHMCS getDomainStatus domain ".json_encode($domain));	
 		if($this->hasStatus($domain,"deleted")) {
-			syslog(LOG_INFO,"WHMCS Domain has Status deleted: ".$domain->Status);
+			logActivity("WHMCS Domain has Status deleted: ".$domain->Status);
 			return "Cancelled";
 		}
-		if($this->hasStatus($domain,"active") || $this->hasStatus($domain,"expiring") || $this->hasStatus($domain,"parked")) {			
+		if(
+			$this->hasStatus($domain,"active") || 
+			$this->hasStatus($domain,"expiring") || 
+			$this->hasStatus($domain,"lock")) {			
 			return "Active"; 
 		}
-		syslog(LOG_INFO,"WHMCS Invalid Status: ".$domain->Status);		
+		logActivity("WHMCS Invalid Status: ".$domain->Status);		
 		return false;
 		
 	}
 	public function setDomainStatus($domain) {		
-		syslog(LOG_INFO,"WHMCS SetDomainStatus JSON: ".json_encode($domain));
-		syslog(LOG_INFO,"WHMCS SetDomainStatus Status: ".$domain->Status);
+		logActivity("WHMCS SetDomainStatus JSON: ".json_encode($domain));
+		logActivity("WHMCS SetDomainStatus Status: ".$domain->Status);
 		if($domain) {
 			$this->setStatus($domain,$this->getDomainStatus($domain));				
 		} else {
@@ -358,7 +366,7 @@ Class Request {
 				$dueDate->modify('+1 year');	
 			}
 			if(!isset($this->params["Sync_Due_Date"]) || $this->params["Sync_Due_Date"]=="on") {
-				syslog(LOG_INFO, "WHMCS sync due date");
+				logActivity("WHMCS sync due date");
 				$values["nextduedate"] = $dueDate->format('Y-m-d');	
 			} 
 			if($expDate) {
@@ -367,11 +375,11 @@ Class Request {
 			}
 		}
 		$values ["status"] = $status;
-		syslog(LOG_INFO, "WHMCS setStatus: ".json_encode($values));
+		logActivity("WHMCS setStatus: ".json_encode($values));
 		$results = localAPI("updateclientdomain",$values,Tools::getApiUser()); 	
-		syslog(LOG_INFO, "WHMCS setStatus result: ".json_encode($results));
+		logActivity("WHMCS setStatus result: ".json_encode($results));
 
-		syslog(LOG_INFO, "Set new WHMCS status for ".$domain->DomainName. ": ".$status.", ".$expDate);
+		logActivity("Set new WHMCS status for ".$domain->DomainName. ": ".$status.", ".$expDate);
 	}	
 	protected function hasStatus($domain,$search) {
 		return strpos($domain->Status, strtoupper($search)) > -1;
@@ -434,7 +442,7 @@ Class Request {
 			$ascioParams = $this->mapToOrder($params,"Transfer_Domain");
 			$datalessTlds = array("com","net","org","biz","info","us","cc","cn","com.cn","net.cn","org.cn","tv","it");
 			if(in_array($params["tld"], $datalessTlds) && $this->params["DatalessTransfer"]=="on") {
-				syslog(LOG_INFO,"Do dataless transfer");
+				logActivity("WHMCS: Do dataless transfer");
 				unset($ascioParams["order"]["Domain"]["Registrant"]);
 				unset($ascioParams["order"]["Domain"]["AdminContact"]);
 				unset($ascioParams["order"]["Domain"]["TechContact"]);
@@ -478,7 +486,7 @@ Class Request {
 		$updateTech = Tools::compareContact($newTech,$old->TechContact);	
 
 		if($updateRegistrant) {
-			syslog(LOG_INFO,"WHMCS Update Registrant: ".$registrantResult);
+			logActivity("WHMCS Update Registrant: ".$registrantResult);
 			try {
 				$ascioParams = $this->mapToOrder($params,$updateRegistrant);		
 			} catch (AscioException $e) {
@@ -487,26 +495,26 @@ Class Request {
 			$ascioParams["order"]["Domain"]["Registrant"] = $newRegistrant;
 			// Do the Adminchange within the owner-change
 			if($updateAdmin && $updateRegistrant=="Owner_Change") {
-				syslog(LOG_INFO,"WHMCS Owner_Change + Admin_Change");
+				logActivity("WHMCS Owner_Change + Admin_Change");
 				$ascioParams["order"]["Domain"]["AdminContact"] = $newAdmin;
 			}
 			$registrantResult = $this->request("CreateOrder",$ascioParams);		
 		} 
 		if($updateTech || $updateBilling || ($updateAdmin && $updateRegistrant!="Owner_Change")) {
-			syslog(LOG_INFO,"WHMCS Contact_Update");
+			logActivity("WHMCS Contact_Update");
 			try {
 				$ascioParams = $this->mapToOrder($params,"Contact_Update");		
 			} catch (AscioException $e) {
 				return array("error" => $e->getMessage());
 			}
 			if($updateAdmin) {
-				syslog(LOG_INFO,"WHMCS Update Tech");
+				logActivity("WHMCS Update Tech");
 				$ascioParams["order"]["Domain"]["AdminContact"] = $newAdmin;
 			} else {
 				$ascioParams["order"]["Domain"]["AdminContact"] = $old->AdminContact;
 			}
 			if($updateTech) {
-				syslog(LOG_INFO,"WHMCS Update Tech");
+				logActivity("WHMCS Update Tech");
 				$ascioParams["order"]["Domain"]["TechContact"] = $newTech;
 			} else {
 				$ascioParams["order"]["Domain"]["TechContact"] = $old->TechContact;
@@ -566,7 +574,7 @@ Class Request {
 		return $result;
 	}	
 	public function saveRegistrarLock($params,$noRenewTld) {
-		syslog("LOG_INFO", "WHMCS saveRegistrarLock");
+		logActivity( "WHMCS saveRegistrarLock");
 
 		$params = $this->setParams($params);
 		$lockstatus = $params["lockenabled"]=="unlocked" ? "UnLock" : "Lock";
