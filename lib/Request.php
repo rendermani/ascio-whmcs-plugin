@@ -228,7 +228,7 @@ Class Request {
 		Tools::addNote($domainName, $order->order->Type. ": ".$orderStatus . $errors);
 		$this->ackMessage($messageId,$order,$domain);
 		$this->sendStatus($order,$domainId,$orderStatus,$errors); 
-		$this->sendAuthCode($order->order,$domainId);
+		//$this->sendAuthCode($order->order,$domainId);
 		$this->expireAfterRenew($order,$domain);				
 	}
 	protected function expireAfterRenew($order,$domain) {
