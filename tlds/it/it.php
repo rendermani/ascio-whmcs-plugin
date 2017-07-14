@@ -26,13 +26,15 @@ class it extends Request {
 		$contact["RegistrantNumber"]  	= $params["additionalfields"]["Tax ID"];
 		//var_dump($contact);
 		//var_dump($params);
-		
+		if($contact["RegistrantType"]==1) {
+			unset($contact["OrgName"]);
+		}
 		return $contact;
 	}
 	protected function mapToTrademark($params) {		
 		// If the country is non italian, state is not needed. Just set any country. Won't be in the Whois
 		if($params["additionalfields"]["Legal Type"]== "Italian and foreign natural persons") {
-			return array ("Country" => "DK");
+			return array ("Country" => $params["additionalfields"]["Birth country"]);
 		} 
 	}	
 	public function renewDomain($params) {
