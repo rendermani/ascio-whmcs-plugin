@@ -12,6 +12,9 @@
 //
 //  WHMCS functions
 //
+use WHMCS\Domains\DomainLookup\ResultsList;
+use WHMCS\Domains\DomainLookup\SearchResult;
+
 require_once("lib/Tools.php");
 require_once("lib/Request.php");
 require_once("lib/DnsService.php");
@@ -210,6 +213,43 @@ function ascio_Sync($params) {
 	syslog(LOG_INFO, "Syncing ". $params["sld"].".".$params["tld"]);
 	
 	return $values;
+}
+
+function ascio_CheckAvailability($params) {
+	$request = createRequest($params);
+	$lookupResults = new ResultsList();
+	try {
+
+		$result = $request->availabilityCheck($params);
+		if ($result->AvailabilityCheckResult->ResultCode == '200') {
+			if (isset($result->results->AvailabilityCheckResult)) {
+				$availCheckResult = $result->results->AvailabilityCheckResult;
+				$tokens = explode(".",$availCheckResult->DomainName);
+				$sld = array_shift($tokens);
+				$tld = join(".",$tokens);
+				$searchResult = new SearchResult($sld, $tld);
+				switch($availCheckResult->StatusCode) {
+					// Domain Available
+					case "200":
+						$status = SearchResult::STATUS_NOT_REGISTERED;
+						break;
+					// Domain Unavailable
+					case "201":
+						$status = SearchResult::STATUS_REGISTERED;
+						break;
+					// TODO: Add more result codes
+					default:
+						$status = SearchResult::STATUS_REGISTERED;
+						break;
+				}
+				$searchResult->setStatus($status);
+				$lookupResults->append($searchResult);
+			}
+		}
+	} catch(Exception $e) {
+		echo $e->getMessage();
+	}
+	return $lookupResults;
 }
 
 ?>
