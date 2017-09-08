@@ -2,8 +2,7 @@
 use Illuminate\Database\Capsule\Manager as Capsule;
 require_once("Tools.php");
 define("ASCIO_WSDL_LIVE","https://aws.ascio.com/2012/01/01/AscioService.wsdl");
-define("ASCIO_WSDL_TEST","https://aws.ascio.info/debug/v2-wsdl.xq?token=d258d53c-ccae-4f71-9000-4fab5339fe70");
-
+define("ASCIO_WSDL_TEST","https://aws.demo.ascio.com/2012/01/01/AscioService.wsdl");
 Class SessionCache {
 	public static function get($account) {
 		try {
@@ -58,7 +57,6 @@ Class Request {
 	var $password; 
 	var $params;
 	var $domain;
-
 	public function __construct($params) {
 		$this->setParams($params);
 	}
@@ -126,7 +124,6 @@ Class Request {
 		$result =  $this->request("GetDomain", $ascioParams); 
 		if($result->error) return $result;
 		else {	
-
 			$status = !$result->domain->DomainName ? NULL : $result->domain->Status;
 			
 			$this->setDomainStatus($result->domain);
@@ -209,7 +206,6 @@ Class Request {
 		// External WHMCS API: Set Status
 		// External WHMCS API: Send Mail
 		$msgPart = "Domain (". $domainId . "): ".$domainName;
-
 		//$whmcsStatus = $this->setDomainStatus($domain);
 		logActivity("WHMCS getCallbackData -> setOrderStatus");
 		$whmcsStatus = $this->setOrderStatus($order);
@@ -315,7 +311,6 @@ Class Request {
 		if($type == "Transfer_Domain" && $pending) {
 			return $this->setStatus($order->Domain,"Pending Transfer");
 		}
-
 		if($type == "Register_Domain" || $type =="Transfer_Domain") {			
 			if($pending) {		
 				$this->setStatus($order->Domain,"Pending");
@@ -335,6 +330,11 @@ Class Request {
 			$this->hasStatus($domain,"lock")) {			
 			return "Active"; 
 		}
+		if(
+			$this->hasStatus($domain,"pending")
+		){	
+			return "Pending"; 
+		}
 		logActivity("WHMCS Invalid Status: ".$domain->Status);		
 		return false;
 		
@@ -343,13 +343,14 @@ Class Request {
 		logActivity("WHMCS SetDomainStatus JSON: ".json_encode($domain));
 		logActivity("WHMCS SetDomainStatus Status: ".$domain->Status);
 		if($domain) {
-			$this->setStatus($domain,$this->getDomainStatus($domain));				
+			if($this->getDomainStatus($domain)) {				
+				$this->setStatus($domain,$this->getDomainStatus($domain));				
+			}
 		} else {
 			$this->setStatus($domain,"Cancelled");	
 		}		
 	}
 	public function setStatus($domain,$status) {
-
 		if(!status) return false; 
 		$values["domain"] =  $domain->DomainName ? $domain->DomainName : $this->params["domainname"]; 
 		if(isset($domain->ExpDate) && $domain->ExpDate != "0001-01-01T00:00:00") {
@@ -378,7 +379,6 @@ Class Request {
 		logActivity("WHMCS setStatus: ".json_encode($values));
 		$results = localAPI("updateclientdomain",$values,Tools::getApiUser()); 	
 		logActivity("WHMCS setStatus result: ".json_encode($results));
-
 		logActivity("Set new WHMCS status for ".$domain->DomainName. ": ".$status.", ".$expDate);
 	}	
 	protected function hasStatus($domain,$search) {
@@ -406,7 +406,6 @@ Class Request {
 		$result =  $this->request("GetOrder", $ascioParams,true); 
 		return $result;
 	}
-
 	public function poll() {
 		$ascioParams = array(
 			'sessionId' => 'mySessionId',
@@ -484,7 +483,6 @@ Class Request {
 		$updateRegistrant = Tools::compareRegistrant($newRegistrant,$old->Registrant);
 		$updateAdmin = Tools::compareContact($newAdmin,$old->AdminContact);
 		$updateTech = Tools::compareContact($newTech,$old->TechContact);	
-
 		if($updateRegistrant) {
 			logActivity("WHMCS Update Registrant: ".$registrantResult);
 			try {
@@ -575,7 +573,6 @@ Class Request {
 	}	
 	public function saveRegistrarLock($params,$noRenewTld) {
 		logActivity( "WHMCS saveRegistrarLock");
-
 		$params = $this->setParams($params);
 		$lockstatus = $params["lockenabled"]=="unlocked" ? "UnLock" : "Lock";
 		$lockParams = $this->mapToOrder($params,"Change_Locks");
@@ -643,7 +640,6 @@ Class Request {
 		}
 		$params = $this->setParams($params);
 		$domainName = $params["domainname"];
-
 		$proxy = $params["Proxy_Lite"] == "on" ? "Privacy" : "Proxy";
 		$domain = array( 
 			'DomainName' => $domainName,
@@ -773,6 +769,5 @@ Class Request {
 		}		
 		return $result; 
 	}
-
 }
 ?>
