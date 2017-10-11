@@ -115,11 +115,8 @@ function ascio_GetDNS($params) {
 	return $result;
 }
 function ascio_SaveDNS($params) {		
-
 	$zone = new DnsZone($params);
 	$result = $zone->update($params);
-	var_dump($result);
-
 }
 function ascio_RegisterDomain($params) {
 	$request = createRequest($params);
