@@ -101,10 +101,8 @@ class DnsZone {
 
 		$result = $this->dnsService->createRecord($createRecord);	
 		if($result->StatusCode != 200 ) {
-				Tools:log($result->StatusMessage);				
+				Tools:log($result->StatusMessage);
 		}
-		var_dump($result);
-		die("result");
 		return $result;
 	}
 	private function createZone($records) {		
