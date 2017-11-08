@@ -21,7 +21,7 @@ class DnsZone {
 		$result = $this->dnsService->GetZone($zone);	
 		if($result->GetZoneResult->StatusCode == 404) return false;	
 		$this->records = array();
-		$usedTypes = array("A","CNAME","MX","AAAA","TXT");
+		$usedTypes = array("A","CNAME","MX","AAAA","TXT","WebForward");
 		foreach ($result->zone->Records->Record as $key => $record) {
 			if(!in_array(get_class($record), $usedTypes)) continue;
 			$this->records[] = $record;
@@ -86,12 +86,14 @@ class DnsZone {
 	}
 	private function createRecord($record) {
 		if(!$record["address"]) return ;
-
-		$type =  $record["type"];
+		$type =  $record["type"] == "URL" ? "WebForward" : $record["type"];		
 		$newRecord = new $type();	
 		$newRecord->Source 	= $this->addZonename($record["hostname"]);
 		$newRecord->Target 	= $this->addZonename($record["address"]);
 		$newRecord->Priority 	= $record["priority"];
+		if($record["type"] == "URL") {
+			$newRecord->RedirectionType ="Permanent";		
+		}
 		$createRecord = new CreateRecord();
 		$createRecord->zoneName = $this->name;
 		$createRecord->record = $newRecord;
@@ -99,8 +101,10 @@ class DnsZone {
 
 		$result = $this->dnsService->createRecord($createRecord);	
 		if($result->StatusCode != 200 ) {
-				Tools:log($result->StatusMessage);
+				Tools:log($result->StatusMessage);				
 		}
+		var_dump($result);
+		die("result");
 		return $result;
 	}
 	private function createZone($records) {		
