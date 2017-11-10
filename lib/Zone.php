@@ -138,6 +138,7 @@ class DnsZone {
 		foreach ($result as $key => $record) {
 			$source = $this->removeZonename($record->Source);
 			$target = $this->removeZonename($record->Target);
+			
 			if(get_class($record)=="MX") {
 				$records[] = 		
 				array( 
@@ -146,6 +147,13 @@ class DnsZone {
 					"address" 	=> $target, 
 					"priority" 	=> $record->Priority 
 				);
+			} elseif (get_class($record)=="WebForward") {
+			  	$records[] = 		
+					array( 
+						"hostname" 	=> $source, 
+						"type" 		=>  "URL" ,
+						"address" 	=> $target
+					);	
 			} else {
 				$records[] = 		
 				array( 
