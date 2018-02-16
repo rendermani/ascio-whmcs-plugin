@@ -66,7 +66,6 @@ Class Request {
 		             'Password' =>  $this->password
 		);
 		$result =  $this->sendRequest('LogIn',array('session' => $session ));
-		logActivity("login-result: ".json_encode($result));
 		SessionCache::put($result->sessionId,$this->account);
 		return $result;
 	}
@@ -87,7 +86,6 @@ Class Request {
 		if($ascioParams->order) {
 			$orderType = " ".$ascioParams->order->Type ." "; 
 		} else $orderType ="";
-		logActivity("WHMCS Request:".$functionName .$orderType."(". $this->account .")" );
 		$wsdl = $this->params["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;
         $client = new SoapClient($wsdl,array( "trace" => 1));
         $result = $client->__call($functionName, array('parameters' => $ascioParams));    
@@ -100,13 +98,13 @@ Class Request {
 			return $result;
 		} else if( $status->ResultCode==554)  {
 			$messages = "Temporary error. Please try later or contact your support.";
-		} elseif ($status->ResultCode==401 && $functionName != "LogIn") {
+		} elseif ($status->ResultCode==401 && $functionName != "LogIn" && $status->Values->string=="Invalid Session") {
 			SessionCache::clear($this->account);
-			logActivity("WHMCS Invalid Session, redoing Login");
 			$this->login();
 			return $this->request($functionName, $ascioParams);
 		} elseif ($status->ResultCode==401) {
-			die("401");
+			logActivity("Ascio registrar plugin settings - Login failed, invalid account or password: ".$this->account);
+			die("Ascio registrar plugin settings - Login failed, invalid account or password: ".$this->account);
 			return array('error' => $status->Message );     
 		} else if (count($status->Values->string) > 1 ){
 			$messages = join(", \r\n<br>",$status->Values->string);	
@@ -195,6 +193,7 @@ Class Request {
 				'msgId' => $messageId
 			);			
 			if($orderStatus == "Completed" && ($orderType=="Register_Domain" || $orderType =="Transfer_Domain")) {
+				//$this->deleteOldHandles($domainName);
 				$this->expireDommain($this->params);
 			}
 			$this->request("AckMessage", $ascioParams);
@@ -307,7 +306,6 @@ Class Request {
 		$type = $result->order->Type;
 		$order = $result->order;
 		$pending =  strpos($order->Status, "Pending") > -1 || strpos($order->Status, "NotSet") > -1;
-		logActivity("WHMCS SetOrderStatus, order->Status: ".$order->Status);
 		if($type == "Transfer_Domain" && $pending) {
 			return $this->setStatus($order->Domain,"Pending Transfer");
 		}
@@ -319,7 +317,6 @@ Class Request {
 	}
 	public function getDomainStatus($domain) {	
 		if(!$domain) return "Cancelled";
-		//logActivity("WHMCS getDomainStatus domain ".json_encode($domain));	
 		if($this->hasStatus($domain,"deleted")) {
 			logActivity("WHMCS Domain has Status deleted: ".$domain->Status);
 			return "Cancelled";
@@ -340,8 +337,6 @@ Class Request {
 		
 	}
 	public function setDomainStatus($domain) {		
-		logActivity("WHMCS SetDomainStatus JSON: ".json_encode($domain));
-		logActivity("WHMCS SetDomainStatus Status: ".$domain->Status);
 		if($domain) {
 			if($this->getDomainStatus($domain)) {				
 				$this->setStatus($domain,$this->getDomainStatus($domain));				
@@ -378,8 +373,6 @@ Class Request {
 		$values ["status"] = $status;
 		logActivity("WHMCS setStatus: ".json_encode($values));
 		$results = localAPI("updateclientdomain",$values,Tools::getApiUser()); 	
-		logActivity("WHMCS setStatus result: ".json_encode($results));
-		logActivity("Set new WHMCS status for ".$domain->DomainName. ": ".$status.", ".$expDate);
 	}	
 	protected function hasStatus($domain,$search) {
 		return strpos($domain->Status, strtoupper($search)) > -1;
@@ -643,7 +636,7 @@ Class Request {
 		$proxy = $params["Proxy_Lite"] == "on" ? "Privacy" : "Proxy";
 		$domain = array( 
 			'DomainName' => $domainName,
-			'RegPeriod' =>  $params["original"]["regperiod"],
+			'RegPeriod' =>  $params["regperiod"],
 			'AuthInfo'	=> 	$params["eppcode"],
 			'DomainPurpose' =>  $params["Application Purpose"],
 			'Comment'		=>  $params["Comment"],
@@ -749,6 +742,10 @@ Class Request {
 		$result = $result == ""  ? false : $result;
 		return $result;
 	}
+	public function getHandlesByDomain($domainName) {
+		$result = Capsule::select('select tblasciohandles.ascio_id from tblasciohandles inner join tbldomains on tblasciohandles.whmcs_id = tbldomains.id where domain="'.$domainName.'"');
+		return $result;
+	}
 	public function setHandle($domain) {
 		$this->storeHandle("domain",Tools::getDomainId($domain->DomainName),$domain->DomainHandle,$domain->DomainName);
 		/*
@@ -768,6 +765,12 @@ Class Request {
 			$result = update_query("tblasciohandles",$query,array("whmcs_id" => $whmcsId,"type" => $type));
 		}		
 		return $result; 
+	}
+	public function deleteOldHandles($domainName) {
+		foreach($this->getHandlesByDomain($domainName) as $key => $ascioId)  {
+				Capsule::table('tblasciohandles')->where('ascio_id','=',$ascioId)->delete();
+				logActivity("deleteHandle ". $ascioId . " - domain:".$domainName );	
+		}			
 	}
 }
 ?>
