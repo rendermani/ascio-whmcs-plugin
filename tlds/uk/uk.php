@@ -1,5 +1,5 @@
 <?php
-class co_uk extends Request {	
+class uk extends Request {	
 	protected function mapToRegistrant($params) {
 		$contact = parent::mapToRegistrant($params);
 		$map = array(
