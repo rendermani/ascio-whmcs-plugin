@@ -17,7 +17,7 @@ class uk extends Request {
 		$isCompany = isset($contact["OrgName"]);
 
 		$contact["RegistrantType"] 			= $map[$params["additionalfields"]["Legal Type"]];
-		$contact["RegistrantNumber"] 		= $map[$params["additionalfields"]["Company ID Number"]];
+		$contact["RegistrantNumber"] 		= $params["additionalfields"]["Company ID Number"];
 		if(($contact["CountryCode"] != "GB") &! $isCompany) $contact["RegistrantType"] ="FIND";
 		return $contact;
 	}
