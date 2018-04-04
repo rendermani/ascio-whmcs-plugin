@@ -76,14 +76,13 @@ Class Request {
 			if(is_array($loginResult) && $loginResult["error"]) return $loginResult;
 			$ascioParams["sessionId"] = $loginResult->sessionId; 				
 			SessionCache::put($loginResult->sessionId, $this->account);
-			return $loginResult;
 		} else {		
 			$ascioParams["sessionId"] = $sessionId; 
 		}
 		return $this->sendRequest($functionName,$ascioParams);
 	}
 	private function sendRequest($functionName,$ascioParams) {			
-		if($ascioParams->order) {
+		if(isset($ascioParams->order)) {
 			$orderType = " ".$ascioParams->order->Type ." "; 
 		} else $orderType ="";
 		$wsdl = $this->params["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;
@@ -93,7 +92,7 @@ Class Request {
 		$status = $result->$resultName;
 		$result->status = $status;
 		$ot = $orderType ? " [".$orderType."] " : ""; 
-		logActivity("WHMCS ".$functionName  .$ot.$status->Values->string . " ResultCode:" . $status->ResultCode . " ResultMessage: ".$status->Message);
+		logActivity("WHMCS ".$functionName  .$ot. " ResultCode:" . $status->ResultCode . " ResultMessage: ".$status->Message);
 		if ( $status->ResultCode==200) {
 			return $result;
 		} else if( $status->ResultCode==554)  {
@@ -131,7 +130,7 @@ Class Request {
 		}
 		return $result;
 	}
-	public function searchDomain($params) {
+	public function searchDomain() {
 		$domain = DomainCache::get($this->domainName);
 		if(isset($domain)) return $domain; 
 		$handle = $this->getHandle("domain",Tools::getDomainId($this->domainName));
@@ -282,7 +281,7 @@ Class Request {
 		return $results;
 	}
 	public function autoCreateZone($domain) {
-		$params = $this->setParams();		
+		$params = $this->params;		
 		logActivity("WHMCS Creating DNS zone ".$domain);	
 		if($this->params["AutoCreateDNS"]=="on") {
 			$dns = $this->params["DNS_Default_Zone"];
@@ -730,10 +729,12 @@ Class Request {
 	}
 	public function setParams($params) {
 		if($params) {
-			$this->params = $params; 
-			$this->domainName = $params["sld"] ."." . $params["tld"];			
+			$this->params = $params; 			
 			if($this->params["Username"]) $this->account = $this->params["Username"];
 			if($this->params["Password"]) $this->password = $this->params["Password"];
+			if(isset( $params["sld"])) {
+				$this->domainName = $params["sld"] ."." . $params["tld"];			
+			}
 		} 
 		return $this->params;
 	}
