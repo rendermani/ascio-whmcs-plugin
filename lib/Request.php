@@ -93,11 +93,11 @@ Class Request {
 		$result->status = $status;
 		$ot = $orderType ? " [".$orderType."] " : ""; 
 		logActivity("WHMCS ".$functionName  .$ot. " ResultCode:" . $status->ResultCode . " ResultMessage: ".$status->Message);
-		if ( $status->ResultCode==200) {
+		if ( $status->ResultCode == 200 ||$status->ResultCode == 201) {			
 			return $result;
 		} else if( $status->ResultCode==554)  {
 			$messages = "Temporary error. Please try later or contact your support.";
-		} elseif ($status->ResultCode==401 && $functionName != "LogIn" && $status->Values->string=="Invalid Session") {
+		} elseif ($status->ResultCode==401 && $functionName != "LogIn" ) {
 			SessionCache::clear($this->account);
 			$this->login();
 			return $this->request($functionName, $ascioParams);
@@ -112,6 +112,20 @@ Class Request {
 		}		
 		$message = Tools::cleanString($messages);
 		return array('error' => $message );     
+	}
+	public function availabilityInfo($domain) {
+		$ascioParams = array(
+			'sessionId' => 'mySessionId',
+			"domainName" => $domain,
+			"quality" => "Live"
+		);
+		$result =  $this->request("AvailabilityInfo", $ascioParams);
+		
+		if($result->AvailabilityInfoResult->ResultCode >= 300) {
+			return  array('error' => $result->AvailabilityInfoResult->ResultMessage );
+		} else {
+			return $result;
+		}
 	}
 	public function getDomain($handle) {
 		$ascioParams = array(
