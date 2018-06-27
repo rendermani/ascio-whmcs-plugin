@@ -50,7 +50,7 @@ function ascio_ClientAreaCustomButtonArray() {
 function ascio_CheckAvailability($params)
 {
 	// user defined configuration values
-
+	die($params);
 	$request = createRequest($params);
     // availability check parameters
     $searchTerm = $params['searchTerm'];
@@ -93,53 +93,10 @@ function ascio_CheckAvailability($params)
 		$results->append($searchResult);
 
 	}
-    // Build post data
-    $postfields = array(
-        'username' => $userIdentifier,
-        'password' => $apiKey,
-        'testmode' => $testMode,
-        'domain' => $sld . '.' . $tld,
-        'searchTerm' => $searchTerm,
-        'tldsToSearch' => $tldsToInclude,
-        'includePremiumDomains' => $premiumEnabled,
-    );
-    try {
-        $api = new ApiClient();
-        $api->call('CheckAvailability', $postfields);
-        $results = new ResultsList();
-        foreach ($api->getFromResponse('domains') as $domain) {
-            // Instantiate a new domain search result object
-            $searchResult = new SearchResult($domain['sld'], $domain['tld']);
-            // Determine the appropriate status to return
-            if ($domain['status'] == 'available') {
-                $status = SearchResult::STATUS_NOT_REGISTERED;
-            } elseif ($domain['statis'] == 'registered') {
-                $status = SearchResult::STATUS_REGISTERED;
-            } elseif ($domain['statis'] == 'reserved') {
-                $status = SearchResult::STATUS_RESERVED;
-            } else {
-                $status = SearchResult::STATUS_TLD_NOT_SUPPORTED;
-            }
-            $searchResult->setStatus($status);
-            // Return premium information if applicable
-            if ($domain['isPremiumName']) {
-                $searchResult->setPremiumDomain(true);
-                $searchResult->setPremiumCostPricing(
-                    array(
-                        'register' => $domain['premiumRegistrationPrice'],
-                        'renew' => $domain['premiumRenewPrice'],
-                        'CurrencyCode' => 'USD',
-                    )
-                );
-            }
-            // Append to the search results list
-            $results->append($searchResult);
-        }
-        return $results;
-    } catch (\Exception $e) {
+    catch (\Exception $e) {
         return array(
             'error' => $e->getMessage(),
-        );
+    );
     }
 }
 
