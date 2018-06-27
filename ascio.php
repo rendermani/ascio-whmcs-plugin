@@ -37,13 +37,15 @@ function ascio_getConfigArray() {
 }
 function ascio_AdminCustomButtonArray() {
     $buttonarray = array(
-	 "Update EPP Code" => "UpdateEPPCode"
+	 "Update EPP Code" => "UpdateEPPCode",
+	 "Autorenew On" => "ExpireDomain",
+	 "Autorenew Off" => "UnexpireDomain"
 	);
 	return $buttonarray;
 }
 function ascio_ClientAreaCustomButtonArray() {
     $buttonarray = array(
-	 "Update EPP Code" => "UpdateEPPCode"
+	 "Update EPP Code" => "Expire "
 	);
 	return $buttonarray;
 }
@@ -190,6 +192,10 @@ function ascio_RenewDomain($params) {
 function ascio_ExpireDomain($params) {
 	$request = createRequest($params);
 	return $request->expireDomain($params); 
+}
+function ascio_UnexpireDomain($params) {
+	$request = createRequest($params);
+	return $request->unexpireDomain($params); 
 }
 
 function ascio_GetContactDetails($params) {
