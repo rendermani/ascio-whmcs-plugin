@@ -180,6 +180,21 @@ class Tools {
 		$cachedAdminUser = $admin; 
 		return $admin;
 	}
+	public static function reformatPrices($result) {
+		$prices= $result->PriceInfo->Prices;
+		$pricesTmp = array();
+		foreach($prices as $key => $price) {					
+			$type = $price->OrderType;
+			if($pricesTmp[$type]  && $pricesTmp[$type]->Period > $price->Period ) {
+				$pricesTmp[$type] = $price;
+			}
+		}
+		return array(
+			'register' => $pricesTmp['Register_Domain']->Price,
+			'renew' => $pricesTmp['Renew_Domain']->Price,
+			'CurrencyCode' => $result->PriceInfo->Currency,
+		);
+	}
 }
 class AscioException extends Exception { }
 ?>

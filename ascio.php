@@ -17,6 +17,10 @@ require_once("lib/Request.php");
 require_once("lib/DnsService.php");
 require_once("lib/Zone.php");
 
+
+use WHMCS\Domains\DomainLookup\ResultsList;
+use WHMCS\Domains\DomainLookup\SearchResult;
+
 function ascio_getConfigArray() {
 	$configarray = array(
 	 "Username" => array( "Type" => "text", "Size" => "20", "Description" => "Enter your username here" ),
@@ -49,24 +53,32 @@ function ascio_ClientAreaCustomButtonArray() {
 	);
 	return $buttonarray;
 }
+function ascio_DomainSuggestionOptions() {
+    return array(
+        'includeCCTlds' => array(
+            'FriendlyName' => 'Include Country Level TLDs',
+            'Type' => 'yesno',
+            'Description' => 'Tick to enable',
+        ),
+    );
+}
 function ascio_CheckAvailability($params)
 {
 	// user defined configuration values
 	
 	try {
+		
 		$request = createRequest($params);
 		// availability check parameters
 		$searchTerm = $params['searchTerm'];
-		$punyCodeSearchTerm = $params['punyCodeSearchTerm'];
 		$tldsToInclude = $params['tldsToInclude'];
 		$isIdnDomain = (bool) $params['isIdnDomain'];
 		$premiumEnabled = (bool) $params['premiumEnabled'];
 		$results = new ResultsList();
 		foreach($tldsToInclude as $key => $tld) {
-			$result = $request->availabilityInfo($searchTerm . ".". $tld);	
+			$result = $request->availabilityInfo($searchTerm . $tld);	
 			$searchResult = new SearchResult($searchTerm, $tld);
-			$code = $result->AvailabilityInfoResult['ResultCode'];	
-			$priceInfo = $result->PriceInfo;
+			$code = $result->AvailabilityInfoResult->ResultCode;	
 			if ($code == 200 || $code == 203) {
 				$status = SearchResult::STATUS_NOT_REGISTERED;
 			} elseif ($code == 201) {
@@ -78,28 +90,70 @@ function ascio_CheckAvailability($params)
 			}
 			$searchResult->setStatus($status);
 			// Return premium information if applicable
-			if ($priceInfo) {
-				$prices = [];
-				foreach($priceInfo->Price as $key => $price) {
-					$prices[$price->OrderType] = $price->Price;
-				}
+			if ( $result->PriceInfo) {				
 				$searchResult->setPremiumDomain(true);
-				$searchResult->setPremiumCostPricing(
-					array(
-						'register' => $prices["Register_Domain"],
-						'renew' => $prices["Renew_Domain"],
-						'CurrencyCode' => $priceInfo->Currency,
-					)
-				);
+				$searchResult->setPremiumCostPricing(Tools::reformatPrices($result));
 			}
 			// Append to the search results list
-			$results->append($searchResult);
+			$results->append($searchResult);			
 		}
+		return $results;
 	}
     catch (\Exception $e) {
         return array(
             'error' => $e->getMessage(),
-    );
+		);
+	}
+	
+}
+/**
+ * Get Domain Suggestions.
+ *
+ * Provide domain suggestions based on the domain lookup term provided.
+ *
+ * @param array $params common module parameters
+ * @see https://developers.whmcs.com/domain-registrars/module-parameters/
+ *
+ * @see \WHMCS\Domains\DomainLookup\SearchResult
+ * @see \WHMCS\Domains\DomainLookup\ResultsList
+ *
+ * @throws Exception Upon domain suggestions check failure.
+ *
+ * @return \WHMCS\Domains\DomainLookup\ResultsList An ArrayObject based collection of \WHMCS\Domains\DomainLookup\SearchResult results
+ */
+function ascio_GetDomainSuggestions($params)
+{
+    // user defined configuration values
+	$request = createRequest($params);
+    $searchTerm = $params['searchTerm'];
+    $tldsToInclude = $params['tldsToInclude'];
+    $isIdnDomain = (bool) $params['isIdnDomain'];
+    $premiumEnabled = (bool) $params['premiumEnabled'];
+	// Build post data
+    try {
+        $results = new ResultsList();
+		$avResult = $request->availabilityCheck([$searchTerm],$tldsToInclude);
+		foreach($avResult->results->AvailabilityCheckResult as $key => $result) {
+			$tld = str_replace($searchTerm,"",$result->DomainName);					
+			$searchResult = new SearchResult($searchTerm,$tld);
+			if($result->StatusCode == 200) {				
+				$searchResult->setStatus(SearchResult::STATUS_NOT_REGISTERED);
+				$results->append($searchResult);
+			} else if($result->StatusCode == 203) {
+				$searchResult->setStatus(SearchResult::STATUS_NOT_REGISTERED);				
+				$aiResult = $request->availabilityInfo($result->DomainName);
+				$searchResult->setPremiumDomain(true);								
+				if(isset($aiResult->PriceInfo)) {
+					$searchResult->setPremiumCostPricing(Tools::reformatPrices($aiResult));
+				}				
+				$results->append($searchResult);
+			}
+		}
+        return $results;
+    } catch (\Exception $e) {
+        return array(
+            'error' => $e->getMessage(),
+        );
     }
 }
 

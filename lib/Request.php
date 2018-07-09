@@ -1,6 +1,7 @@
 <?php
 use Illuminate\Database\Capsule\Manager as Capsule;
 require_once("Tools.php");
+require_once("ParameterCapture.php");
 define("ASCIO_WSDL_LIVE","https://aws.ascio.com/2012/01/01/AscioService.wsdl");
 define("ASCIO_WSDL_TEST","https://aws.demo.ascio.com/2012/01/01/AscioService.wsdl");
 Class SessionCache {
@@ -82,8 +83,8 @@ Class Request {
 		return $this->sendRequest($functionName,$ascioParams);
 	}
 	private function sendRequest($functionName,$ascioParams) {			
-		if(isset($ascioParams->order)) {
-			$orderType = " ".$ascioParams->order->Type ." "; 
+		if(isset($ascioParams["order"])) {
+			$orderType = " ".$ascioParams["order"]["Type"] .""; 
 		} else $orderType ="";
 		$wsdl = $this->params["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;
         $client = new SoapClient($wsdl,array( "trace" => 1));
@@ -92,6 +93,8 @@ Class Request {
 		$status = $result->$resultName;
 		$result->status = $status;
 		$ot = $orderType ? " [".$orderType."] " : ""; 
+		$parameterCapture = new ParameterCapture($this->params,$functionName,$orderType);
+		$parameterCapture->capture();
 		logActivity("WHMCS ".$functionName  .$ot. " ResultCode:" . $status->ResultCode . " ResultMessage: ".$status->Message);
 		if ( $status->ResultCode == 200 ||$status->ResultCode == 201) {			
 			return $result;
@@ -114,15 +117,29 @@ Class Request {
 		return array('error' => $message );     
 	}
 	public function availabilityInfo($domain) {
+		
 		$ascioParams = array(
 			'sessionId' => 'mySessionId',
 			"domainName" => $domain,
-			"quality" => "Live"
-		);
+			"quality" => "SmartLive"
+		);		
 		$result =  $this->request("AvailabilityInfo", $ascioParams);
-		
-		if($result->AvailabilityInfoResult->ResultCode >= 300) {
+		if($result->AvailabilityInfoResult->ResultCode >= 500) {
 			return  array('error' => $result->AvailabilityInfoResult->ResultMessage );
+		} else {
+			return $result;
+		}
+	}
+	public function availabilityCheck($domain,$tlds) {
+		$ascioParams = array(
+			'sessionId' => 'mySessionId',
+			"domains" => $domain,
+			"tlds" => $tlds,
+			"quality" => "SmartLive"
+		);
+		$result =  $this->request("AvailabilityCheck", $ascioParams);
+		if($result->AvailabilityCheckResult->ResultCode >= 500) {
+			return  array('error' => $result->AvailabilityCheckResult->ResultMessage );
 		} else {
 			return $result;
 		}
