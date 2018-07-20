@@ -64,10 +64,7 @@ function ascio_DomainSuggestionOptions() {
 }
 function ascio_CheckAvailability($params)
 {
-	// user defined configuration values
-	
-	try {
-		
+	try {		
 		$request = createRequest($params);
 		// availability check parameters
 		$searchTerm = $params['searchTerm'];
@@ -88,12 +85,14 @@ function ascio_CheckAvailability($params)
 			} else {
 				$status = SearchResult::STATUS_TLD_NOT_SUPPORTED;
 			}
-			$searchResult->setStatus($status);
-			// Return premium information if applicable
-			if ( $result->PriceInfo) {				
+			
+			// Return premium information if applicable		
+			if ( isset($result->PriceInfo->Prices)) {	
+				$status = SearchResult::STATUS_NOT_REGISTERED;
 				$searchResult->setPremiumDomain(true);
 				$searchResult->setPremiumCostPricing(Tools::reformatPrices($result));
 			}
+			$searchResult->setStatus($status);
 			// Append to the search results list
 			$results->append($searchResult);			
 		}
@@ -174,7 +173,15 @@ function ascio_GetNameservers($params) {
 }
 function ascio_SaveNameservers($params) {
 	$request = createRequest($params);
-	return $request->saveNameservers();
+	$result =  $request->saveNameservers($params);
+	// has error?
+	if(is_array($result)) {
+		return $result;
+	} else {
+		return array(
+            'success' => true,
+        );
+	}
 }
 
 function ascio_GetRegistrarLock($params) {
@@ -192,7 +199,15 @@ function ascio_GetRegistrarLock($params) {
 
 function ascio_saveRegistrarLock($params) {
 	$request = createRequest($params);
-	return $request->saveRegistrarLock();
+	$result = $request->saveRegistrarLock();
+	// has error?
+	if(is_array($result)) {
+		return $result;
+	} else {
+		return array(
+			'success' => true,
+		);
+	} 
 }
 function ascio_IDProtectToggle($params) {
 	$params["idprotection"] = $params["protectenable"] == 1 ? true : false;
@@ -230,26 +245,66 @@ function ascio_SaveDNS($params) {
 }
 function ascio_RegisterDomain($params) {
 	$request = createRequest($params);
-	return $request->registerDomain($params); 
+	$result =  $request->registerDomain($params); 
+	// has error?
+	if(is_array($result)) {
+		return $result;
+	} else {
+		return array(
+            'success' => true,
+        );
+	}
 }
 
 function ascio_TransferDomain($params) {
 	$request = createRequest($params);
-	return $request->transferDomain($params);  
+	$result =   $request->transferDomain($params); 
+	// has error?
+	if(is_array($result)) {
+		return $result;
+	} else {
+		return array(
+            'success' => true,
+        );
+	} 
 }
 
 function ascio_RenewDomain($params) {
 	$request = createRequest($params);
-	return $request->renewDomain($params); 
+	$result =  $request->renewDomain($params); 
+	// has error?
+	if(is_array($result)) {
+		return $result;
+	} else {
+		return array(
+            'success' => true,
+        );
+	} 
 }
 
 function ascio_ExpireDomain($params) {
 	$request = createRequest($params);
-	return $request->expireDomain($params); 
+	$result =   $request->expireDomain($params); 
+	// has error?
+	if(is_array($result)) {
+		return $result;
+	} else {
+		return array(
+			'success' => true,
+		);
+	} 
 }
 function ascio_UnexpireDomain($params) {
 	$request = createRequest($params);
-	return $request->unexpireDomain($params); 
+	$result =  $request->unexpireDomain($params); 
+	// has error?
+	if(is_array($result)) {
+		return $result;
+	} else {
+		return array(
+			'success' => true,
+		);
+	} 
 }
 
 function ascio_GetContactDetails($params) {
@@ -268,7 +323,16 @@ function ascio_GetContactDetails($params) {
 
 function ascio_SaveContactDetails($params) {
 	$request = createRequest($params);
-	return $request->updateContacts($params);
+	$result =   $request->updateContacts($params);
+	// has error?
+	if(is_array($result)) {
+		return $result;
+	} else {
+		return array(
+			'success' => true,
+		);
+	}   
+	
 }
 
 function ascio_GetEPPCode($params) {
@@ -278,8 +342,15 @@ function ascio_GetEPPCode($params) {
 }
 function ascio_UpdateEPPCode($params) {
 	$request = createRequest($params);	
-	$params = $request->updateEPPCode($params);
-	return $params;
+	$result = $request->updateEPPCode($params);
+	// has error?
+	if(is_array($result)) {
+		return $result;
+	} else {
+		return array(
+			'success' => true,
+		);
+	} 
 }
 
 function ascio_RegisterNameserver($params) {
