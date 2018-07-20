@@ -60,6 +60,21 @@ class Tools {
  		$results 	= localAPI($command,$values,$adminuser);
 		return $results; 
 	}
+	public static function logModule($action, $requestData, $responseData) {
+		if(isset($requestData["order"])) {
+			$orderType = " [".$requestData["order"]["Type"] ."]"; 
+		} else $orderType ="";
+		logModuleCall(
+			'ascio',
+			$action . $orderType,
+			$requestData ,			
+			$responseData,
+			json_encode($responseData), 
+			array(
+				$requestData["sessionId"],
+				$requestData["Password"])
+			);
+	}
 	public static function compareRegistrant($newContact,$oldContact) {
 		$diffs =  Tools::diffContact($newContact,$oldContact);
 		if($diffs["Name"] || $diffs["OrgName"] || $diffs["RegistrantNumber"]) return "Owner_Change";
@@ -183,9 +198,9 @@ class Tools {
 	public static function reformatPrices($result) {
 		$prices= $result->PriceInfo->Prices;
 		$pricesTmp = array();
-		foreach($prices as $key => $price) {					
+		foreach($prices->Price as $key => $price) {					
 			$type = $price->OrderType;
-			if($pricesTmp[$type]  && $pricesTmp[$type]->Period > $price->Period ) {
+			if( !isset($pricesTmp[$type]) || $pricesTmp[$type]->Period > $price->Period ) {
 				$pricesTmp[$type] = $price;
 			}
 		}
