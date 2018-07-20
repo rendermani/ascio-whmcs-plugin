@@ -95,8 +95,8 @@ Class Request {
 		$ot = $orderType ? " [".$orderType."] " : ""; 
 		$parameterCapture = new ParameterCapture($this->params,$functionName,$orderType);
 		$parameterCapture->capture();
-		logActivity("WHMCS ".$functionName  .$ot. " ResultCode:" . $status->ResultCode . " ResultMessage: ".$status->Message);
-		if ( $status->ResultCode == 200 ||$status->ResultCode == 201) {			
+		Tools::logModule($functionName,$ascioParams,$result);
+		if ( $status->ResultCode == 200 ||$status->ResultCode == 201 || $status->ResultCode == 413 ) {			
 			return $result;
 		} else if( $status->ResultCode==554)  {
 			$messages = "Temporary error. Please try later or contact your support.";
@@ -121,7 +121,7 @@ Class Request {
 		$ascioParams = array(
 			'sessionId' => 'mySessionId',
 			"domainName" => $domain,
-			"quality" => "SmartLive"
+			"quality" => "Live"
 		);		
 		$result =  $this->request("AvailabilityInfo", $ascioParams);
 		if($result->AvailabilityInfoResult->ResultCode >= 500) {
@@ -449,9 +449,14 @@ Class Request {
 	}
 	public function registerDomain($params=false) {
 		// register domains
+		$premiumDomainsEnabled = (bool) $params['premiumEnabled'];
+		$premiumDomainsCost = $params['premiumCost'];		
 		$params = $this->setParams($params);
 		try {			
 			$ascioParams = $this->mapToOrder($params,"Register_Domain");
+			if ($premiumDomainsEnabled && $premiumDomainsCost) {
+				$ascioParams['order']['AgreedPrice'] = $premiumDomainsCost;
+			}
 		} catch (AscioException $e) {
 			return array("error" => $e->getMessage());
 		}		
