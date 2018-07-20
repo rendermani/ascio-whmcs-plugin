@@ -13,4 +13,6 @@
 
 $additionaldomainfields[".ca"][] = array("Name" => "Canadian ID number", "LangVar" => "catrademarkcountry", "Type" => "text", "Description" => "This is required when and individual is a Canadian citizen but does not reside in Canada, in this case a passport number or canadian ID number should be provided in this field.",);
 $additionaldomainfields[".ca"][] = array("Name" => "Trademark number", "LangVar" => "catrademarknumber", "Type" => "text", "Description" => "This is only applicable when domain is based on a trademark. The domain has to be either an exact match of the trademark, or a domain name that includes a registered mark. For example, when the company owns the trademark for abccompany, they can register abccompany.ca or something like Iloveabccompany.ca as long as the name of the trademark is contained within the domain.",);
+
+
 ?>
