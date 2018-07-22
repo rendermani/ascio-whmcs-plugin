@@ -28,16 +28,15 @@ Class SessionCache {
 	}
 }
 Class DomainCache {
-	public static function get($domainName) {
+	public static function get($domainId) {
 		GLOBAL $ascioDomainCache;
 		if(!$ascioDomainCache) $ascioDomainCache = array();
-		return $ascioDomainCache[$domainName];
+		return $ascioDomainCache[$domainId];
 	}
 	public static function put($domain) {
 		GLOBAL $ascioDomainCache;
 		if(!$ascioDomainCache) $ascioDomainCache = array();
-		$ascioDomainCache[$domain->DomainName];
-		$ascioDomainCache[$domain->DomainName] = $domain;
+		$ascioDomainCache[$domain->domainId] = $domain;
 	}
 }
 function createRequest($params) {
@@ -152,21 +151,24 @@ Class Request {
 		$result =  $this->request("GetDomain", $ascioParams); 
 		if($result->error) return $result;
 		else {	
-			$status = !$result->domain->DomainName ? NULL : $result->domain->Status;
-			
-			$this->setDomainStatus($result->domain);
-			DomainCache::put($result->domain);
-			$this->setHandle($result->domain);
+			$status = !$result->domain->DomainName ? NULL : $result->domain->Status;	
 			return $result->domain;
 		}
 		return $result;
 	}
 	public function searchDomain() {
-		$domain = DomainCache::get($this->domainName);
-		if(isset($domain)) return $domain; 
-		$handle = $this->getHandle("domain",Tools::getDomainId($this->domainName));
+		$domainId = $this->params["domainid"];
+		$domain = DomainCache::get($domainId);
+		if(isset($domain)) return $domain; 		
+		$handle = $this->getHandle("domain",$domainId,$this->domainName);
 		if($handle) {	
-			return  $this->getDomain($handle);		
+			$domain =   $this->getDomain($handle);	
+			$status = !$domain->DomainName ? NULL : $domain->Status;	
+			$this->setDomainStatus($domain);
+			$domain->domainId = $domainId;
+			DomainCache::put($domain);
+			$this->setHandle($domain);
+			return $domain;	
 		}	
 		$criteria= array(
 			'Mode' => 'Strict',
@@ -187,6 +189,7 @@ Class Request {
 		if($result->error) return $result;
 		else {						
 			$status = !$result->domains->Domain->DomainName ? NULL : $result->domains->Domain->Status;
+			$result->domains->Domain->domainId = $domainId;
 			$this->setDomainStatus($result->domains->Domain);
 			DomainCache::put($result->domains->Domain);
 			$this->setHandle($result->domains->Domain);
@@ -208,6 +211,10 @@ Class Request {
 			};			
 		}
 	}
+	private function isAscioOrder($domainId) {
+		$result =  get_query_val("tbldomains","registrar", array("id" => $domainId));
+		return $result == "ascio" || $result == "ascio_usd";
+	}
 	public function getCallbackData($orderStatus,$messageId,$orderId,$type) {
 		$ascioParams = array(
 			'sessionId' => 'mySessionId',
@@ -215,21 +222,29 @@ Class Request {
 		);		
 		$result = $this->request("GetMessageQueue", $ascioParams);
 		$order =  $this->getOrder($orderId);
+		
+		//var_dump($result);
+		//var_dump($order);		
 		$domainName = $order->order->Domain->DomainName;
-		$domainId   = Tools::getDomainId($domainName);
+		$domainId = Tools::getDomainIdFromOrder($order->order);
+		if(!$this->isAscioOrder($domainId)) {
+			$domainId = NULL;
+		}
+		$this->params["domainid"] = $domainId;
 		if(!isset($domainId)) {
 			 $ascioParams = array(
 				'sessionId' => 'mySessionId', 
 				'msgId' => $messageId
 			);			
-			if($orderStatus == "Completed" && ($orderType=="Register_Domain" || $orderType =="Transfer_Domain")) {
-				//$this->deleteOldHandles($domainName);
-				$this->expireDommain($this->params);
-			}
 			$this->request("AckMessage", $ascioParams);
 			return;	
 		}
 		$domain = $this->getDomain($order->order->Domain->DomainHandle);
+		$status = !$domain->DomainName ? NULL : $domain->Status;	
+		$this->setDomainStatus($domain);
+		$domain->domainId = $domainId;
+		DomainCache::put($domain);
+		$this->setHandle($domain);
 		$orderType = $order->order->Type;
 		$this->params["domainname"] = $domainName;
 		// External WHMCS API: Set Status
@@ -377,7 +392,7 @@ Class Request {
 	}
 	public function setStatus($domain,$status) {
 		if(!status) return false; 
-		$values["domain"] =  $domain->DomainName ? $domain->DomainName : $this->params["domainname"]; 
+		$values["domainid"] =  $this->params["domainid"]; 
 		if(isset($domain->ExpDate) && $domain->ExpDate != "0001-01-01T00:00:00") {
 			$expDate = $this->formatDate($domain->ExpDate);
 			$creDate = $this->formatDate($domain->CreDate);
@@ -688,7 +703,7 @@ Class Request {
 		$order = 
 			array( 
 			'Type' => $orderType, 
-			'TransactionComment' => "WHMCS", 
+			'TransactionComment' => json_encode(array("application" => "WHMCS","domainId" => $params["domainid"],"userId" => $params["userid"],"objectType" => "Domain")), 
 			'Domain' => $domain,
 			'Comments'	=>	$params["userid"],
 			'Options' => $params["options"]
@@ -774,17 +789,31 @@ Class Request {
 		} 
 		return $this->params;
 	}
-	public function getHandle($type,$whmcsId) {
-		$result = get_query_val("tblasciohandles","ascio_id", array("type" => $type, "whmcs_id" => $whmcsId));
-		$result = $result == ""  ? false : $result;
-		return $result;
+	public function getHandle($type,$whmcsId,$domainName) {
+		$handleId = Capsule::table('tblasciohandles')
+			->where([
+				"type" => $type, 
+				"whmcs_id" => $whmcsId,
+				"domain" => $domainName
+			])
+			->value('ascio_id');
+		if(!$handleId) {
+			// to stay compatible with older version. Will be updated with the first search-domain. 
+			$handleId = Capsule::table('tblasciohandles')
+				->where([
+					"type" => $type, 
+					"whmcs_id" => $whmcsId
+				])
+				->value('ascio_id');				
+		};		
+		return $handleId;
 	}
 	public function getHandlesByDomain($domainName) {
 		$result = Capsule::select('select tblasciohandles.ascio_id from tblasciohandles inner join tbldomains on tblasciohandles.whmcs_id = tbldomains.id where domain="'.$domainName.'"');
 		return $result;
 	}
-	public function setHandle($domain) {
-		$this->storeHandle("domain",Tools::getDomainId($domain->DomainName),$domain->DomainHandle,$domain->DomainName);
+	public function setHandle($domain) {		
+		$this->storeHandle("domain",$this->params["domainid"],$domain->DomainHandle,$domain->DomainName);
 		/*
 		$this->storeHandle("registrant",$domain->Registrant->Handle);
 		$this->storeHandle("contact",$domain->AdminContact->Handle);
@@ -793,13 +822,22 @@ Class Request {
 		*/
 	}
 	public function storeHandle($type,$whmcsId, $ascioId,$domain) {
-		$handle = $this->getHandle($type,$whmcsId);
-		if(!$handle) {
-			$query = array("type" => $type,"ascio_id" => $ascioId,"whmcs_id" => $whmcsId);
-			$result = insert_query("tblasciohandles",$query,array("whmcs_id" => $whmcsId,"type" => $type,"domain" => $domain));
-		} else {
-			$query = array("ascio_id" => $ascioId);
-			$result = update_query("tblasciohandles",$query,array("whmcs_id" => $whmcsId,"type" => $type));
+		if(!isset($ascioId)) return; 		
+		$handle = $this->getHandle($type,$whmcsId,$domain);
+		if(!$handle) {		
+			Capsule::table('tblasciohandles')
+				->insert([
+					"ascio_id" => $ascioId,
+					"whmcs_id" => $whmcsId,
+					"type" => $type,
+					"domain" => $domain]);		
+		} else {			
+			Capsule::table('tblasciohandles')
+				->where('ascio_id',$ascioId)
+				->update([
+					"whmcs_id" => $whmcsId,
+					"type" => $type,
+					"domain" => $domain]);			
 		}		
 		return $result; 
 	}
