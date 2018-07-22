@@ -149,12 +149,12 @@ Class Request {
 			'domainHandle' => $handle
 		);
 		$result =  $this->request("GetDomain", $ascioParams); 
-		if($result->error) return $result;
+		if($result->error) {
+			return $result;
+		}
 		else {	
-			$status = !$result->domain->DomainName ? NULL : $result->domain->Status;	
 			return $result->domain;
 		}
-		return $result;
 	}
 	public function searchDomain() {
 		$domainId = $this->params["domainid"];
@@ -163,7 +163,6 @@ Class Request {
 		$handle = $this->getHandle("domain",$domainId,$this->domainName);
 		if($handle) {	
 			$domain =   $this->getDomain($handle);	
-			$status = !$domain->DomainName ? NULL : $domain->Status;	
 			$this->setDomainStatus($domain);
 			$domain->domainId = $domainId;
 			DomainCache::put($domain);
@@ -188,7 +187,6 @@ Class Request {
 		$result =  $this->request("SearchDomain",$ascioParams);
 		if($result->error) return $result;
 		else {						
-			$status = !$result->domains->Domain->DomainName ? NULL : $result->domains->Domain->Status;
 			$result->domains->Domain->domainId = $domainId;
 			$this->setDomainStatus($result->domains->Domain);
 			DomainCache::put($result->domains->Domain);
