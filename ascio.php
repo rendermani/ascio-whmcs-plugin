@@ -55,16 +55,16 @@ function ascio_ClientAreaCustomButtonArray() {
 }
 function ascio_DomainSuggestionOptions() {
     return array(
-        'includeCCTlds' => array(
-            'FriendlyName' => 'Include Country Level TLDs',
-            'Type' => 'yesno',
-            'Description' => 'Tick to enable',
+        'tldsToInclude' => array(
+            'FriendlyName' => 'Comma separated list of TLDs (.com, .net)',
+            'Type' => 'text',
+            'Description' => 'Include TLDs',
         ),
     );
 }
 function ascio_CheckAvailability($params)
 {
-	try {		
+	try {	
 		$request = createRequest($params);
 		// availability check parameters
 		$searchTerm = $params['searchTerm'];
@@ -122,13 +122,18 @@ function ascio_CheckAvailability($params)
  */
 function ascio_GetDomainSuggestions($params)
 {
-    // user defined configuration values
+	// user defined configuration values
+
 	$request = createRequest($params);
     $searchTerm = $params['searchTerm'];
-    $tldsToInclude = $params['tldsToInclude'];
+	$tlds = $params['suggestionSettings']['tldsToInclude'];
+	$tldsToInclude = explode(", ",$tlds);
+	foreach($tldsToInclude as $key => $tld) {
+		$tldsToInclude[$key] = trim($tld,". ");
+	}
     $isIdnDomain = (bool) $params['isIdnDomain'];
     $premiumEnabled = (bool) $params['premiumEnabled'];
-	// Build post data
+
     try {
         $results = new ResultsList();
 		$avResult = $request->availabilityCheck([$searchTerm],$tldsToInclude);
