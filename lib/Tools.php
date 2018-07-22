@@ -64,6 +64,7 @@ class Tools {
 		if(isset($requestData["order"])) {
 			$orderType = " [".$requestData["order"]["Type"] ."]"; 
 		} else $orderType ="";
+		$password = isset($requestData["session"]) ? $requestData["session"]["Password"] : null;
 		logModuleCall(
 			'ascio',
 			$action . $orderType,
@@ -72,7 +73,8 @@ class Tools {
 			json_encode($responseData), 
 			array(
 				$requestData["sessionId"],
-				$requestData["Password"])
+				$password
+				)
 			);
 	}
 	public static function compareRegistrant($newContact,$oldContact) {
@@ -173,6 +175,16 @@ class Tools {
 		$row = mysql_fetch_assoc($result);		
 	    $id = $row["id"];
 	    return $id; 
+	}
+	public static function getDomainIdFromOrder($order) {
+		$comment = json_decode($order->TransactionComment);		
+		if($comment == NULL && is_object($comment)) {
+			$domainId   = Tools::getDomainId($domainName);
+		} else {
+			$domainId   = $comment->domainId;
+		}
+		$order->Domain->domainId = $domainId; 
+		return $domainId;
 	}	
 	public static function setExpireDate($domain) {
 		$tmpDate = explode("T", $domain->ExpDate);
