@@ -14,7 +14,7 @@ class AscioImport {
         $this->fileName = $fileName;
         $cfg = getRegistrarConfigOptions("ascio");
         $cfg["Username"] = "yyy";
-        $cfg["Password"] = "xxxx";
+        $cfg["Password"] = "xxx";
         $this->request = new Request($cfg);
     }
     function start() {
