@@ -85,9 +85,9 @@ Class Request {
 		if(isset($ascioParams["order"])) {
 			$orderType = " ".$ascioParams["order"]["Type"] .""; 
 		} else $orderType ="";
-		$wsdl = $this->params["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;
-        $client = new SoapClient($wsdl,array( "trace" => 1));
-        $result = $client->__call($functionName, array('parameters' => $ascioParams));    
+		$wsdl = $this->params["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;        $client = new SoapClient($wsdl,array( "trace" => 1));
+		$client = new SoapClient($wsdl,array( "trace" => 1));
+		$result = $client->__call($functionName, array('parameters' => $ascioParams));    
 		$resultName = $functionName . "Result";	
 		$status = $result->$resultName;
 		$result->status = $status;
@@ -220,9 +220,7 @@ Class Request {
 		);		
 		$result = $this->request("GetMessageQueue", $ascioParams);
 		$order =  $this->getOrder($orderId);
-		
-		//var_dump($result);
-		//var_dump($order);		
+	
 		$domainName = $order->order->Domain->DomainName;
 		$domainId = Tools::getDomainIdFromOrder($order->order);
 		if(!$this->isAscioOrder($domainId)) {
@@ -612,11 +610,10 @@ Class Request {
 		$result =  $this->request("CreateOrder",$ascioParams);
 		return $result;
 	}	
-	public function saveRegistrarLock($params,$noRenewTld) {
+	public function saveRegistrarLock() {
 		logActivity( "WHMCS saveRegistrarLock");
-		$params = $this->setParams($params);
-		$lockstatus = $params["lockenabled"]=="unlocked" ? "UnLock" : "Lock";
-		$lockParams = $this->mapToOrder($params,"Change_Locks");
+		$lockstatus = $this->params["lockenabled"]=="unlocked" ? "UnLock" : "Lock";
+		$lockParams = $this->mapToOrder($this->params,"Change_Locks");
 		$lockParams["order"]["Domain"]["TransferLock"] = $lockstatus;
 		return $this->request("CreateOrder",$lockParams);
 	}	
