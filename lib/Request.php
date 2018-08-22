@@ -611,7 +611,6 @@ Class Request {
 		return $result;
 	}	
 	public function saveRegistrarLock() {
-		logActivity( "WHMCS saveRegistrarLock");
 		$lockstatus = $this->params["lockenabled"]=="unlocked" ? "UnLock" : "Lock";
 		$lockParams = $this->mapToOrder($this->params,"Change_Locks");
 		$lockParams["order"]["Domain"]["TransferLock"] = $lockstatus;
