@@ -84,8 +84,8 @@ Class Request {
 		if(isset($ascioParams["order"])) {
 			$orderType = " ".$ascioParams["order"]["Type"] .""; 
 		} else $orderType ="";
-		$wsdl = $this->params["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;        $client = new SoapClient($wsdl,array( "cache_wsdl " => WSDL_CACHE_MEMORY ));
-		$client = new SoapClient($wsdl,array( "trace" => 1));
+		$wsdl = $this->params["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;        
+		$client = new SoapClient($wsdl,array( "cache_wsdl " => WSDL_CACHE_MEMORY ));
 		$result = $client->__call($functionName, array('parameters' => $ascioParams));    
 		$resultName = $functionName . "Result";	
 		$status = $result->$resultName;
