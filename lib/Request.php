@@ -17,8 +17,7 @@ Class SessionCache {
 		$query = "	INSERT INTO  mod_asciosession (account, sessionId) 
 					VALUES('$account', '$sessionId') 
 					ON DUPLICATE KEY UPDATE account='$account', sessionId='$sessionId'";
-		mysql_query($query); 
-		echo mysql_error();
+		mysql_query($query); 		
 		if(mysql_error()) {
 			Tools::log("Error writing session: ".mysql_error());
 		}		
@@ -85,7 +84,7 @@ Class Request {
 		if(isset($ascioParams["order"])) {
 			$orderType = " ".$ascioParams["order"]["Type"] .""; 
 		} else $orderType ="";
-		$wsdl = $this->params["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;        $client = new SoapClient($wsdl,array( "trace" => 1));
+		$wsdl = $this->params["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;        $client = new SoapClient($wsdl,array( "cache_wsdl " => WSDL_CACHE_MEMORY ));
 		$client = new SoapClient($wsdl,array( "trace" => 1));
 		$result = $client->__call($functionName, array('parameters' => $ascioParams));    
 		$resultName = $functionName . "Result";	
