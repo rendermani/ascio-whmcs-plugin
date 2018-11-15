@@ -1,5 +1,6 @@
 <?php
 use Illuminate\Database\Capsule\Manager as Capsule;
+use ascio\whmcs\ssl as ssl; 
 require_once("Tools.php");
 require_once("ParameterCapture.php");
 define("ASCIO_WSDL_LIVE","https://aws.ascio.com/2012/01/01/AscioService.wsdl");
@@ -163,8 +164,8 @@ Class Request {
 		$handle = $this->getHandle("domain",$domainId,$this->domainName);
 		if($handle) {	
 			$domain =   $this->getDomain($handle);	
-			$this->setDomainStatus($domain);
 			$domain->domainId = $domainId;
+			$this->setDomainStatus($domain);			
 			DomainCache::put($domain);
 			$this->setHandle($domain);
 			return $domain;	
@@ -194,7 +195,7 @@ Class Request {
 			return $result->domains->Domain;
 		}
 	}
-	public function ackMessage($messageId,$order,$domain) {
+	public function ackMessage($messageId,$order=null,$domain=null) {
 		$ascioParams = array(
 			'sessionId' => 'mySessionId', 
 			'msgId' => $messageId
@@ -218,11 +219,19 @@ Class Request {
 			'sessionId' => 'mySessionId',
 			'msgId' => $messageId
 		);		
-		$result = $this->request("GetMessageQueue", $ascioParams);
+		$result = $this->request("GetMessageQueue", $ascioParams);		
 		$order =  $this->getOrder($orderId);
-		
-		//var_dump($result);
-		//var_dump($order);		
+		if( $order->order->TransactionComment == "WHMCS SSL Module") {
+			require_once(__DIR__. "/../../../servers/asciossl/lib/SslCallback.php");
+			$env = $this->params["TestMode"]=="on" ? "testing" : "live" ;
+			$params = new ssl\Params();
+			$params->testmode = $this->params["TestMode"]=="on" ? true : false;
+			$params->setAccount($this->account,$this->password);				
+			$callback = new ssl\SslCallback($params,$orderId);
+			$message = $result->item->Msg;
+			$callback->process($orderId,$orderStatus,$messageId,$message);			
+			return;
+		}
 		$domainName = $order->order->Domain->DomainName;
 		$domainId = Tools::getDomainIdFromOrder($order->order);
 		if(!$this->isAscioOrder($domainId)) {
@@ -258,6 +267,8 @@ Class Request {
 				sleep(5);
 				$this->expireDomain($this->params);	
 			}	
+			$this->deleteOldHandle($domainId);
+			$this->setHandle($domain);
 		} else {
 			$msgPart = "Domain (". $domainId . "): ".$domainName;
 			$errors =  Tools::formatError($result->item->StatusList->CallbackStatus,$msgPart);
@@ -844,6 +855,9 @@ Class Request {
 				Capsule::table('tblasciohandles')->where('ascio_id','=',$ascioId)->delete();
 				logActivity("deleteHandle ". $ascioId . " - domain:".$domainName );	
 		}			
+	}
+	public function deleteOldHandle($whmcsDomainId) {
+		Capsule::table('tblasciohandles')->where('whmcs_id','=',$whmcsDomainId)->delete();			
 	}
 }
 ?>
