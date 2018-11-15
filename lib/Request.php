@@ -18,8 +18,7 @@ Class SessionCache {
 		$query = "	INSERT INTO  mod_asciosession (account, sessionId) 
 					VALUES('$account', '$sessionId') 
 					ON DUPLICATE KEY UPDATE account='$account', sessionId='$sessionId'";
-		mysql_query($query); 
-		echo mysql_error();
+		mysql_query($query); 		
 		if(mysql_error()) {
 			Tools::log("Error writing session: ".mysql_error());
 		}		
@@ -86,9 +85,9 @@ Class Request {
 		if(isset($ascioParams["order"])) {
 			$orderType = " ".$ascioParams["order"]["Type"] .""; 
 		} else $orderType ="";
-		$wsdl = $this->params["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;
-        $client = new SoapClient($wsdl,array( "trace" => 1));
-        $result = $client->__call($functionName, array('parameters' => $ascioParams));    
+		$wsdl = $this->params["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;        
+		$client = new SoapClient($wsdl,array( "cache_wsdl " => WSDL_CACHE_MEMORY ));
+		$result = $client->__call($functionName, array('parameters' => $ascioParams));    
 		$resultName = $functionName . "Result";	
 		$status = $result->$resultName;
 		$result->status = $status;
@@ -623,11 +622,9 @@ Class Request {
 		$result =  $this->request("CreateOrder",$ascioParams);
 		return $result;
 	}	
-	public function saveRegistrarLock($params,$noRenewTld) {
-		logActivity( "WHMCS saveRegistrarLock");
-		$params = $this->setParams($params);
-		$lockstatus = $params["lockenabled"]=="unlocked" ? "UnLock" : "Lock";
-		$lockParams = $this->mapToOrder($params,"Change_Locks");
+	public function saveRegistrarLock() {
+		$lockstatus = $this->params["lockenabled"]=="unlocked" ? "UnLock" : "Lock";
+		$lockParams = $this->mapToOrder($this->params,"Change_Locks");
 		$lockParams["order"]["Domain"]["TransferLock"] = $lockstatus;
 		return $this->request("CreateOrder",$lockParams);
 	}	
