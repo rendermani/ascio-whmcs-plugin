@@ -40,7 +40,21 @@ if(mysql_error()) echo mysql_error().$lineBreak;
 echo "- Creating mod_asciosession table".$lineBreak;
 $q = 'CREATE TABLE IF NOT EXISTS `mod_asciosession` (`account` varchar(255) NOT NULL, `sessionId` varchar(255) NOT NULL, `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, UNIQUE KEY `account` (`account`), KEY `date` (`timestamp`) )';
 mysql_query($q);
-if(mysql_error()) echo mysql_error()."\n<br>";
+if(mysql_error()) echo mysql_error().$lineBreak;
+
+echo "- Adding domain to tlbasciohandles table (update)".$lineBreak;
+$q = 'ALTER TABLE `tblasciohandles` ADD `domain` VARCHAR(255) NOT NULL AFTER `ascio_id`, ADD INDEX `domain` (`domain`);';
+mysql_query($q);
+
+echo "- tlbasciohandles: Drop primary key".$lineBreak;
+$q = 'ALTER TABLE `tblasciohandles` DROP PRIMARY KEY';
+mysql_query($q);
+
+echo "- tlbasciohandles: Add whmcs as primary key replacement".$lineBreak;
+$q = 'ALTER TABLE `tblasciohandles` ADD INDEX(`whmcs_id`);';
+mysql_query($q);
+
+
 echo $lineBreak."* Read TLD parameters *".$lineBreak;
 $s = curl_init(); 
 curl_setopt($s,CURLOPT_URL,"http://aws.ascio.info/tldkit.xq"); 
