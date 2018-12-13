@@ -1,6 +1,6 @@
 <?php
-require_once("../../../init.php");
-require_once("lib/Tools.php");
+require_once(__DIR__."/../../../init.php");
+require_once(__DIR__."/lib/Tools.php");
 error_reporting(E_ALL);
 ini_set('error_reporting', E_ERROR);
 ini_set('display_errors', "on");
@@ -19,8 +19,8 @@ function check($name,$value) {
 }
 echo $lineBreak."* Check requirements *".$lineBreak;
 check("Soap",class_exists("SoapClient"));
-check("init.php",file_exists("../../../init.php"));
-check("registrarfunctions.php",file_exists("../../../includes/registrarfunctions.php"));
+check("init.php",file_exists(__DIR__."/../../../init.php"));
+check("registrarfunctions.php",file_exists(__DIR__."/../../../includes/registrarfunctions.php"));
 
 echo $lineBreak."* Creating email templates *";
 Tools::createEmailTemplates();
