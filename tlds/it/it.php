@@ -31,6 +31,11 @@ class it extends Request {
 		}
 		return $contact;
 	}
+	protected function mapToAdmin($params) {
+		if($params["additionalfields"]["Legal Type"] == "Italian and foreign natural persons") {
+			return $this->mapToRegistrant($params);
+		}		
+	}
 	protected function mapToTrademark($params) {		
 		// If the country is non italian, state is not needed. Just set any country. Won't be in the Whois
 		if($params["additionalfields"]["Legal Type"]== "Italian and foreign natural persons") {
