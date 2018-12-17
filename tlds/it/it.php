@@ -29,15 +29,6 @@ class it extends Request {
 	}
 	protected function mapToAdmin($params) {
 		if($params["additionalfields"]["Legal Type"] == "Italian and foreign natural persons") {
-			$map = array(
-				"Italian and foreign natural persons" 	=> "1",
-				"Companies/one man companies" 			=> "2",
-				"Freelance workers/professionals" 		=> "3",
-				"non-profit organizations" 				=> "5",
-				"public organizations" 					=> "4",
-				"other subjects" 						=> "6",
-				"non natural foreigners" 				=> "7"
-			);
 			$contact = Array(
 				'FirstName' 	=> $params["firstname"],
 				'LastName' 		=> $params["lastname"],
