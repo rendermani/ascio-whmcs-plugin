@@ -172,7 +172,6 @@ function ascio_GetNameservers($params) {
 	$values["ns2"] = $ns->NameServer2->HostName;
 	$values["ns3"] = $ns->NameServer3->HostName;
 	$values["ns4"] = $ns->NameServer4->HostName;
-	$values["status"] = "Active";
 
 	return $values;
 }
