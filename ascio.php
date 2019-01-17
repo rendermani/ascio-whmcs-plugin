@@ -42,8 +42,8 @@ function ascio_getConfigArray() {
 function ascio_AdminCustomButtonArray() {
     $buttonarray = array(
 	 "Update EPP Code" => "UpdateEPPCode",
-	 "Autorenew On" => "ExpireDomain",
-	 "Autorenew Off" => "UnexpireDomain"
+	 "Autorenew On" => "UnexpireDomain",
+	 "Autorenew Off" => "ExpireDomain"
 	);
 	return $buttonarray;
 }
