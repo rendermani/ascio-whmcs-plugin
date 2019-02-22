@@ -172,7 +172,7 @@ function ascio_GetNameservers($params) {
 	$values["ns2"] = $ns->NameServer2->HostName;
 	$values["ns3"] = $ns->NameServer3->HostName;
 	$values["ns4"] = $ns->NameServer4->HostName;
-
+	$values["ns5"] = $ns->NameServer5->HostName;
 	return $values;
 }
 function ascio_SaveNameservers($params) {
