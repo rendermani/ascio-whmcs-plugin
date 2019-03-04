@@ -9,7 +9,7 @@ class DnsZone {
 	var $records;
 	var $owner;
 	public function __construct  ($params,$name=false) {
-		$this->dnsService = new DnsService($params["Username"],$params["Password"]);
+		$this->dnsService = new DnsService($params["Username"],$params["Password"],$params["UserName"]);
 		if($name) $this->name = $name;
 		else $this->name = $params["sld"] . "." . $params["tld"];
 		$this->owner = $params["Username"];		
