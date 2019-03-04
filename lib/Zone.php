@@ -8,13 +8,15 @@ class DnsZone {
 	var $name;
 	var $records;
 	var $owner;
+	var $password;
 	public function __construct  ($params,$name=false) {
 		$this->dnsService = new DnsService($params["Username"],$params["Password"],$params["UserName"]);
+		$this->password = $params["Password"];
 		if($name) $this->name = $name;
 		else $this->name = $params["sld"] . "." . $params["tld"];
 		$this->owner = $params["Username"];		
 	}
-	public function get($params) {
+	public function get() {
 	    # Put your code here to get the current DNS settings - the result should be an array of hostname, record type, and address
 		$zone = new GetZone();
 		$zone->zoneName = $this->name;
@@ -105,7 +107,7 @@ class DnsZone {
 		}
 		return $result;
 	}
-	private function createZone($records) {		
+	private function createZone() {		
 		$createZone = new CreateZone();
 		$createZone->zoneName = $this->name;
 		$createZone->owner 	  = $this->owner;
@@ -116,22 +118,22 @@ class DnsZone {
 		return $result;
 		
 	}
-	public function createUser($params) { 	
+	public function createUser() { 	
 		$getUser = new GetUser();
 		$getUser->userName = $this->owner;
-		$result = $dns->getUser($getUser);
+		$result = $$this->dnsService->getUser($getUser);
 		if($result->GetUserResult->StatusCode == 414) {
 			$user = new User;
 			$user->Name = "WHMCS API";
 			$user->UserName = $this->owner;
-			$user->Password = $accountPw;
+			$user->Password = $this->password;
 			$user->Role = "CustomerAdvanced";
 			$user->Email ="ml@webrender.de";
 			$createUser = new CreateUser();
 			$createUser->user = $user; 
 			$result = $dns->CreateUser($createUser);
 		} 
-		return $userName;
+		return $user;
 	}
 	public function convertToWhmcs($result) {		
 		$records = array();
