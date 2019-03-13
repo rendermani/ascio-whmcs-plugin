@@ -28,6 +28,7 @@ class it extends Request {
 		return $contact;
 	}
 	protected function mapToAdmin($params) {
+		$country = $params["country"];
 		if($params["additionalfields"]["Legal Type"] == "Italian and foreign natural persons") {
 			$contact = Array(
 				'FirstName' 	=> $params["firstname"],
@@ -46,7 +47,7 @@ class it extends Request {
 			);
 			return $contact;
 		} else {
-			return parent::mapToAdmin();
+			return parent::mapToAdmin($params);
 		}	
 	}
 	
@@ -62,5 +63,6 @@ class it extends Request {
 			return parent::unexpireDomain($params);
 		} else return array("error" => "Domain can't be renewed again.");		
 	}
+	
 }
 ?>
