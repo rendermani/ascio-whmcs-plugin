@@ -384,7 +384,7 @@ class DnsService extends SoapClient {
                                     'GetRecordResponse' => 'GetRecordResponse',
                                    );
  
-  public function __construct($userName, $password, $partnerAccount, $actAs = false, $wsdl = "https://dnsservice.ascio.com/2010/10/30/DnsService.wsdl", $options = array()) {
+  public function __construct($userName, $password, $partnerAccount = null, $actAs = null, $wsdl = "https://dnsservice.ascio.com/2010/10/30/DnsService.wsdl", $options = array()) {
     $ns = 'http://groupnbt.com/2010/10/30/Dns/DnsService'; //Namespace of the WS. 
     $headers = array(); 
     $headers[] = new SoapHeader($ns,'UserName', $userName);
