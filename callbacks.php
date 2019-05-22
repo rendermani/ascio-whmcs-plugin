@@ -28,7 +28,7 @@ try {
 	$account = $pathArr[count($pathArr)-1] == "callbacks_usd.php" ? "ascio_usd" : "ascio";
 	$cfg = getRegistrarConfigOptions($account);
 	$request = new Request($cfg);
-	$request->getCallbackData($orderStatus,$messageId,$orderId);
+	$request->getCallbackData($orderStatus,$messageId,$orderId,$type);
 	echo "Callback received and processed by WHMCS";
 } catch (Exception $e) {
 	echo "Something unexpected happened: ";

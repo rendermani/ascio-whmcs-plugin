@@ -24,7 +24,7 @@ try {
 	$account = $pathArr[count($pathArr)-1] == "callbacks_usd.php" ? "ascio_usd" : "ascio";
 	$cfg = getRegistrarConfigOptions($account);
 	$request = new Request($cfg);
-	$request->getCallbackData($orderStatus,$messageId,$orderId);
+	$request->getCallbackData($orderStatus,$messageId,$orderId,null);
 	echo "Callback received, ";
 	echo "OrderId: ".$orderId. ", ";
 	echo "MessageId: ".$messageId. ", ";

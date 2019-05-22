@@ -213,7 +213,7 @@ Class Request {
 		$result =  get_query_val("tbldomains","registrar", array("id" => $domainId));
 		return $result == "ascio" || $result == "ascio_usd";
 	}
-	public function getCallbackData($orderStatus,$messageId,$orderId,$type) {
+	public function getCallbackData($orderStatus,$messageId,$orderId,$type=null) {
 		$ascioParams = array(
 			'sessionId' => 'mySessionId',
 			'msgId' => $messageId
@@ -437,7 +437,7 @@ Class Request {
 		return $result;
 	}
 	private function formatDate($xsDateTime) {
-		if($domain->ExpDate == "0001-01-01T00:00:00") return false;
+		if($xsDateTime == "0001-01-01T00:00:00") return false;
 		$dateTokens = explode("T", $xsDateTime);
 		if(count($dateTokens == 2)) {
 			return str_replace("-", "", $dateTokens[0]);
@@ -535,7 +535,7 @@ Class Request {
 		$updateAdmin = Tools::compareContact($newAdmin,$old->AdminContact);
 		$updateTech = Tools::compareContact($newTech,$old->TechContact);	
 		if($updateRegistrant) {
-			logActivity("WHMCS Update Registrant: ".$registrantResult);
+			logActivity("WHMCS Update Registrant");
 			try {
 				$ascioParams = $this->mapToOrder($params,$updateRegistrant);		
 			} catch (AscioException $e) {
@@ -549,7 +549,7 @@ Class Request {
 			}
 			$registrantResult = $this->request("CreateOrder",$ascioParams);		
 		} 
-		if($updateTech || $updateBilling || ($updateAdmin && $updateRegistrant!="Owner_Change")) {
+		if($updateTech || ($updateAdmin && $updateRegistrant!="Owner_Change")) {
 			logActivity("WHMCS Contact_Update");
 			try {
 				$ascioParams = $this->mapToOrder($params,"Contact_Update");		
@@ -755,6 +755,7 @@ Class Request {
 	// WHMCS has 2 contact structures. Flat and nested.
 	// This function in converting from adminfirstname to Admin["First Name"]
 	public function mapToContact2($params,$type) {
+		//Todo: Remove fixPhone		
 		$ascio = (object) array(
 			'OrgName'  				=> $params["Organisation Name"],
 			'Address1'  			=> $params["Address 1"],
@@ -765,7 +766,6 @@ Class Request {
 			'CountryCode'  			=> $params["Country"],
 			'Email'  				=> $params["Email"],
 			'Phone'  				=> Tools::fixPhone($params["Phone"],$params["Country"]), 
-			// todo test!
 			'Fax'  					=> Tools::fixPhone($params["custom"]["Fax"],$params["Country"]),
 		);
 		if($type=="Registrant") {
@@ -845,7 +845,6 @@ Class Request {
 					"type" => $type,
 					"domain" => $domain]);			
 		}		
-		return $result; 
 	}
 	public function deleteOldHandles($domainName) {
 		foreach($this->getHandlesByDomain($domainName) as $key => $ascioId)  {
