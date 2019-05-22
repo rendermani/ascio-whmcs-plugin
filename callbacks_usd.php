@@ -20,7 +20,7 @@ try {
 	// this is when usd and eur account is used. In this case a second registrar module can be installed.
 	// please ask manuel.lautenschlager@ascio.com for the code
 	$path = pathinfo(__PATH__);
-	$pathArr = split("/",$_SERVER['PHP_SELF']);
+	$pathArr = explode("/",$_SERVER['PHP_SELF']);
 	$account = $pathArr[count($pathArr)-1] == "callbacks_usd.php" ? "ascio_usd" : "ascio";
 	$cfg = getRegistrarConfigOptions($account);
 	$request = new Request($cfg);
