@@ -243,6 +243,7 @@ Class Request {
 				'msgId' => $messageId
 			);			
 			$this->request("AckMessage", $ascioParams);
+			Tools::log("DomainId: " . $domainId." not found in the WHMCS-Database: " .$order->order->Type. ", Domain: ".$domainName.", Order-Status: ".$orderStatus."\n ".$errors);
 			return;	
 		}
 		$domain = $this->getDomain($order->order->Domain->DomainHandle);
@@ -575,7 +576,6 @@ Class Request {
 	}
 	public function renewDomain($params) {
 		$result = Capsule::select("select Threshold, Renew from tblasciotlds where Tld = '".$params["tld"]."'")[0];				
-	    $hasRenew = $result->Renew == 1 ? true : false; 	
 		$params = $this->setParams($params);
 		if($result->Renew == 1) {
 			try {
