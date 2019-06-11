@@ -237,6 +237,7 @@ Class Request {
 			$domainId = NULL;
 		}
 		$this->params["domainid"] = $domainId;
+		// if the domain doesn't exist in WHMCS, the message is acked and nothing is done. 
 		if(!isset($domainId)) {
 			 $ascioParams = array(
 				'sessionId' => 'mySessionId', 
@@ -247,19 +248,16 @@ Class Request {
 			return;	
 		}
 		$domain = $this->getDomain($order->order->Domain->DomainHandle);
-		$status = !$domain->DomainName ? NULL : $domain->Status;	
 		$this->setDomainStatus($domain);
 		$domain->domainId = $domainId;
 		DomainCache::put($domain);
 		$this->setHandle($domain);
-		$orderType = $order->order->Type;
 		$this->params["domainname"] = $domainName;
 		// External WHMCS API: Set Status
 		// External WHMCS API: Send Mail
 		$msgPart = "Domain (". $domainId . "): ".$domainName;
-		//$whmcsStatus = $this->setDomainStatus($domain);
 		logActivity("WHMCS getCallbackData -> setOrderStatus");
-		$whmcsStatus = $this->setOrderStatus($order);
+		$this->setOrderStatus($order);
 		if ($orderStatus=="Completed") {
 			if(
 				$this->params["AutoExpire"] =="on" && 
@@ -280,6 +278,8 @@ Class Request {
 		//$this->sendAuthCode($order->order,$domainId);
 		$this->expireAfterRenew($order,$domain);				
 	}
+	// for TLDs that have no Renew, the domain is expired after the auto-renew is completed. 
+	// this prevents domains being autorenewed without payment. 
 	protected function expireAfterRenew($order,$domain) {
 		if($this->params["AutoExpire"] != "on") return;
 		if(
@@ -411,14 +411,20 @@ Class Request {
 			$dueDate = DateTime::createFromFormat(DateTime::ATOM,$domain->ExpDate."-01:00");
 			$dueDate->modify($threshold.' day');		
 			// this is only if the renew command doesn't exist, and the domain is not expiring. 
-			// in this case 1x paid means unexpire, then expire with the next autorenew. 			
+			// in this case payment means unexpire, and then expire again after the next autorenew is completed. 			
+			// this +1 is set, as the due-date is aligned to the expire-date, and the expire-date doesn't changes for TLDs that have no renew. 
+			// $this->hasStatus($domain,"expiring") : the domain is active, autorenew pending
+			// $hasRenew==false : this TLD doesn't support renew. 
 			if(!$this->hasStatus($domain,"expiring") && $hasRenew==false) {
 				$dueDate->modify('+1 year');	
 			}
+			// if the setting Sync_Due_Date is not set, or it is on, the Due-Date will be aligned to the 
+			// ExpireDate + Threshold (which is negative in most cases)
 			if(!isset($this->params["Sync_Due_Date"]) || $this->params["Sync_Due_Date"]=="on") {
 				logActivity("WHMCS sync due date");
 				$values["nextduedate"] = $dueDate->format('Y-m-d');	
 			} 
+			// set the expire-date and the registration-date from the API 
 			if($expDate) {
 				$values["expirydate"] = $expDate;	
 				$values["registrationdate"] = $creDate;	 
@@ -575,15 +581,20 @@ Class Request {
 		return array_merge($registrantResult,$contactResult);
 	}
 	public function renewDomain($params) {
+		// lookup the renew settings for the tld. 
 		$result = Capsule::select("select Threshold, Renew from tblasciotlds where Tld = '".$params["tld"]."'")[0];				
 		$params = $this->setParams($params);
+		// if the registry supports the renew command, the normal renew api method is called
 		if($result->Renew == 1) {
 			try {
 				$ascioParams = $this->mapToOrder($params,"Renew_Domain");
 			} catch (AscioException $e) {
 				return array("error" => $e->getMessage());
 			}
-		} else {
+		} 
+		// the domain doesn't support renew. Domain is unexpired, and expired again after
+		// the domain was autorenewed: $this->expireAfterRenew()
+		else {
 			$domain = $this->searchDomain($params);
 			if($this->hasStatus($domain,"expiring")) {
 					return $this->unexpireDomain($params);
