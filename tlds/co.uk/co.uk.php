@@ -19,7 +19,7 @@ class co_uk extends Request {
 		$contact["RegistrantNumber"] 		= $params["additionalfields"]["Company ID Number"];
 		if(($contact["CountryCode"] != "GB") &! $isCompany) $contact["RegistrantType"] ="FIND";
 		if($contact["RegistrantType"] == "IND") {
-			$contact["OrgName"] == null; 
+			$contact["OrgName"] = null; 
 		}
 		return $contact;
 	}
