@@ -14,11 +14,13 @@ class co_uk extends Request {
 			"Foreign Organization"  => "FCORP",
 			"Other foreign organizations"  => "FOTHER"
 		);
-		$isCompany = isset($contact["OrgName"]);
-
+		$isCompany = isset($contact["OrgName"]);		
 		$contact["RegistrantType"] 			= $map[$params["additionalfields"]["Legal Type"]];
 		$contact["RegistrantNumber"] 		= $params["additionalfields"]["Company ID Number"];
 		if(($contact["CountryCode"] != "GB") &! $isCompany) $contact["RegistrantType"] ="FIND";
+		if($contact["RegistrantType"] == "IND") {
+			$contact["OrgName"] == null; 
+		}
 		return $contact;
 	}
 	public function transferDomain($params=false) {
