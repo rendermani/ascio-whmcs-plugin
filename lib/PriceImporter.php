@@ -163,7 +163,7 @@ class PriceImporter {
 		}
 		return $tld;		
 	}
-	public function updateTlds($tldName) {
+	public function updateTlds() {
 		$context = $this->getRequestContext();
 		$url = 'https://tldkit.ascio.com/api/v1/TldKit/';
 		$result = file_get_contents($url, false, $context);
@@ -194,5 +194,5 @@ echo "start\r\n";
 $priceImporter = new PriceImporter("account", "password");
 $priceImporter->setMargin(10);
 //$priceImporter->updateTld("ac");
-$priceImporter->updateTlds("ac");
+$priceImporter->updateTlds();
 echo "end\r\n";
