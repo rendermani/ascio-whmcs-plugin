@@ -170,7 +170,7 @@ class Tools {
 		return  localAPI($command, $values, $adminuser);
 	}
 	public static function getDomainId($domain) {
-		$query = 'SELECT id FROM  `tbldomains` WHERE domain =  "'.$domain.'" LIMIT 0 , 1';
+		$query = 'SELECT id FROM  `tbldomains` WHERE domain =  "'.$domain.'" ORDER BY id DESC LIMIT 0 , 1 ';
 		$result = mysql_query($query);
 		$row = mysql_fetch_assoc($result);		
 		$id = $row["id"];
