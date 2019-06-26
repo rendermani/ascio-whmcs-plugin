@@ -400,7 +400,7 @@ Class Request {
 		}		
 	}
 	public function setStatus($domain,$status) {
-		if(!status) return false; 
+		if(!$status) return false; 
 		$values["domainid"] =  $this->params["domainid"]; 
 		if(isset($domain->ExpDate) && $domain->ExpDate != "0001-01-01T00:00:00") {
 			$expDate = $this->formatDate($domain->ExpDate);
