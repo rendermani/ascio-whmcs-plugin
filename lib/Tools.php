@@ -173,13 +173,13 @@ class Tools {
 		$query = 'SELECT id FROM  `tbldomains` WHERE domain =  "'.$domain.'" LIMIT 0 , 1';
 		$result = mysql_query($query);
 		$row = mysql_fetch_assoc($result);		
-	    $id = $row["id"];
+		$id = $row["id"];
 	    return $id; 
 	}
 	public static function getDomainIdFromOrder($order) {
-		$comment = json_decode($order->TransactionComment);		
-		if($comment == NULL && is_object($comment)) {
-			$domainId   = Tools::getDomainId($domainName);
+		$comment = json_decode($order->TransactionComment);
+		if($comment == NULL) {
+			$domainId   = Tools::getDomainId($order->Domain->DomainName);
 		} else {
 			$domainId   = $comment->domainId;
 		}
