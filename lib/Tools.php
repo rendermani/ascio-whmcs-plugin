@@ -174,6 +174,13 @@ class Tools {
 		$result = mysql_query($query);
 		$row = mysql_fetch_assoc($result);		
 		$id = $row["id"];
+		// if there are cancelled domains. But Active and pending domains have priority
+		if(!$id) {
+			$query = 'SELECT id FROM  `tbldomains` WHERE domain =  "'.$domain.'"  ORDER BY status ASC, id DESC LIMIT 0 , 1 ';
+			$result = mysql_query($query);
+			$row = mysql_fetch_assoc($result);		
+			$id = $row["id"];
+		}
 	    return $id; 
 	}
 	public static function getDomainIdFromOrder($order) {
