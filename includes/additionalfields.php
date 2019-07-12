@@ -82,6 +82,8 @@ $additionaldomainfields[".it"][] = array("Name" => "Accept Section 5 of .IT regi
 $additionaldomainfields[".it"][] = array("Name" => "Accept Section 6 of .IT registrar contract", "LangVar" => "ittldsec6", "Type" => "tickbox",);
 $additionaldomainfields[".it"][] = array("Name" => "Accept Section 7 of .IT registrar contract", "LangVar" => "ittldsec7", "Type" => "tickbox",);
 
+$additionaldomainfields["tn.it"] = $additionaldomainfields[".it"];
+
 // .DE
 $additionaldomainfields[".de"] = [];
 $additionaldomainfields[".de"][] = array("Name" => "Tax ID", "LangVar" => "detldtaxid", "Type" => "text", "Size" => "20", "Default" => "", "Required" => true,);
