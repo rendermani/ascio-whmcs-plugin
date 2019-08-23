@@ -55,6 +55,7 @@ $q = 'ALTER TABLE `tblasciohandles` ADD INDEX(`whmcs_id`);';
 mysql_query($q);
 echo $lineBreak."* Read TLD parameters *".$lineBreak;
 $s = curl_init(); 
+// TODO: handle errors
 curl_setopt($s,CURLOPT_URL,"https://aws.ascio.info/tldkit.xq"); 
 curl_setopt($s,CURLOPT_RETURNTRANSFER,true);
 $tldsString = curl_exec($s);
