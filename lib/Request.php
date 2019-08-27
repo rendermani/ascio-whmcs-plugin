@@ -209,8 +209,8 @@ Class Request {
 			};			
 		}
 	}
-	private function isAscioOrder($domainId) {
-		$result =  get_query_val("tbldomains","registrar", array("id" => $domainId));
+	private function isAscioOrder($domainId,$domainName) {
+		$result =  get_query_val("tbldomains","registrar", array("id" => $domainId,"domain" => $domainName));
 		return $result == "ascio" || $result == "ascio_usd";
 	}
 	public function getCallbackData($orderStatus,$messageId,$orderId,$type=null) {
@@ -233,17 +233,21 @@ Class Request {
 		}
 		$domainName = $order->order->Domain->DomainName;
 		$domainId = Tools::getDomainIdFromOrder($order->order);
-		if(!$this->isAscioOrder($domainId)) {
+		if(!$this->isAscioOrder($domainId,$domainName)) {
 			$domainId = NULL;
 		}
 		$this->params["domainid"] = $domainId;
 		// if the domain doesn't exist in WHMCS, the message is acked and nothing is done. 
-		if(!isset($domainId)) {
-			 $ascioParams = array(
-				'sessionId' => 'mySessionId', 
-				'msgId' => $messageId
-			);			
-			$this->request("AckMessage", $ascioParams);
+		if(!isset($domainId)) {					
+			if ($this->params["MultiBrand_Mode"] == "on") {
+				sleep(5);
+			} else {
+				$ascioParams = array(
+					'sessionId' => 'mySessionId', 
+					'msgId' => $messageId
+				);	
+				$this->request("AckMessage", $ascioParams);
+			}
 			Tools::log("DomainId: " . $domainId." not found in the WHMCS-Database: " .$order->order->Type. ", Domain: ".$domainName.", Order-Status: ".$orderStatus."\n ".$errors);
 			return;	
 		}
