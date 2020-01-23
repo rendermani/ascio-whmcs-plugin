@@ -417,6 +417,7 @@ Class Request {
 			// $hasRenew==false : this TLD doesn't support renew. 
 			if(!$this->hasStatus($domain,"expiring") && $hasRenew==false) {
 				$dueDate->modify('+1 year');	
+				$expDate->modify('+1 year');	
 			}
 			// if the setting Sync_Due_Date is not set, or it is on, the Due-Date will be aligned to the 
 			// ExpireDate + Threshold (which is negative in most cases)
