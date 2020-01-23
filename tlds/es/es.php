@@ -34,6 +34,14 @@ class es extends Request {
 	public function transferDomain($params=false) {
 		$params["original"]["regperiod"] = 0 ; 
 		parent::transferDomain($params);
+	}	
+	public function mapToNameservers($params) {
+		return array (
+					'NameServer1' => Array('HostName' => $params["ns1"], 'IpAddress' => gethostbyname($params["ns1"])), 
+					'NameServer2' => Array('HostName' => $params["ns2"], 'IpAddress' => gethostbyname($params["ns2"])),
+					'NameServer3' => Array('HostName' => $params["ns3"], 'IpAddress' => gethostbyname($params["ns3"])),
+					'NameServer4' => Array('HostName' => $params["ns4"], 'IpAddress' => gethostbyname($params["ns4"]))
+		);
 	}
 }
 ?>

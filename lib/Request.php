@@ -209,8 +209,8 @@ Class Request {
 			};			
 		}
 	}
-	private function isAscioOrder($domainId) {
-		$result =  get_query_val("tbldomains","registrar", array("id" => $domainId));
+	private function isAscioOrder($domainId,$domainName) {
+		$result =  get_query_val("tbldomains","registrar", array("id" => $domainId,"domain" => $domainName));
 		return $result == "ascio" || $result == "ascio_usd";
 	}
 	public function getCallbackData($orderStatus,$messageId,$orderId,$type=null) {
@@ -233,17 +233,21 @@ Class Request {
 		}
 		$domainName = $order->order->Domain->DomainName;
 		$domainId = Tools::getDomainIdFromOrder($order->order);
-		if(!$this->isAscioOrder($domainId)) {
+		if(!$this->isAscioOrder($domainId,$domainName)) {
 			$domainId = NULL;
 		}
 		$this->params["domainid"] = $domainId;
 		// if the domain doesn't exist in WHMCS, the message is acked and nothing is done. 
-		if(!isset($domainId)) {
-			 $ascioParams = array(
-				'sessionId' => 'mySessionId', 
-				'msgId' => $messageId
-			);			
-			$this->request("AckMessage", $ascioParams);
+		if(!isset($domainId)) {					
+			if ($this->params["MultiBrand_Mode"] == "on") {
+				sleep(5);
+			} else {
+				$ascioParams = array(
+					'sessionId' => 'mySessionId', 
+					'msgId' => $messageId
+				);	
+				$this->request("AckMessage", $ascioParams);
+			}
 			Tools::log("DomainId: " . $domainId." not found in the WHMCS-Database: " .$order->order->Type. ", Domain: ".$domainName.", Order-Status: ".$orderStatus."\n ".$errors);
 			return;	
 		}
@@ -748,14 +752,14 @@ Class Request {
 		$country =  $params[$prefix . "country"];	
 		try {
 			$contact = Array(
-				'OrgName' 		=>  $params[$prefix . "companyname"],
-				'Address1' 		=>  $params[$prefix . "address1"],	
-				'Address2' 		=>  $params[$prefix . "address2"],
-				'PostalCode' 	=>  $params[$prefix . "postcode"],
-				'City' 			=>  $params[$prefix . "city"],
-				'State' 		=>  $params[$prefix . "state"],		
+				'OrgName' 		=>  trim($params[$prefix . "companyname"]),
+				'Address1' 		=>  trim($params[$prefix . "address1"]),
+				'Address2' 		=>  trim($params[$prefix . "address2"]),
+				'PostalCode' 	=>  trim($params[$prefix . "postcode"]),
+				'City' 			=>  trim($params[$prefix . "city"]),
+				'State' 		=>  trim($params[$prefix . "state"]),
 				'CountryCode' 	=>  $country,
-				'Email' 		=>  $params[$prefix . "email"],
+				'Email' 		=>  trim($params[$prefix . "email"]),
 				'Phone'			=>  Tools::fixPhone($params[$prefix . "fullphonenumber"],$country),
 				'Fax' 			=> 	Tools::fixPhone($params[$prefix . "custom"]["Fax"],$country)
 			);
@@ -769,22 +773,22 @@ Class Request {
 	public function mapToContact2($params,$type) {
 		//Todo: Remove fixPhone		
 		$ascio = (object) array(
-			'OrgName'  				=> $params["Organisation Name"],
-			'Address1'  			=> $params["Address 1"],
-			'Address2'  			=> $params["Address 2"],
-			'PostalCode'  			=> $params["ZIP Code"],
-			'City'  				=> $params["City"],
-			'State'	  				=> $params["State"],
-			'CountryCode'  			=> $params["Country"],
-			'Email'  				=> $params["Email"],
+			'OrgName'  				=> trim($params["Organisation Name"]),
+			'Address1'  			=> trim($params["Address 1"]),
+			'Address2'  			=> trim($params["Address 2"]),
+			'PostalCode'  			=> trim($params["ZIP Code"]),
+			'City'  				=> trim($params["City"]),
+			'State'	  				=> trim($params["State"]),
+			'CountryCode'  			=> trim($params["Country"]),
+			'Email'  				=> trim($params["Email"]),
 			'Phone'  				=> Tools::fixPhone($params["Phone"],$params["Country"]), 
 			'Fax'  					=> Tools::fixPhone($params["custom"]["Fax"],$params["Country"]),
 		);
 		if($type=="Registrant") {
-			$ascio->Name = $params["First Name"]. " ". $params["Last Name"];		
+			$ascio->Name = trim($params["First Name"]. " ". $params["Last Name"]);		
 		} else {
-			$ascio->FirstName 	= $params["First Name"];
-			$ascio->LastName 	= $params["Last Name"];
+			$ascio->FirstName 	= trim($params["First Name"]);
+			$ascio->LastName 	= trim($params["Last Name"]);
 		}
 		return $ascio; 
 	}
