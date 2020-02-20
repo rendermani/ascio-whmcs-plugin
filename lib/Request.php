@@ -315,6 +315,7 @@ Class Request {
 		if(
 			$orderStatus == "Completed" || 
 			$orderStatus == "Failed" || 
+			$orderStatus == "Invalid" || 
 			$orderStatus == "Pending_End_User_Action" || 
 			$orderStatus == "Pending_Documentation"
 			) {
