@@ -31,6 +31,16 @@ class es extends Request {
 		$contact["OrganisationNumber"] = $params["additionalfields"]["ID Form Number"];
 		return $contact;
 	}
+	protected function mapToTech($params) {
+		$contact = parent::mapToTech($params);
+		$contact["OrganisationNumber"] = $params["additionalfields"]["ID Form Number"];
+		return $contact;
+	}
+	protected function mapToBilling($params) {
+		$contact = parent::mapToBilling($params);
+		$contact["OrganisationNumber"] = $params["additionalfields"]["ID Form Number"];
+		return $contact;
+	}
 	public function transferDomain($params=false) {
 		$params["original"]["regperiod"] = 0 ; 
 		parent::transferDomain($params);
