@@ -696,13 +696,15 @@ Class Request {
 	public function mapToOrder ($params,$orderType) {
 		//	get custom-field names. Params only has IDs but the names are needed
 		$fields = $customfields = $params["custom"] = array();
- 		$result = mysql_query("select id,fieldname from tblcustomfields");
- 		foreach ($params["customfields"] as $key => $value) {
- 			$customFields[$value["id"]] = $value["value"];
- 		}
- 		while ($row = mysql_fetch_assoc($result)) {
- 			$params["custom"][$row['fieldname']]=$customFields[$row['id']] ;
-		}
+		 if ($params["customfields"]) {
+			$result = mysql_query("select id,fieldname from tblcustomfields");
+			foreach ($params["customfields"] as $key => $value) {
+				$customFields[$value["id"]] = $value["value"];
+			}
+			while ($row = mysql_fetch_assoc($result)) {
+				$params["custom"][$row['fieldname']]=$customFields[$row['id']] ;
+		   }
+		 }		
 		$params = $this->setParams($params);
 		$domainName = $params["domainname"];
 		$proxy = $params["Proxy_Lite"] == "on" ? "Privacy" : "Proxy";
