@@ -316,12 +316,43 @@ function ascio_GetContactDetails($params) {
 	$request = createRequest($params);
 	$result = $request->searchDomain();
 	$name = Tools::splitName($result->Registrant->Name);
-	$values["Registrant"]["First Name"] = $name["first"];
-	$values["Registrant"]["Last Name"]  = $name["last"];
-	$values["Admin"]["First Name"] 		= $result->Admin->Firstname;
-	$values["Admin"]["Last Name"] 		= $result->Admin->Lastname;
-	$values["Tech"]["First Name"] 		= $result->Tech->Firstname;
-	$values["Tech"]["Last Name"] 		= $result->Tech->Lastname;
+	$values ["Registrant"]["First Name"] = $name["first"];
+	$values ["Registrant"]["Last Name"]  = $name["last"];
+	$values ["Registrant"] ["Company"] = $result->Registrant->OrgName;
+	$values ["Registrant"] ["Email"] = $result->Registrant->Email;
+	$values ["Registrant"] ["Phone Number"] = $result->Registrant->Phone;
+	$values ["Registrant"] ["Address1"] = $result->Registrant->Address1;
+	$values ["Registrant"] ["Address2"] = $result->Registrant->Address2;
+	$values ["Registrant"] ["State"] = $result->Registrant->State;
+	$values ["Registrant"] ["Postcode"] = $result->Registrant->PostalCode;
+	$values ["Registrant"] ["City"] = $result->Registrant->City;
+	$values ["Registrant"] ["Country Code"] = $result->Registrant->CountryCode;
+
+	$values ["Admin"]["First Name"] = $result->AdminContact->FirstName;
+	$values ["Admin"]["Last Name"]  = $result->AdminContact->LastName;
+	$values ["Admin"] ["Company"] = $result->AdminContact->OrgName;
+	$values ["Admin"] ["Email"] = $result->AdminContact->Email;
+	$values ["Admin"] ["Phone Number"] = $result->AdminContact->Phone;
+	$values ["Admin"] ["Address1"] = $result->AdminContact->Address1;
+	$values ["Admin"] ["Address2"] = $result->AdminContact->Address2;
+	$values ["Admin"] ["State"] = $result->AdminContact->State;
+	$values ["Admin"] ["Postcode"] = $result->AdminContact->PostalCode;
+	$values ["Admin"] ["City"] = $result->AdminContact->City;
+	$values ["Admin"] ["Country Code"] = $result->AdminContact->CountryCode;
+
+	if ($result->TechContact) {
+		$values ["Tech"]["First Name"] = $result->TechContact->FirstName;
+		$values ["Tech"]["Last Name"]  = $result->TechContact->LastName;
+		$values ["Tech"] ["Company"] = $result->TechContact->OrgName;
+		$values ["Tech"] ["Email"] = $result->TechContact->Email;
+		$values ["Tech"] ["Phone Number"] = $result->TechContact->Phone;
+		$values ["Tech"] ["Address1"] = $result->TechContact->Address1;
+		$values ["Tech"] ["Address2"] = $result->TechContact->Address2;
+		$values ["Tech"] ["State"] = $result->TechContact->State;
+		$values ["Tech"] ["Postcode"] = $result->TechContact->PostalCode;
+		$values ["Tech"] ["City"] = $result->TechContact->City;
+		$values ["Tech"] ["Country Code"] = $result->TechContact->CountryCode;
+	}
 	syslog(LOG_INFO, "WHMCS GetContactDetails");
 	return $values;
 }
