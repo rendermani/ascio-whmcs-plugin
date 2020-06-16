@@ -794,6 +794,39 @@ Class Request {
 		}
 		return $ascio; 
 	}
+	public function mapGetContactDetailContact($values, $contact, $type) {
+		if($contact) {
+			$values [$type]["First Name"] = $contact ->FirstName;
+			$values [$type]["Last Name"]  = $contact ->LastName;
+			$values [$type] ["Company Name"] = $contact ->OrgName;
+			$values [$type] ["Email"] = $contact ->Email;
+			$values [$type] ["Phone Number"] = $contact ->Phone;
+			$values [$type] ["Fax Number"] = $contact ->Fax;
+			$values [$type] ["Address1"] = $contact ->Address1;
+			$values [$type] ["Address2"] = $contact ->Address2;
+			$values [$type] ["State"] = $contact ->State;
+			$values [$type] ["Postcode"] = $contact ->PostalCode;
+			$values [$type] ["City"] = $contact ->City;
+			$values [$type] ["Country Code"] = $contact ->CountryCode;
+		}
+		return $values;
+	}
+	public function mapGetContactDetailRegistrant($values, $registrant) {
+		$name = Tools::splitName($registrant->Name);
+		$values ["Registrant"]["First Name"] = $name["first"];
+		$values ["Registrant"]["Last Name"]  = $name["last"];
+		$values ["Registrant"] ["Company Name"] = $registrant->OrgName;
+		$values ["Registrant"] ["Email"] = $registrant->Email;
+		$values ["Registrant"] ["Phone Number"] = $registrant->Phone;
+		$values ["Registrant"] ["Fax Number"] = $registrant->Fax;
+		$values ["Registrant"] ["Address1"] = $registrant->Address1;
+		$values ["Registrant"] ["Address2"] = $registrant->Address2;
+		$values ["Registrant"] ["State"] = $registrant->State;
+		$values ["Registrant"] ["Postcode"] = $registrant->PostalCode;
+		$values ["Registrant"] ["City"] = $registrant->City;
+		$values ["Registrant"] ["Country Code"] = $registrant->CountryCode;
+		return $values;
+	}
 	public function mapToNameservers($params) {
 		return array (
 					'NameServer1' => Array('HostName' => $params["ns1"]), 
