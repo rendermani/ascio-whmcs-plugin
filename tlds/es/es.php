@@ -42,7 +42,7 @@ class es extends Request {
 		return $contact;
 	}
 	public function transferDomain($params=false) {
-		$params["original"]["regperiod"] = 0 ; 
+		$params["regperiod"] = 0 ; 
 		parent::transferDomain($params);
 	}	
 	public function mapToNameservers($params) {
