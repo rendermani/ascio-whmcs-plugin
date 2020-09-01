@@ -706,7 +706,9 @@ Class Request {
 		   }
 		 }		
 		$params = $this->setParams($params);
-		$domainName = $params["domainname"];
+		$domainName = $params["domainObj"]->getIdnSecondLevel().".".$params["domainObj"]->getTopLevel();
+		//var_dump($params["domainObj"]->getIdnSecondLevel().".".$params["domainObj"]->getTopLevel());
+		//die();
 		$proxy = $params["Proxy_Lite"] == "on" ? "Privacy" : "Proxy";
 		$domain = array( 
 			'DomainName' => $domainName,
