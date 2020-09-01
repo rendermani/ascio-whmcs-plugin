@@ -59,8 +59,12 @@ class DnsZone {
 			$this->deleteRecord($record);
 		}
 		else {
-			$record->Source 	= $this->addZonename($newRecord["hostname"]);
-			$record->Target 	= $this->addZonename($newRecord["address"]);
+			$record->Source 	= $this->addZonename($newRecord["hostname"]);				
+			if($newRecord["type"] == "TXT") {
+				$record->Target = $newRecord["address"];
+			} else {
+				$record->Target = $this->addZonename($newRecord["address"]);
+			}
 			if($newRecord["priority"]) $record->Priority = $newRecord["priority"];
 		}
 		$updateRecord = new UpdateRecord();
@@ -91,7 +95,11 @@ class DnsZone {
 		$type =  $record["type"] == "URL" ? "WebForward" : $record["type"];		
 		$newRecord = new $type();	
 		$newRecord->Source 	= $this->addZonename($record["hostname"]);
-		$newRecord->Target 	= $this->addZonename($record["address"]);
+		if($record["type"] == "TXT") {
+			$newRecord->Target = $record["address"];
+		} else {
+			$newRecord->Target = $this->addZonename($record["address"]);
+		}
 		$newRecord->Priority 	= $record["priority"];
 		if($record["type"] == "URL") {
 			$newRecord->RedirectionType ="Permanent";		
@@ -131,7 +139,7 @@ class DnsZone {
 			$user->Email ="ml@webrender.de";
 			$createUser = new CreateUser();
 			$createUser->user = $user; 
-			$result = $dns->CreateUser($createUser);
+			$result = $this->dnsService->CreateUser($createUser);
 		} 
 		return $user;
 	}
