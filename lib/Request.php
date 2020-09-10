@@ -840,8 +840,6 @@ Class Request {
 			$this->params = $params; 			
 			if($this->params["Username"]) $this->account = $this->params["Username"];
 			if($this->params["Password"]) $this->password = $this->params["Password"];
-			var_dump($params);
-			die();
 			if(isset( $params["sld"])) {
 				$this->domainName = $params["domainObj"]->getIdnSecondLevel().".".$params["domainObj"]->getTopLevel();		
 			}
