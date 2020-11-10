@@ -57,6 +57,7 @@ Class Request {
 	var $password; 
 	var $params;
 	var $domain;
+	public $domainName;
 	public function __construct($params) {
 		$this->setParams($params);
 	}
@@ -706,7 +707,7 @@ Class Request {
 		   }
 		 }		
 		$params = $this->setParams($params);
-		$domainName = $params["domainObj"]->getIdnSecondLevel().".".$params["domainObj"]->getTopLevel();
+		$domainName = $this->domainName;
 		$proxy = $params["Proxy_Lite"] == "on" ? "Privacy" : "Proxy";
 		$domain = array( 
 			'DomainName' => $domainName,
@@ -842,6 +843,8 @@ Class Request {
 			if($this->params["Password"]) $this->password = $this->params["Password"];
 			if(isset( $params["sld"])) {
 				$this->domainName = $params["domainObj"]->getIdnSecondLevel().".".$params["domainObj"]->getTopLevel();		
+			} else {
+				$this->domainName = $params->domainName;
 			}
 		} 
 		return $this->params;
