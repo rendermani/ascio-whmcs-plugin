@@ -219,7 +219,8 @@ Class Request {
 			'sessionId' => 'mySessionId',
 			'msgId' => $messageId
 		);		
-		$result = $this->request("GetMessageQueue", $ascioParams);		
+		$result = $this->request("GetMessageQueue", $ascioParams);	
+		$this->domainName = $result->item->DomainName;
 		$order =  $this->getOrder($orderId);
 		if( $order->order->TransactionComment == "WHMCS SSL Module") {
 			require_once(__DIR__. "/../../../servers/asciossl/lib/SslCallback.php");

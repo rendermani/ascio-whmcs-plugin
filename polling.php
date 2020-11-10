@@ -12,7 +12,6 @@ $result = $request->poll();
 while ($result->item && $result->item->MsgId) {
 	echo "getMessage ".$result->item->MsgId."\n";
 	$item = $result->item;
-	$request->domainName = $item->DomainName;
 	$request->getCallbackData($item->OrderStatus,$item->MsgId,$item->OrderId,"Poll-Message");
 	syslog(LOG_INFO,"Acking: ".$result->item->MsgId);
 	$result = $request->poll();
