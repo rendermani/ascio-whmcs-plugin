@@ -248,7 +248,7 @@ Class Request {
 					'sessionId' => 'mySessionId', 
 					'msgId' => $messageId
 				);	
-				$this->request("AckMessage", $ascioParams);
+				//$this->request("AckMessage", $ascioParams);
 			}
 			Tools::log("DomainId: " . $domainId." not found in the WHMCS-Database: " .$order->order->Type. ", Domain: ".$domainName.", Order-Status: ".$orderStatus."\n ".$errors);
 			return;	
@@ -258,7 +258,7 @@ Class Request {
 		$domain->domainId = $domainId;
 		DomainCache::put($domain);
 		$this->setHandle($domain);
-		$this->params["domainname"] = $domainName;
+		$this->params["domainName"] = $domainName;
 		// External WHMCS API: Set Status
 		// External WHMCS API: Send Mail
 		$msgPart = "Domain (". $domainId . "): ".$domainName;
@@ -278,7 +278,7 @@ Class Request {
 			$errors =  Tools::formatError($result->item->StatusList->CallbackStatus,$msgPart);
 		}	
 		Tools::log($type." received from Ascio. Order: " .$order->order->Type. ", Domain: ".$domainName.", Order-Status: ".$orderStatus."\n ".$errors);
-		Tools::addNote($domainName, $order->order->Type. ": ".$orderStatus . $errors);
+		Tools::addNote($domainName, $order->order->Type. ": ".$orderStatus . $errors);		
 		$this->ackMessage($messageId,$order,$domain);
 		$this->sendStatus($order,$domainId,$orderStatus,$errors); 
 		//$this->sendAuthCode($order->order,$domainId);
@@ -697,8 +697,7 @@ Class Request {
 	}
 	public function mapToOrder ($params,$orderType) {
 		//	get custom-field names. Params only has IDs but the names are needed
-		$fields = $customfields = $params["custom"] = array();
-		 if ($params["customfields"]) {
+		if ($params["customfields"]) {
 			$result = mysql_query("select id,fieldname from tblcustomfields");
 			foreach ($params["customfields"] as $key => $value) {
 				$customFields[$value["id"]] = $value["value"];
@@ -845,7 +844,7 @@ Class Request {
 			if(isset( $params["sld"])) {
 				$this->domainName = $params["domainObj"]->getIdnSecondLevel().".".$params["domainObj"]->getTopLevel();		
 			} else {
-				$this->domainName = $params->domainName;
+				$this->domainName = $params["domainName"];
 			}
 		} 
 		return $this->params;
