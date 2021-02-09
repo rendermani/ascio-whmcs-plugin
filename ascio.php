@@ -44,7 +44,8 @@ function ascio_AdminCustomButtonArray() {
     $buttonarray = array(
 	 "Update EPP Code" => "UpdateEPPCode",
 	 "Autorenew On" => "UnexpireDomain",
-	 "Autorenew Off" => "ExpireDomain"
+	 "Autorenew Off" => "ExpireDomain",
+	 "Sync" => "SyncManual"
 	);
 	return $buttonarray;
 }
@@ -395,6 +396,19 @@ function ascio_Sync($params) {
 	$values["expirydate"] = $d->format("Y-m-d");
 	$values["active"] = $request->getDomainStatus($domain);
 	syslog(LOG_INFO, "Syncing ". $params["sld"].".".$params["tld"]);
+	
+	return $values;
+}
+
+function ascio_SyncManual($params) {
+	$request = createRequest($params);
+	$domain = $request->searchDomain($params);
+	$values["message"] = "Syncing " . $params["sld"] . "." . $params["tld"]. " : " . $domain->Status . "\n";
+	if(!$domain) return array("error" => "Domain ".$params["sld"].".".$params["tld"]." not found.");
+	$d = new DateTime($domain->ExpDate);
+	$values["expirydate"] = $d->format("Y-m-d");
+	$values["active"] = $request->getDomainStatus($domain);
+	syslog(LOG_INFO, "Syncing (manual) ". $params["sld"].".".$params["tld"]);
 	
 	return $values;
 }
