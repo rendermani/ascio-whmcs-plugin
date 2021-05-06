@@ -722,7 +722,7 @@ Class Request {
 			'NameServers' 	=>  $this->mapToNameservers($params),
 			'Trademark' 	=>  $this->mapToTrademark($params)
 		);
-		if(!($orderType == "Transfer_Domain" &! $domain["AdminContact"]["FirstName"])) {
+		if(in_array($orderType, ["Transfer_Domain","Register_Domain", "Domain_Details_Update"])) {
 			$domain["PrivacyProxy"] = array("Type" => $params["idprotection"] ? $proxy : "None");
 		}
 		$order = 
