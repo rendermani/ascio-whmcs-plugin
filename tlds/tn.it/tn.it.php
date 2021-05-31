@@ -1,5 +1,5 @@
 <?php
-class tn_it extends Request {	
+class it extends Request {	
 	private $map =  array(
 		"Italian and foreign natural persons" 	=> "1",
 		"Companies/one man companies" 			=> "2",
@@ -51,7 +51,12 @@ class tn_it extends Request {
 		}	
 	}
 	
-	protected function mapToTrademark($params) {		
+	protected function mapToTrademark($params) {	
+		if($params["additionalfields"]["Legal Type"] == "Italian and foreign natural persons"){
+			if(!$params["additionalfields"]["Birth country"]) {
+				$params["additionalfields"]["Birth country"] = $params["countrycode"];
+			}
+		}
 		// If the country is non italian, state is not needed. Just set any country. Won't be in the Whois
 		if($params["additionalfields"]["Legal Type"]== "Italian and foreign natural persons") {
 			return array ("Country" => $params["additionalfields"]["Birth country"]);
