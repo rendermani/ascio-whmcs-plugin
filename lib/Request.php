@@ -109,7 +109,7 @@ Class Request {
 			die("Ascio registrar plugin settings - Login failed, invalid account or password: ".$this->account);
 			return array('error' => $status->Message );     
 		} else if (count($status->Values->string) > 1 ){
-			$messages = join(", \r\n<br>",$status->Values->string);	
+			$messages = join(", \r\n",$status->Values->string);	
 		}  else {
 			$messages = $status->Values->string;
 		}		
