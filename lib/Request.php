@@ -248,7 +248,7 @@ Class Request {
 					'sessionId' => 'mySessionId', 
 					'msgId' => $messageId
 				);	
-				//$this->request("AckMessage", $ascioParams);
+				$this->request("AckMessage", $ascioParams);
 			}
 			Tools::log("DomainId: " . $domainId." not found in the WHMCS-Database: " .$order->order->Type. ", Domain: ".$domainName.", Order-Status: ".$orderStatus."\n ".$errors);
 			return;	
