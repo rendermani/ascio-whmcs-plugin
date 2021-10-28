@@ -40,10 +40,6 @@ class ru extends Request {
 		);
 		return $contact;
 	}
-	public function transferDomain($params=false) {
-		$params["regperiod"] = 0 ;
-		return parent::transferDomain($params);
-	}	
 
 }
 ?>
