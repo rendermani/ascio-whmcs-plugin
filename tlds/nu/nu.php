@@ -28,5 +28,9 @@ class nu extends Request {
 		protected function mapToTech($params) {
 		return $this->mapToAdmin($params);
 	}
+	public function transferDomain($params=false) {
+		$params["regperiod"] = 0 ;
+		return parent::transferDomain($params);
+	}	
 }
 ?>
