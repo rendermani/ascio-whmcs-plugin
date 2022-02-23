@@ -1,5 +1,5 @@
 <?php
- require_once("lib/Request.php");
+ require_once(__DIR__."/lib/Request.php");
  function hook_set_domain_status($vars) {  
 	if(strpos($vars["params"]["registrar"], "ascio") == false) return;	
 	$request = new Request(array('Account'=> $vars["params"]["Username"],'Password' => $vars["params"]["Password"]));
