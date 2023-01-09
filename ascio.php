@@ -66,7 +66,7 @@ function ascio_DomainSuggestionOptions() {
 function ascio_CheckAvailability($params)
 {
 	try {	
-		$request = createRequest($params);
+		$request = new Request($params);
 		// availability check parameters
 		$searchTerm = $params['searchTerm'];
 		$tldsToInclude = $params['tldsToInclude'];
@@ -84,6 +84,7 @@ function ascio_CheckAvailability($params)
 			} elseif ($code == 0) {
 				$status = SearchResult::STATUS_RESERVED;
 			} else {
+				
 				$status = SearchResult::STATUS_TLD_NOT_SUPPORTED;
 			}
 			

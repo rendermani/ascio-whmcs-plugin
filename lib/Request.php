@@ -117,7 +117,6 @@ Class Request {
 		return array('error' => $message );     
 	}
 	public function availabilityInfo($domain) {
-		
 		$ascioParams = array(
 			'sessionId' => 'mySessionId',
 			"domainName" => $domain,
@@ -841,7 +840,7 @@ Class Request {
 			$this->params = $params; 			
 			if($this->params["Username"]) $this->account = $this->params["Username"];
 			if($this->params["Password"]) $this->password = $this->params["Password"];
-			if(isset( $params["sld"])) {
+			if(isset( $params["domainObj"]) && isset( $params["sld"])) {
 				$this->domainName = $params["domainObj"]->getIdnSecondLevel().".".$params["domainObj"]->getTopLevel();		
 			} else {
 				$this->domainName = $params["domainName"];
