@@ -2,7 +2,6 @@
 
 class de extends Request {	
 	public function transferDomain($params=false) {
-		$params["regperiod"] = 0 ;
 		return parent::transferDomain($params);
 	}
 	public function updateEPPCode($params) {
