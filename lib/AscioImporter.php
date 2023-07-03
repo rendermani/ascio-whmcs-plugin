@@ -9,6 +9,8 @@ require_once(realpath(dirname(__FILE__))."/Request.php");
 
 
 class AscioImport {
+    private $fileName;
+    private $request;
     function __construct($fileName)
     {
         $this->fileName = $fileName;
