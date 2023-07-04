@@ -161,21 +161,21 @@ Class Request {
 		$domain = DomainCache::get($domainId);
 		if(isset($domain)) return $domain; 		
 		$handle = $this->getHandle("domain",$domainId,$this->domainName);
-		if($handle) {	
+		if($handle) {
 			$domain =   $this->getDomain($handle);	
 			$domain->domainId = $domainId;
 			$this->setDomainStatus($domain);			
 			DomainCache::put($domain);
 			$this->setHandle($domain);
 			return $domain;	
-		}	
+		}
 		$criteria= array(
 			'Mode' => 'Strict',
 			'Withoutstates' => Array('string' => 'deleted'),
 			'Clauses' => Array(
 				'Clause' => Array(
 					'Attribute' => 'DomainName', 
-					'Value' => $this->domainName , 
+					'Value' => $this->params['domain_punycode'] , 
 					'Operator' => 'Is'
 				)
 			)
@@ -186,7 +186,7 @@ Class Request {
 		);
 		$result =  $this->request("SearchDomain",$ascioParams);
 		if($result->error) return $result;
-		else {						
+		else {
 			$result->domains->Domain->domainId = $domainId;
 			$this->setDomainStatus($result->domains->Domain);
 			DomainCache::put($result->domains->Domain);
