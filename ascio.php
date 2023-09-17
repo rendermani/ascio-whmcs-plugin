@@ -264,17 +264,25 @@ function ascio_GetDomainInformation($params) {
 function ascio_AdminDomainsTabFields($params){
 	$status = Tools::getVerificationStatus($params["domainid"]);
 	$outRows = ""; 
-	foreach($status as $key => $message) {
-		$message->name . ": " . $message->value . "<br/>";
+	$translation = [
+		"last_from_address" => "Last mail sent from",
+		"last_to_address" =>  "Verification Email",
+		"last_try_date" => "Last mail sent",
+		"verified_by" => "IP Address of the Client when verifying",
+		"verified_date" => "Verified at date"
+	];
+	foreach($status as $message) {
+		if($translation[$message->name]) {
+			$outRows .= '<tr>
+				<td>'. $translation[$message->name]. '</td><td>' . $message->value . '</td>
+			</tr>';
+		}
 	}
 	
-	die();
-	
     # Return output
-    return array(
-        'Registrant Verification Status' => '<p><b>'.$status->verificationInfo->VerificationStatus.'</b></p>',
-        'Domain Notes' => 'blabla notes',
-    );
+    return [
+		"Registrant Verification" => '<table><tbody>' . $outRows. '</tbody></table>'
+	]; 
 }
 
 function ascio_ResendIRTPVerificationEmail(array $params) {
@@ -516,7 +524,7 @@ function ascio_GetTldPricing(array $params)
         // All the set methods can be chained and utilised together.
 		$item = (new ImportItem)
             ->setExtension($tld)
-            ->setMinYears(min($extension["Period"]))
+            ->setMinYears(min($extension["Period"]) > 0 ? min($extension["Period"])  : 1)
             ->setMaxYears(max($extension["Period"]))
             ->setRegisterPrice($extension['OrderType']['Register'])
             ->setRenewPrice($extension['OrderType']['Renew'])
@@ -536,7 +544,11 @@ function extractPeriods($list) {
 		//var_dump($product->Tld); 
 		//die();
 		$tlds[$product->Tld]["Period"][] = $product->Period;
-		if($product->Period == 1) {
+		if(
+			$product->Period == 1 || 
+			$product->OrderType == "Restore" ||
+			($product->OrderType == "Transfer" && $product->Period == 0)
+		) {
 			$tlds[$product->Tld]["OrderType"][$product->OrderType] = $entry->Price;
 		}
  	}
