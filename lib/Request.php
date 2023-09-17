@@ -151,7 +151,7 @@ Class Request {
 		);
 		$result =  $this->request("GetDomain", $ascioParams); 
 		if($result->error) {
-			return $result;
+			throw new Exception($result->error);
 		}
 		else {	
 			return $result->domain;
@@ -163,7 +163,7 @@ Class Request {
 		if(isset($domain)) return $domain; 		
 		$handle = $this->getHandle("domain",$domainId,$this->domainName);
 		if($handle) {	
-			$domain =   $this->getDomain($handle);	
+			$domain = $this->getDomain($handle);	
 			$domain->domainId = $domainId;
 			$this->setDomainStatus($domain);			
 			DomainCache::put($domain);
@@ -186,7 +186,11 @@ Class Request {
 			'criteria' => $criteria
 		);
 		$result =  $this->request("SearchDomain",$ascioParams);
-		if($result->error) return $result;
+		if(!property_exists($result->domains,"Domain")) {
+			return (object)["error" => "Domain not found"];
+		} else if($result->error)  {
+			return $result;
+		}
 		else {						
 			$result->domains->Domain->domainId = $domainId;
 			$this->setDomainStatus($result->domains->Domain);
