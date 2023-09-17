@@ -1,6 +1,7 @@
 <?php
 use Illuminate\Database\Capsule\Manager as Capsule;
 use ascio\whmcs\ssl as ssl; 
+use WHMCS\Domain\Registrar\Domain;
 require_once("Tools.php");
 require_once("ParameterCapture.php");
 define("ASCIO_WSDL_LIVE","https://aws.ascio.com/2012/01/01/AscioService.wsdl");
@@ -375,6 +376,26 @@ Class Request {
 			} else $this->setDomainStatus($order->Domain);
 		}
 	}
+	public function getDomainRegistrarStatus($domain) {	
+		if(!$domain) return Domain::STATUS_DELETED;
+		if($this->hasStatus($domain,"deleted")) {
+			logActivity("WHMCS Domain has Status deleted: ".$domain->Status);
+			return Domain::STATUS_DELETED;
+		}
+		if(
+			$this->hasStatus($domain,"active") || 
+			$this->hasStatus($domain,"expiring") || 
+			$this->hasStatus($domain,"lock")) {			
+			return Domain::STATUS_ACTIVE; 
+		}
+		if(
+			$this->hasStatus($domain,"pending")
+		){	
+			return Domain::STATUS_INACTIVE; 
+		}
+		logActivity("WHMCS Invalid Status: ".$domain->Status);		
+		return false;		
+	}
 	public function getDomainStatus($domain) {	
 		if(!$domain) return "Cancelled";
 		if($this->hasStatus($domain,"deleted")) {
@@ -393,9 +414,9 @@ Class Request {
 			return "Pending"; 
 		}
 		logActivity("WHMCS Invalid Status: ".$domain->Status);		
-		return false;
-		
+		return false;		
 	}
+	
 	public function setDomainStatus($domain) {		
 		if($domain) {
 			if($this->getDomainStatus($domain)) {				
@@ -452,7 +473,7 @@ Class Request {
 	private function formatDate($xsDateTime) {
 		if($xsDateTime == "0001-01-01T00:00:00") return false;
 		$dateTokens = explode("T", $xsDateTime);
-		if(count($dateTokens == 2)) {
+		if(count($dateTokens) == 2) {
 			return str_replace("-", "", $dateTokens[0]);
 		}
 		return false; 
@@ -586,6 +607,20 @@ Class Request {
 		}
 		return array_merge($registrantResult,$contactResult);
 	}
+	public function doRegistrantVerification($email) {
+		$ascioParams = [
+			"sessionId" => "set-it-later",
+			"value" => $email
+		];
+		return $this->request("DoRegistrantVerification",$ascioParams);
+	}	
+	public function getRegistrantVerificationInfo($email) {
+		$ascioParams = [
+			"sessionId" => "set-it-later",
+			"value" => $email
+		];
+		return $this->request("GetRegistrantVerificationInfo",$ascioParams);
+	}	
 	public function renewDomain($params) {
 		// lookup the renew settings for the tld. 
 		$result = Capsule::select("select Threshold, Renew from tblasciotlds where Tld = '".$params["tld"]."'")[0];				
