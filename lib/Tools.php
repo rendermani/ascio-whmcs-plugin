@@ -239,7 +239,6 @@ class Tools {
 			self::writeDomainExtra($domainId, "verified_date", $details->VerificationDate);
 		} else {
 			$last = end($details->Messages->Message);
-			self::writeDomainExtra($domainId, "verification_email", $status->verificationInfo->EmailAddress);
 			self::writeDomainExtra($domainId, "last_try_date", $last->Created);
 			self::writeDomainExtra($domainId, "last_from_address", $last->FromAddress);
 			self::writeDomainExtra($domainId, "last_to_address", $last->ToAddress);
@@ -250,9 +249,7 @@ class Tools {
 		->where("domain_id", $domainId)
 		->whereIn("name",["verified_by","verified_date","verification_email","last_try_date","last_from_address","last_to_address"])
 		->get();
-		var_dump($status);
-		die();
-
+		return $status;
 	}
 	public static function getApiUser() {
 		global $cachedAdminUser; 

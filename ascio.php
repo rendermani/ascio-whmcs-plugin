@@ -14,15 +14,37 @@
 //
 require_once("lib/Tools.php");
 require_once("lib/Request.php");
+require_once("lib/RequestV3.php");
 require_once("lib/DnsService.php");
 require_once("lib/Zone.php");
 
-
+use WHMCS\Carbon;
+use WHMCS\Domain\Registrar\Domain;
 use WHMCS\Domains\DomainLookup\ResultsList;
 use WHMCS\Domains\DomainLookup\SearchResult;
-
+use WHMCS\Domain\TopLevel\ImportItem;
+use WHMCS\Results\ResultsList as PriceResultList;
+/**
+ * Define module related metadata
+ *
+ * Provide some module information including the display name and API Version to
+ * determine the method of decoding the input values.
+ *
+ * @return array
+ */
+function ascio_MetaData()
+{
+    return array(
+        'DisplayName' => 'Ascio Domains',
+        'APIVersion' => '1.1',
+    );
+}
 function ascio_getConfigArray() {
 	$configarray = array(
+	'FriendlyName' => [
+		'Type' => 'System',
+		'Value' => 'Ascio Domains',
+	],
 	 "Username" => array( "Type" => "text", "Size" => "20", "Description" => "Enter your username here" ),
 	 "Password" => array( "Type" => "password", "Size" => "20", "Description" => "Enter your password here"),	 
 	 "TestMode" => array( "Type" => "yesno",  "Description" => "You will need a test-account for this","FriendlyName" =>"Test Mode"),
@@ -163,6 +185,7 @@ function ascio_GetDomainSuggestions($params)
     }
 }
 
+
 function ascio_GetNameservers($params) {	
 	$request = createRequest($params);	
 	$domain = $request->searchDomain(); 
@@ -189,7 +212,82 @@ function ascio_SaveNameservers($params) {
         );
 	}
 }
+function mapNameservers($ascioNameServers) {
+	$nameservers = [];
+	foreach($ascioNameServers as $key => $ascioNameserver) {
+		$nameservers[] =  $ascioNameserver->HostName;
+	}
+	return $nameservers;
+}
+function ascio_GetDomainInformation($params) {
+	$request = createRequest($params);
+	$domain = $request->searchDomain();
+	if (is_array($domain)) $domain = $domain[0];
+	$expDate = Carbon::createFromFormat('Y-m-d', Tools::dateFromXsDateTime($domain->ExpDate));
+	$irtpTransferLockExpiryDate = Carbon::createFromFormat('Y-m-d', Tools::dateFromXsDateTime($domain->CreDate));
+	$irtpTransferLockExpiryDate->addDays(90);
+	$request = createRequest($params);
+	$rvInfo = $request->getRegistrantVerificationInfo($domain->Registrant->Email);
+	Tools::setVerificationStatus($params["domainid"], $rvInfo);
+	$result = (new Domain)
+        ->setDomain($domain->DomainName)
+        ->setNameservers(mapNameservers($domain->Nameservers))
+        ->setRegistrationStatus($request->getDomainRegistrarStatus($domain))
+        ->setExpiryDate($expDate) // $response['expirydate'] = YYYY-MM-DD
+        ->setRestorable(true)
+        ->setIdProtectionStatus($domain->PrivacyProxy->Type == "Proxy" || $domain->PrivacyProxy->Type=="Privacy")
+        ->setDnsManagementStatus($params['dnsmanagement'])
+        ->setEmailForwardingStatus($params['emailforwarding'])
+        ->setIsIrtpEnabled(Tools::isIcannTld($domain->DomainName))
+        ->setIrtpOptOutStatus(false)
+        ->setIrtpTransferLock(true)
+        ->setIrtpTransferLockExpiryDate($irtpTransferLockExpiryDate)
+        ->setRegistrantEmailAddress($domain->Registrant->Email)
+        ->setIrtpVerificationTriggerFields(
+            [
+                'Registrant' => [
+                    'First Name',
+                    'Last Name',
+                    'Organization Name',
+                    'Email',
+                ],
+            ]
+        );
 
+	return $result; 
+}
+/**
+ * Admin Domains Tab Fields
+ * @param array $param::Data from WHMCS
+ * @return array::Admin domain tab fields
+ */
+function ascio_AdminDomainsTabFields($params){
+	$status = Tools::getVerificationStatus($params["domainid"]);
+	$outRows = ""; 
+	foreach($status as $key => $message) {
+		$message->name . ": " . $message->value . "<br/>";
+	}
+	
+	die();
+	
+    # Return output
+    return array(
+        'Registrant Verification Status' => '<p><b>'.$status->verificationInfo->VerificationStatus.'</b></p>',
+        'Domain Notes' => 'blabla notes',
+    );
+}
+
+function ascio_ResendIRTPVerificationEmail(array $params) {
+	// Perform API call to initiate resending of the IRTP Verification Email
+	$request = createRequest($params);
+	$result = $request->doRegistrantVerification($params);
+
+	if ($result->ResultCode == 1) {
+		return ['success' => true];
+	} else {
+		return ['error' => "Could not send registrant verification email."];
+	}
+}
 function ascio_GetRegistrarLock($params) {
 	$request = createRequest($params);
 	$domain = $request->searchDomain();
@@ -224,7 +322,7 @@ function ascio_IDProtectToggle($params) {
 function ascio_GetEmailForwarding($params) {
 	$request = createRequest($params);
 	# Put your code to get email forwarding here - the result should be an array of prefixes and forward to emails (max 10)
-	foreach ($result AS $value) {
+	foreach ($result as $value) {
 		$values[$counter]["prefix"] = $value["prefix"];
 		$values[$counter]["forwardto"] = $value["forwardto"];
 	}
@@ -355,16 +453,6 @@ function ascio_UpdateEPPCode($params) {
 	} 
 }
 
-function ascio_RegisterNameserver($params) {
-	$request = createRequest($params);
-    $nameserver = $params["nameserver"];
-    $ipaddress = $params["ipaddress"];
-    # Put your code to register the nameserver here
-    # If error, return the error message in the value below
-    $values["error"] = $error;
-    return $values;
-}
-
 function ascio_ModifyNameserver($params) {
 	$request = createRequest($params);
     $nameserver = $params["nameserver"];
@@ -377,9 +465,7 @@ function ascio_ModifyNameserver($params) {
 }
 
 function ascio_DeleteNameserver($params) {
-	$request = createRequest($params);
-    $values["error"] = "Operation not allowed";
-    return $values;
+    return  ["error" => "Operation not allowed"];
 }
 // this function is not needed if you have polling or callbacks
 
@@ -396,4 +482,64 @@ function ascio_Sync($params) {
 	return $values;
 }
 
+function ascio_GetTldPricing(array $params)
+{
+    // Perform API call to retrieve extension information
+    // A connection error should return a simple array with error key and message
+    // return ['error' => 'This error occurred',];
+	$command = 'GetTLDPricing';
+	$results = localAPI($command);
+	$tlds = array_keys($results["pricing"]);	
+	$now = new DateTime();
+	$pageInfo =  [
+		"PageIndex" => 1,
+		"PageSize" => 5000
+	];
+	$ascioParams =  [
+		"Date" => $now->format('Y-m-d\TH:i:s'),
+		"ObjectTypes" => ["DomainType"],
+		"OrderTypes" => [
+			"Register", 
+			"Renew", 
+			"Restore", 
+			"Transfer"		
+		],
+		"Tlds" => $tlds,
+		"PageInfo" => $pageInfo
+	];
+	$request = new RequestV3($params);
+	$result = $request->getPrices($ascioParams);
+	$currency = $result->Currency;
+	$tlds = extractPeriods($result->Prices->PriceInfo); 
+    $results = new PriceResultList;
+    foreach ($tlds as $tld =>  $extension) {
+        // All the set methods can be chained and utilised together.
+		$item = (new ImportItem)
+            ->setExtension($tld)
+            ->setMinYears(min($extension["Period"]))
+            ->setMaxYears(max($extension["Period"]))
+            ->setRegisterPrice($extension['OrderType']['Register'])
+            ->setRenewPrice($extension['OrderType']['Renew'])
+            ->setTransferPrice($extension['OrderType']['Transfer'])
+            ->setRedemptionFeeDays(30)
+            ->setRedemptionFeePrice($extension['OrderType']['Restore'])
+            ->setCurrency($currency)
+            ->setEppRequired(true);
+        $results[] = $item;
+    }   
+	return $results;
+}
+function extractPeriods($list) {
+	$tlds = [];
+	foreach($list as $entry) {
+		$product = $entry->Product;
+		//var_dump($product->Tld); 
+		//die();
+		$tlds[$product->Tld]["Period"][] = $product->Period;
+		if($product->Period == 1) {
+			$tlds[$product->Tld]["OrderType"][$product->OrderType] = $entry->Price;
+		}
+ 	}
+	return $tlds; 
+}
 ?>
