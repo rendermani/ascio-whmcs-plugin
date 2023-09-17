@@ -1,5 +1,7 @@
 <?php
-use Illuminate\Database\Capsule\Manager as Capsule;
+use WHMCS\Database\Capsule;
+
+
 require_once  __DIR__ . '/../vendor/autoload.php';
 
 class Tools {
@@ -88,6 +90,15 @@ class Tools {
 		if (count($diffs) > 0) return "Contact_Update";
 		else return false;
 	}
+	public static function isIcannTld($domainName) {
+		$parts = explode('.', $domainName);
+		$tld = end($parts);
+		if (strlen($tld) > 2) {
+			return true; // It's an ICANN TLD according to the rule
+		} else {
+			return false; // It's not an ICANN TLD according to the rule
+		}
+	}	
 	public static function replaceSpecialCharacters($string) {
 		$string = str_replace("ü", "u", $string);
 		$string = str_replace("ä", "a", $string);
@@ -202,6 +213,46 @@ class Tools {
 		$values["expirydate"] = $expirydate;
  		$results 	= localAPI($command,$values,$adminuser);
  		return $results;
+	}
+	public static function dateFromXsDateTime($xsDateTime) {
+		return explode("T", $xsDateTime)[0];
+	} 
+	public static function writeDomainExtra($domainId, $name, $value) {
+		Capsule::table("tbldomains_extra")
+		->where('domain_id', $domainId)
+		->where('name', $name)
+		->delete();
+		Capsule::table("tbldomains_extra")
+			->insert([
+				"domain_id" => $domainId,
+				"name" => $name,
+				"value" => $value
+			]);
+	}
+	public static function setVerificationStatus($domainId, $status) {
+		// delete old values
+		$details = $status->verificationInfo->VerificationDetails;
+		if(!$details) {
+			return;
+		} else if( $status->verificationInfo->VerificationStatus === "Verified") {
+			self::writeDomainExtra($domainId, "verified_by", $details->VerifiedBy);
+			self::writeDomainExtra($domainId, "verified_date", $details->VerificationDate);
+		} else {
+			$last = end($details->Messages->Message);
+			self::writeDomainExtra($domainId, "verification_email", $status->verificationInfo->EmailAddress);
+			self::writeDomainExtra($domainId, "last_try_date", $last->Created);
+			self::writeDomainExtra($domainId, "last_from_address", $last->FromAddress);
+			self::writeDomainExtra($domainId, "last_to_address", $last->ToAddress);
+		}
+	}
+	public static function getVerificationStatus($domainId) {
+		$status = Capsule::table("tbldomains_extra")
+		->where("domain_id", $domainId)
+		->whereIn("name",["verified_by","verified_date","verification_email","last_try_date","last_from_address","last_to_address"])
+		->get();
+		var_dump($status);
+		die();
+
 	}
 	public static function getApiUser() {
 		global $cachedAdminUser; 
