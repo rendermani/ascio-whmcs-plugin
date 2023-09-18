@@ -164,6 +164,9 @@ Class Request {
 		$handle = $this->getHandle("domain",$domainId,$this->domainName);
 		if($handle) {	
 			$domain = $this->getDomain($handle);	
+			if(!$domain) {
+				return ["error" => "Domain for the handle '".$handle. "' was not found. Maybe the wrong account was configured."];
+			}
 			$domain->domainId = $domainId;
 			$this->setDomainStatus($domain);			
 			DomainCache::put($domain);
