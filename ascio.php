@@ -72,9 +72,7 @@ function ascio_AdminCustomButtonArray() {
 }
 function ascio_ClientAreaCustomButtonArray() {
     $buttonarray = array(
-	 "Update EPP Code" => "UpdateEPPCode",
-	 "Autorenew On" => "UnexpireDomain",
-	 "Autorenew Off" => "ExpireDomain"
+	 "Update EPP Code" => "UpdateEPPCode"
 	);
 	return $buttonarray;
 }
@@ -230,6 +228,8 @@ function ascio_GetDomainInformation($params) {
 	$irtpTransferLockExpiryDate->addDays(90);
 	$request = createRequest($params);
 	$rvInfo = $request->getRegistrantVerificationInfo($domain->Registrant->Email);
+
+	
 	Tools::setVerificationStatus($params["domainid"], $rvInfo);
 	$result = (new Domain)
         ->setDomain($domain->DomainName)
@@ -280,18 +280,16 @@ function ascio_AdminDomainsTabFields($params){
 			</tr>';
 		}
 	}
-	
     # Return output
     return [
 		"Registrant Verification" => '<table><tbody>' . $outRows. '</tbody></table>'
 	]; 
 }
-
 function ascio_ResendIRTPVerificationEmail(array $params) {
 	// Perform API call to initiate resending of the IRTP Verification Email
+	// no idea where this is triggered yet
 	$request = createRequest($params);
 	$result = $request->doRegistrantVerification($params);
-
 	if ($result->ResultCode == 1) {
 		return ['success' => true];
 	} else {
@@ -543,8 +541,6 @@ function extractPeriods($list) {
 	$tlds = [];
 	foreach($list as $entry) {
 		$product = $entry->Product;
-		//var_dump($product->Tld); 
-		//die();
 		$tlds[$product->Tld]["Period"][] = $product->Period;
 		if(
 			$product->Period == 1 || 
