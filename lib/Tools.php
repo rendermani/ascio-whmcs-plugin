@@ -218,6 +218,10 @@ class Tools {
 		return explode("T", $xsDateTime)[0];
 	} 
 	public static function writeDomainExtra($domainId, $name, $value) {
+		// don't write empty values
+		if(!$value) {
+			return; 
+		}
 		Capsule::table("tbldomains_extra")
 		->where('domain_id', $domainId)
 		->where('name', $name)
