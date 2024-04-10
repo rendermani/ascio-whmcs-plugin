@@ -571,7 +571,7 @@ Class Request {
 		$old = $this->searchDomain($params);
 		$newRegistrant 	= $this->mapToContact2($params["contactdetails"]["Registrant"],"Registrant");
 		$newAdmin 		= $this->mapToContact2($params["contactdetails"]["Admin"],"Contact");
-		$newTech 		= $this->mapToContact2($params["contactdetails"]["Tech"],"Contact");
+		$newTech 		= $this->mapToContact2($params["contactdetails"]["Technical"],"Contact");
 		$updateRegistrant = Tools::compareRegistrant($newRegistrant,$old->Registrant);
 		$updateAdmin = Tools::compareContact($newAdmin,$old->AdminContact);
 		$updateTech = Tools::compareContact($newTech,$old->TechContact);	
@@ -612,7 +612,15 @@ Class Request {
 			$ascioParams["order"]["Domain"]["BillingContact"] = $old->BillingContact;
 			$contactResult = $this->request("CreateOrder",$ascioParams);
 		}
-		return array_merge($registrantResult,$contactResult);
+		
+		if(! ($contactResult["error"] || $registrantResult["error"])) {
+			return ["success" => true];
+		}
+		
+		$errorContactUpdate = $contactResult && $contactResult["error"] ? $contactResult["error"] . ". \n" : "";
+		$errorRegistrantUpdate =  $registrantResult && $registrantResult["error"] ? $registrantResult["error"]. ". \n" : "";
+		$error = ["error" => $errorContactUpdate . $errorRegistrantUpdate];
+		return $error; 
 	}
 	public function doRegistrantVerification($email) {
 		$ascioParams = [
@@ -817,16 +825,16 @@ Class Request {
 	public function mapToContact2($params,$type) {
 		//Todo: Remove fixPhone		
 		$ascio = (object) array(
-			'OrgName'  				=> trim($params["Organisation Name"]),
-			'Address1'  			=> trim($params["Address 1"]),
-			'Address2'  			=> trim($params["Address 2"]),
-			'PostalCode'  			=> trim($params["ZIP Code"]),
+			'OrgName'  				=> trim($params["Company Name"]),
+			'Address1'  			=> trim($params["Address1"]),
+			'Address2'  			=> trim($params["Address2"]),
+			'PostalCode'  			=> trim($params["Postcode"]),
 			'City'  				=> trim($params["City"]),
 			'State'	  				=> trim($params["State"]),
-			'CountryCode'  			=> trim($params["Country"]),
+			'CountryCode'  			=> trim($params["Country Code"]),
 			'Email'  				=> trim($params["Email"]),
-			'Phone'  				=> Tools::fixPhone($params["Phone"],$params["Country"]), 
-			'Fax'  					=> Tools::fixPhone($params["custom"]["Fax"],$params["Country"]),
+			'Phone'  				=> Tools::fixPhone($params["Phone Number"],$params["Country"]), 
+			'Fax'  					=> Tools::fixPhone($params["Fax Number"],$params["Country"]),
 		);
 		if($type=="Registrant") {
 			$ascio->Name = trim($params["First Name"]. " ". $params["Last Name"]);		
