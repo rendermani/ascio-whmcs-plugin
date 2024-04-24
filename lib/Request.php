@@ -578,6 +578,7 @@ Class Request {
 		if($updateRegistrant) {
 			logActivity("WHMCS Update Registrant");
 			try {
+				logActivity("Owner_Change");
 				$ascioParams = $this->mapToOrder($params,$updateRegistrant);		
 			} catch (AscioException $e) {
 				return array("error" => $e->getMessage());
@@ -585,26 +586,26 @@ Class Request {
 			$ascioParams["order"]["Domain"]["Registrant"] = $newRegistrant;
 			// Do the Adminchange within the owner-change
 			if($updateAdmin && $updateRegistrant=="Owner_Change") {
-				logActivity("WHMCS Owner_Change + Admin_Change");
+				logActivity("Owner_Change + Admin_Change");
 				$ascioParams["order"]["Domain"]["AdminContact"] = $newAdmin;
 			}
 			$registrantResult = $this->request("CreateOrder",$ascioParams);		
 		} 
 		if($updateTech || ($updateAdmin && $updateRegistrant!="Owner_Change")) {
-			logActivity("WHMCS Contact_Update");
+			logActivity("Contact_Update");
 			try {
 				$ascioParams = $this->mapToOrder($params,"Contact_Update");		
 			} catch (AscioException $e) {
 				return array("error" => $e->getMessage());
 			}
 			if($updateAdmin) {
-				logActivity("WHMCS Update Tech");
+				logActivity("Update Tech");
 				$ascioParams["order"]["Domain"]["AdminContact"] = $newAdmin;
 			} else {
 				$ascioParams["order"]["Domain"]["AdminContact"] = $old->AdminContact;
 			}
 			if($updateTech) {
-				logActivity("WHMCS Update Tech");
+				logActivity("Update Tech");
 				$ascioParams["order"]["Domain"]["TechContact"] = $newTech;
 			} else {
 				$ascioParams["order"]["Domain"]["TechContact"] = $old->TechContact;
@@ -826,8 +827,8 @@ Class Request {
 		//Todo: Remove fixPhone		
 		$ascio = (object) array(
 			'OrgName'  				=> trim($params["Company Name"]),
-			'Address1'  			=> trim($params["Address1"]),
-			'Address2'  			=> trim($params["Address2"]),
+			'Address1'  			=> trim($params["Address1"] ?  $params["Address1"] : $params["Address 1"]),
+			'Address2'  			=> trim($params["Address2"] ?  $params["Address2"] : $params["Address 2"]),
 			'PostalCode'  			=> trim($params["Postcode"]),
 			'City'  				=> trim($params["City"]),
 			'State'	  				=> trim($params["State"]),
