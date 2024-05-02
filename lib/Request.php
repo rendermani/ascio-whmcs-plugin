@@ -825,6 +825,8 @@ Class Request {
 	// This function in converting from adminfirstname to Admin["First Name"]
 	public function mapToContact2($params,$type) {
 		//Todo: Remove fixPhone		
+		var_dump($params); 
+		die();
 		$ascio = (object) array(
 			'OrgName'  				=> trim($params["Company Name"]),
 			'Address1'  			=> trim($params["Address1"] ?  $params["Address1"] : $params["Address 1"]),
@@ -832,7 +834,7 @@ Class Request {
 			'PostalCode'  			=> trim($params["Postcode"]),
 			'City'  				=> trim($params["City"]),
 			'State'	  				=> trim($params["State"]),
-			'CountryCode'  			=> trim($params["Country Code"]),
+			'CountryCode'  			=> trim($params["Country Code"] ? $params["Country Code"] : $params["Country"] ),
 			'Email'  				=> trim($params["Email"]),
 			'Phone'  				=> Tools::fixPhone($params["Phone Number"],$params["Country"]), 
 			'Fax'  					=> Tools::fixPhone($params["Fax Number"],$params["Country"]),
