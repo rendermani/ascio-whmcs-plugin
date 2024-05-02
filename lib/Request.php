@@ -824,9 +824,7 @@ Class Request {
 	// WHMCS has 2 contact structures. Flat and nested.
 	// This function in converting from adminfirstname to Admin["First Name"]
 	public function mapToContact2($params,$type) {
-		//Todo: Remove fixPhone		
-		var_dump($params); 
-		die();
+
 		$ascio = (object) array(
 			'OrgName'  				=> trim($params["Company Name"]),
 			'Address1'  			=> trim($params["Address1"] ?  $params["Address1"] : $params["Address 1"]),
