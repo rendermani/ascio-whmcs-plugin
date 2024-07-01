@@ -1,5 +1,7 @@
 <?php
 
+namespace ascio\v2\domains;
+
 class xxx extends Request {	
 	public function registerDomain($params=false) {
 		$params = $this->setParams($params);

@@ -7,7 +7,17 @@
 *
 */
 
-
+use WHMCS\Carbon;
+use WHMCS\Domain\Registrar\Domain;
+use WHMCS\Domains\DomainLookup\ResultsList;
+use WHMCS\Domains\DomainLookup\SearchResult;
+use WHMCS\Domain\TopLevel\ImportItem;
+use WHMCS\Results\ResultsList as PriceResultList;
+use ascio\v2\domains\Request as RequestV2;
+use ascio\v2\domains\createRequest as createRequest;
+use ascio\v3\domains\Request as RequestV3;
+use ascio\dns\DnsZone as DnsZone;
+use ascio\Tools as Tools; 
 
 //
 //  WHMCS functions
@@ -18,12 +28,7 @@ require_once("lib/RequestV3.php");
 require_once("lib/DnsService.php");
 require_once("lib/Zone.php");
 
-use WHMCS\Carbon;
-use WHMCS\Domain\Registrar\Domain;
-use WHMCS\Domains\DomainLookup\ResultsList;
-use WHMCS\Domains\DomainLookup\SearchResult;
-use WHMCS\Domain\TopLevel\ImportItem;
-use WHMCS\Results\ResultsList as PriceResultList;
+
 /**
  * Define module related metadata
  *
@@ -88,7 +93,7 @@ function ascio_DomainSuggestionOptions() {
 function ascio_CheckAvailability($params)
 {
 	try {	
-		$request = new Request($params);
+		$request = new RequestV2($params);
 		// availability check parameters
 		$searchTerm = $params['searchTerm'];
 		$tldsToInclude = $params['tldsToInclude'];
@@ -148,7 +153,7 @@ function ascio_GetDomainSuggestions($params)
 {
 	// user defined configuration values
 
-	$request = createRequest($params);
+	$request = RequestV2::create($params);
     $searchTerm = $params['searchTerm'];
 	$tlds = $params['suggestionSettings']['tldsToInclude'];
 	$tldsToInclude = explode(", ",$tlds);
@@ -187,7 +192,7 @@ function ascio_GetDomainSuggestions($params)
 
 
 function ascio_GetNameservers($params) {	
-	$request = createRequest($params);	
+	$request = RequestV2::create($params);	
 	$domain = $request->searchDomain(); 
 	if (is_array($domain)) return $domain;
 	$ns = $domain->NameServers;
@@ -201,7 +206,7 @@ function ascio_GetNameservers($params) {
 	return $values;
 }
 function ascio_SaveNameservers($params) {
-	$request = createRequest($params);
+	$request = RequestV2::create($params);
 	$result =  $request->saveNameservers($params);
 	// has error?
 	if(is_array($result)) {
@@ -220,13 +225,13 @@ function mapNameservers($ascioNameServers) {
 	return $nameservers;
 }
 function ascio_GetDomainInformation($params) {
-	$request = createRequest($params);
+	$request = RequestV2::create($params);
 	$domain = $request->searchDomain();
 	if (is_array($domain)) $domain = $domain[0];
 	$expDate = Carbon::createFromFormat('Y-m-d', Tools::dateFromXsDateTime($domain->ExpDate));
 	$irtpTransferLockExpiryDate = Carbon::createFromFormat('Y-m-d', Tools::dateFromXsDateTime($domain->CreDate));
 	$irtpTransferLockExpiryDate->addDays(90);
-	$request = createRequest($params);
+	$request = RequestV2::create($params);
 	$rvInfo = $request->getRegistrantVerificationInfo($domain->Registrant->Email);
 
 	
@@ -288,7 +293,7 @@ function ascio_AdminDomainsTabFields($params){
 function ascio_ResendIRTPVerificationEmail(array $params) {
 	// Perform API call to initiate resending of the IRTP Verification Email
 	// no idea where this is triggered yet
-	$request = createRequest($params);
+	$request = RequestV2::create($params);
 	$result = $request->doRegistrantVerification($params);
 	if ($result->ResultCode == 1) {
 		return ['success' => true];
@@ -297,7 +302,7 @@ function ascio_ResendIRTPVerificationEmail(array $params) {
 	}
 }
 function ascio_GetRegistrarLock($params) {
-	$request = createRequest($params);
+	$request = RequestV2::create($params);
 	$domain = $request->searchDomain();
 	$status = $domain->Status;
 
@@ -310,7 +315,7 @@ function ascio_GetRegistrarLock($params) {
 }
 
 function ascio_saveRegistrarLock($params) {
-	$request = createRequest($params);
+	$request = RequestV2::create($params);
 	$result = $request->saveRegistrarLock();
 	// has error?
 	if(is_array($result)) {
@@ -323,12 +328,12 @@ function ascio_saveRegistrarLock($params) {
 }
 function ascio_IDProtectToggle($params) {
 	$params["idprotection"] = $params["protectenable"] == 1 ? true : false;
-	$request = createRequest($params);
+	$request = RequestV2::create($params);
 	return $request->updateDomain();
 }
 
 function ascio_GetEmailForwarding($params) {
-	$request = createRequest($params);
+	$request = RequestV2::create($params);
 	# Put your code to get email forwarding here - the result should be an array of prefixes and forward to emails (max 10)
 	foreach ($result as $value) {
 		$values[$counter]["prefix"] = $value["prefix"];
@@ -338,7 +343,7 @@ function ascio_GetEmailForwarding($params) {
 }
 
 function ascio_SaveEmailForwarding($params) {
-	$request = createRequest($params);
+	$request = RequestV2::create($params);
 	foreach ($params["prefix"] AS $key=>$value) {
 		$forwardarray[$key]["prefix"] =  $params["prefix"][$key];
 		$forwardarray[$key]["forwardto"] =  $params["forwardto"][$key];
@@ -356,7 +361,7 @@ function ascio_SaveDNS($params) {
 	$result = $zone->update($params);
 }
 function ascio_RegisterDomain($params) {
-	$request = createRequest($params);
+	$request = RequestV2::create($params);
 	$result =  $request->registerDomain($params); 
 	// has error?
 	if(is_array($result)) {
@@ -369,7 +374,7 @@ function ascio_RegisterDomain($params) {
 }
 
 function ascio_TransferDomain($params) {
-	$request = createRequest($params);
+	$request = RequestV2::create($params);
 	$result =   $request->transferDomain($params); 
 	// has error?
 	if(is_array($result)) {
@@ -382,7 +387,7 @@ function ascio_TransferDomain($params) {
 }
 
 function ascio_RenewDomain($params) {
-	$request = createRequest($params);
+	$request = RequestV2::create($params);
 	$result =  $request->renewDomain($params); 
 	// has error?
 	if(is_array($result)) {
@@ -395,7 +400,7 @@ function ascio_RenewDomain($params) {
 }
 
 function ascio_ExpireDomain($params) {
-	$request = createRequest($params);
+	$request = RequestV2::create($params);
 	$result =   $request->expireDomain($params); 
 	// has error?
 	if(is_array($result)) {
@@ -407,7 +412,7 @@ function ascio_ExpireDomain($params) {
 	} 
 }
 function ascio_UnexpireDomain($params) {
-	$request = createRequest($params);
+	$request = RequestV2::create($params);
 	$result =  $request->unexpireDomain($params); 
 	// has error?
 	if(is_array($result)) {
@@ -420,7 +425,7 @@ function ascio_UnexpireDomain($params) {
 }
 
 function ascio_GetContactDetails($params) {
-	$request = createRequest($params);
+	$request = RequestV2::create($params);
 	$result = $request->searchDomain();
 	$values = $request->mapGetContactDetailRegistrant([],$result->Registrant);
 	$values = $request->mapGetContactDetailContact($values,$result->AdminContact,"Admin");
@@ -430,7 +435,7 @@ function ascio_GetContactDetails($params) {
 }
 
 function ascio_SaveContactDetails($params) {
-	$request = createRequest($params);
+	$request = RequestV2::create($params);
 	$result =   $request->updateContacts($params);
 	// has error?
 	if(is_array($result)) {
@@ -444,12 +449,12 @@ function ascio_SaveContactDetails($params) {
 }
 
 function ascio_GetEPPCode($params) {
-	$request = createRequest($params);	
+	$request = RequestV2::create($params);	
 	$params = $request->getEPPCode($params);
 	return $params;
 }
 function ascio_UpdateEPPCode($params) {
-	$request = createRequest($params);	
+	$request = RequestV2::create($params);	
 	$result = $request->updateEPPCode($params);
 	// has error?
 	if(is_array($result)) {
@@ -462,7 +467,7 @@ function ascio_UpdateEPPCode($params) {
 }
 
 function ascio_ModifyNameserver($params) {
-	$request = createRequest($params);
+	$request = RequestV2::create($params);
     $nameserver = $params["nameserver"];
     $currentipaddress = $params["currentipaddress"];
     $newipaddress = $params["newipaddress"];
@@ -478,7 +483,7 @@ function ascio_DeleteNameserver($params) {
 // this function is not needed if you have polling or callbacks
 
 function ascio_Sync($params) {
-	$request = createRequest($params);
+	$request = RequestV2::create($params);
 	$domain = $request->searchDomain($params);
 	echo "Syncing ". $params["sld"].".".$params["tld"]. " :".$domain->Status. "\n";
 	if(!$domain) return array("error" => "Domain ".$params["sld"].".".$params["tld"]." not found.");

@@ -1,5 +1,7 @@
 <?php
 
+namespace ascio\v2\domains;
+
 class fi extends Request {	
 	protected function mapToRegistrant($params) {
 		$contact = parent::mapToRegistrant($params);

@@ -1,11 +1,19 @@
 <?php
+namespace ascio\v2\domains;
 use Illuminate\Database\Capsule\Manager as Capsule;
-use ascio\whmcs\ssl as ssl; 
 use WHMCS\Domain\Registrar\Domain;
+use ascio\dns\DnsZone as DnsZone; 
+use \SoapClient as SoapClient; 
+use ascio\ParameterCapture as ParameterCapture;
+use ascio\Tools as Tools;
+
 require_once("Tools.php");
 require_once("ParameterCapture.php");
+require_once("Zone.php");
+
 define("ASCIO_WSDL_LIVE","https://aws.ascio.com/2012/01/01/AscioService.wsdl");
 define("ASCIO_WSDL_TEST","https://aws.demo.ascio.com/2012/01/01/AscioService.wsdl");
+
 Class SessionCache {
 	public static function get($account) {
 		try {
@@ -40,19 +48,6 @@ Class DomainCache {
 		$ascioDomainCache[$domain->domainId] = $domain;
 	}
 }
-function createRequest($params) {
-	$tld = $params["tld"];
-	$filename = realpath(dirname(__FILE__))."/../tlds/$tld/$tld.php";
-	$defExists = file_exists($filename);	
-	if($tld && $defExists) {
-		require_once($filename);
-		$className = str_replace(".", "_", $tld);
-		$tldRequest = new $className($params);
-		return $tldRequest;
-	} else {
-		return new Request($params);
-	}
-}
 Class Request {
 	var $account;
 	var $password; 
@@ -62,10 +57,23 @@ Class Request {
 	public function __construct($params) {
 		$this->setParams($params);
 	}
+	public static function  create($params) {
+		$tld = $params["tld"];
+		$filename = realpath(dirname(__FILE__))."/../tlds/$tld/$tld.php";
+		$defExists = file_exists($filename);	
+		if($tld && $defExists) {
+			require_once($filename);
+			$className = "\ascio\\v2\\domains\\" . str_replace(".", "_", $tld);
+			$tldRequest = new $className($params);
+			return $tldRequest;
+		} else {
+			return new Request($params);
+		}
+	}
 	private function login() {
 		$session = array(
 		             'Account'=> $this->account,
-		             'Password' =>  $this->password
+		             'Password' => $this->password
 		);
 		$result =  $this->sendRequest('LogIn',array('session' => $session ));
 		SessionCache::put($result->sessionId,$this->account);
@@ -87,7 +95,7 @@ Class Request {
 		if(isset($ascioParams["order"])) {
 			$orderType = " ".$ascioParams["order"]["Type"] .""; 
 		} else $orderType ="";
-		$wsdl = $this->params["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;        
+		$wsdl = $this->params["TestMode"]=="on" ? ASCIO_WSDL_TEST : ASCIO_WSDL_LIVE;    
 		$client = new SoapClient($wsdl,array( "cache_wsdl " => WSDL_CACHE_MEMORY ));
 		$result = $client->__call($functionName, array('parameters' => $ascioParams));    
 		$resultName = $functionName . "Result";	
@@ -265,7 +273,7 @@ Class Request {
 		$domain->domainId = $domainId;
 		DomainCache::put($domain);
 		$this->setHandle($domain);
-		$this->params["domainName"] = $domainName;
+		$this->params["domainname"] = $domainName;
 		// External WHMCS API: Set Status
 		// External WHMCS API: Send Mail
 		$msgPart = "Domain (". $domainId . "): ".$domainName;
@@ -527,7 +535,7 @@ Class Request {
 		$result = $this->request("CreateOrder",$ascioParams);				
 		return $result;
 	}
-	public function transferDomain ($params=false) {		
+	public function transferDomain ($params=false) {
 		$params = $this->setParams($params);
 		try {
 			$ascioParams = $this->mapToOrder($params,"Transfer_Domain");
@@ -894,7 +902,7 @@ Class Request {
 			if(isset( $params["domainObj"]) && isset( $params["sld"])) {
 				$this->domainName = $params["domainObj"]->getIdnSecondLevel().".".$params["domainObj"]->getTopLevel();		
 			} else {
-				$this->domainName = $params["domainName"];
+				$this->domainName = $params["domainname"];
 			}
 		} 
 		return $this->params;

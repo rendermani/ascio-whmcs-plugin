@@ -1,4 +1,5 @@
 <?php
+namespace ascio; 
 use WHMCS\Database\Capsule;
 
 
@@ -282,5 +283,5 @@ class Tools {
 		);
 	}
 }
-class AscioException extends Exception { }
+class AscioException extends \Exception { }
 ?>

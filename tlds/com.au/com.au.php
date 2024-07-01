@@ -1,4 +1,7 @@
 <?php
+
+namespace ascio\v2\domains;
+
 class com_au extends Request {	
 	protected function mapToRegistrant($params) {
 		$contact = parent::mapToRegistrant($params);

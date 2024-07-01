@@ -1,13 +1,16 @@
 <?php
+namespace ascio\v3\domains;
 use Illuminate\Database\Capsule\Manager as Capsule;
-use ascio\whmcs\ssl as ssl; 
 use WHMCS\Domain\Registrar\Domain;
+use ascio\ParameterCapture as ParameterCapture;
+use ascio\Tools as Tools;
+
 require_once("Tools.php");
 require_once("ParameterCapture.php");
 define("ASCIO_V3_WSDL_LIVE","https://aws.ascio.com/v3/aws.wsdl");
 define("ASCIO_V3_WSDL_TEST","https://aws.demo.ascio.com/v3/aws.wsdl");
 
-Class RequestV3 {
+Class Request {
 	var $account;
 	var $password; 
 	var $params;
@@ -31,7 +34,7 @@ Class RequestV3 {
 	}
 	private function sendRequest($functionName,$ascioParams) {			
 		$wsdl = $this->params["TestMode"]=="on" ? ASCIO_V3_WSDL_TEST : ASCIO_V3_WSDL_LIVE;        
-		$client = new SoapClient($wsdl,array( "cache_wsdl " => WSDL_CACHE_MEMORY, "trace" => 1 ));
+		$client = new \SoapClient($wsdl,array( "cache_wsdl " => WSDL_CACHE_MEMORY, "trace" => 1 ));
 		$credentials = ["Account"=> $this->account, "Password" => $this->password];
         $header = new \SoapHeader("http://www.ascio.com/2013/02","SecurityHeaderDetails", $credentials, false);
 		$client->__setSoapHeaders($header);

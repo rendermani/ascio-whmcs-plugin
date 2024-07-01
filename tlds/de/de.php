@@ -1,5 +1,8 @@
 <?php
 
+namespace ascio\v2\domains;
+use ascio\Tools as Tools;
+
 class de extends Request {	
 	public function transferDomain($params=false) {
 		return parent::transferDomain($params);

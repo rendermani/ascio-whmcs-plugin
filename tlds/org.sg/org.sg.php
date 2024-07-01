@@ -1,4 +1,7 @@
 <?php
+
+namespace ascio\v2\domains;
+
 class org_sg extends Request {	
 	public function mapToOrder($params,$orderType) {
 		$ascioParams = parent::mapToOrder($params,$orderType);

@@ -1,4 +1,8 @@
 <?php
+
+namespace ascio\v2\domains;
+use ascio\Tools as Tools;
+
 class it extends Request {	
 	private $map =  array(
 		"Italian and foreign natural persons" 	=> "1",

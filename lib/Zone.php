@@ -1,4 +1,5 @@
 <?php
+namespace ascio\dns;
 require_once("DnsService.php");
 require_once("Tools.php");
 

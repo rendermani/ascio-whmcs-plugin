@@ -1,4 +1,7 @@
 <?php
+
+use ascio\v2\domains\Request as Request;
+
 set_time_limit ( 6000 );
 require_once(realpath(dirname(__FILE__))."/../../../init.php");
 require_once realpath(dirname(__FILE__))."/../../../includes/registrarfunctions.php";

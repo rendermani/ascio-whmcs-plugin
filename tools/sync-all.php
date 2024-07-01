@@ -1,4 +1,5 @@
 <?php
+use ascio\v2\domains\Request as Request;
 use WHMCS\Database\Capsule;
 require_once(__DIR__."/../../../../init.php");
 require_once(__DIR__."/../../../../includes/registrarfunctions.php");

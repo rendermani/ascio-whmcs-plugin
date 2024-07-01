@@ -1,4 +1,7 @@
 <?php
+
+use ascio\v2\domains\Request as Request;
+
  require_once(__DIR__."/lib/Request.php");
  function hook_set_domain_status($vars) {  
 	if(strpos($vars["params"]["registrar"], "ascio") == false) return;	

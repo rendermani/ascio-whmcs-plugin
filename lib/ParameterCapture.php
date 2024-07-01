@@ -1,5 +1,6 @@
 <?php
-
+namespace ascio; 
+use ascio\v2\domains\Request as Request;
 
 class ParameterCapture {   
     public function __construct($params,$method,$orderType)
@@ -43,7 +44,7 @@ class ParameterCapture {
         
         $this->params["domainname"] = $this->domainName;
         
-        $request = createRequest($this->params); 
+        $request = Request::create($this->params); 
         try {			
 			$ascioParams = $request->mapToOrder($this->params, $this->orderType);
 		} catch (AscioException $e) {

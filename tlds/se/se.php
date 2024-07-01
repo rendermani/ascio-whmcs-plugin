@@ -1,4 +1,7 @@
 <?php
+
+namespace ascio\v2\domains;
+
 use Illuminate\Database\Capsule\Manager as Capsule;
 class se extends Request {	
 	protected function mapToRegistrant($params) {

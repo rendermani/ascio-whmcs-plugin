@@ -1,5 +1,7 @@
 <?php
 
+namespace ascio\v2\domains;
+
 class fr extends Request {	
 	protected function mapToTrademark($params) {
 		//Registrant is not a company
