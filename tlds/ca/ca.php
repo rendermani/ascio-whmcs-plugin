@@ -30,7 +30,7 @@ class ca extends Request {
 	}	
 	protected function mapToTrademark($params) {
 		$trademark = array();
-		$trademark["Country"] = $params["additionalfields"]["Password / ID Card Number"];
+		$trademark["Country"] = $params["additionalfields"]["Canadian Citizen"] ? "CA" : NULL;
 		$trademark["Number"] = $params["additionalfields"]["Trademark Number"];
 		$trademark["Name"] = $params["additionalfields"]["Trademark Name"];
 		if($params["additionalfields"]["Trademark Name"]) {
