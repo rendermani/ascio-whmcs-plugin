@@ -1,17 +1,12 @@
 <?php
-class ca extends Request {	
-	public function mapToOrder($params,$orderType) {
-		$ascioParams =parent::mapToOrder($params,$orderType);
-		$regCompany = $ascioParams["order"]["Domain"]["Registrant"]["OrgName"];
-		$adminCompany = $ascioParams["order"]["Domain"]["AdminContact"]["OrgName"];;
-		if($regCompany != $adminCompany ) {
-			throw new AscioException('Owner company and Admin company must be the same: '.$regCompany." is not ".$adminCompany);
-		}
-		return $ascioParams;
 
-	}
+namespace ascio\v2\domains;
+
+class ca extends Request {	
+
 	protected function mapToRegistrant($params) {
 		$contact = parent::mapToRegistrant($params);
+		
 		$map = array(
 			"Corporation" => "CCO",
 			"Canadian Citizen" => "CCT",
@@ -35,8 +30,12 @@ class ca extends Request {
 	}	
 	protected function mapToTrademark($params) {
 		$trademark = array();
-		$trademark["Country"] = $params["additionalfields"]["Canadian ID number"];
-		$trademark["Number"] = $params["additionalfields"]["Canadian ID number"];
+		$trademark["Country"] = $params["additionalfields"]["Password / ID Card Number"];
+		$trademark["Number"] = $params["additionalfields"]["Trademark Number"];
+		$trademark["Name"] = $params["additionalfields"]["Trademark Name"];
+		if($params["additionalfields"]["Trademark Name"]) {
+			$trademark["Country"] =  $params["additionalfields"]["Trademark Country"];
+		}
 		return $trademark;
 	}	
 }
