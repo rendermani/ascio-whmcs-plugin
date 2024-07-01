@@ -21,7 +21,7 @@ final class RegisterTldsTest extends TestCase
             ['register',"asia", [], ["countrycode" => "DE"]],
             ['register',"ca", ["Legal Type" => "Corporation"], ["admincompanyname" => "Same INC", "companyname" => "Same INC", "country" => "CA", "state" => "ON"]],
             ['register',"ca", ["Legal Type" => "Canadian Citizen","Canadian Citizen" => true], ["admincompanyname" => "Same INC", "companyname" => "Same INC2"]],
-            ['register',"ca", ["Legal Type" => "Trade-mark registered in Canada", "Trademark Number" => "2342342", "Trademark Name" =>"Same INC", "Trademark Country" => "CA"], ["admincompanyname" => "Same INC", "companyname" => "Same INC"]],
+            ['register',"ca", ["Legal Type" => "Trade-mark registered in Canada", "Trademark Number" => "2342342", "Trademark Name" =>"Same INC", "Trademark Country" => "CA"]],
             ['register',"it", ["Legal Type" => "Italian and foreign natural persons", "Tax ID" => "1234567"], []],
             ['register',"it", ["Legal Type" => "Italian and foreign natural persons", "Tax ID" => "1234567"], ["companyname" => null]],
             ['register',"it", ["Legal Type" => "Companies/one man companies", "Tax ID" => "1234567"], ["companyname" => "test inc"]],
