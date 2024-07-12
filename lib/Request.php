@@ -450,7 +450,7 @@ Class Request {
 			$result = Capsule::select("select Threshold, Renew from tblasciotlds where Tld = '".$this->getTld($domain->DomainName)."'")[0];	
 			$hasRenew = $result->Renew == 1 ? true : false; 	
 			$threshold = $result->Threshold; 	
-			$dueDate = DateTime::createFromFormat(DateTime::ATOM,$domain->ExpDate."-01:00");
+			$dueDate = \DateTime::createFromFormat(\DateTime::ATOM,$domain->ExpDate."-01:00");
 			$dueDate->modify($threshold.' day');		
 			// this is only if the renew command doesn't exist, and the domain is not expiring. 
 			// in this case payment means unexpire, and then expire again after the next autorenew is completed. 			
