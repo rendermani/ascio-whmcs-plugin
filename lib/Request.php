@@ -891,7 +891,8 @@ Class Request {
 					'NameServer1' => Array('HostName' => $params["ns1"]), 
 					'NameServer2' => Array('HostName' => $params["ns2"]),
 					'NameServer3' => Array('HostName' => $params["ns3"]),
-					'NameServer4' => Array('HostName' => $params["ns4"])
+					'NameServer4' => Array('HostName' => $params["ns4"]),
+					'NameServer5' => Array('HostName' => $params["ns5"])
 		);
 	}
 	public function setParams($params) {
