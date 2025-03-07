@@ -1,6 +1,7 @@
 <?php
 namespace ascio\dns;
 use \SoapClient as SoapClient; 
+use \SoapHeader as SoapHeader;
 
 class GetRoles {
 }
