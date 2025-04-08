@@ -268,14 +268,14 @@ Class Request {
 			Tools::log("DomainId: " . $domainId." not found in the WHMCS-Database: " .$order->order->Type. ", Domain: ".$domainName.", Order-Status: ".$orderStatus. ", MessageId" . $messageId . "\n ".$errors);
 			return;	
 		}
-		$domain = $this->getDomain($order->order->Domain->DomainHandle);
-		$this->setDomainStatus($domain);
-		$domain->domainId = $domainId;
-		DomainCache::put($domain);
-		$this->setHandle($domain);
+		if($order->order->Domain->DomaiHandle) {
+			$domain = $this->getDomain($order->order->Domain->DomainHandle);
+			$this->setDomainStatus($domain);
+			$domain->domainId = $domainId;
+			DomainCache::put($domain);
+			$this->setHandle($domain);
+		}
 		$this->params["domainname"] = $domainName;
-		// External WHMCS API: Set Status
-		// External WHMCS API: Send Mail
 		$msgPart = "Domain (". $domainId . "): ".$domainName;
 		logActivity("WHMCS getCallbackData -> setOrderStatus");
 		$this->setOrderStatus($order);
@@ -420,6 +420,7 @@ Class Request {
 		if(
 			$this->hasStatus($domain,"active") || 
 			$this->hasStatus($domain,"expiring") || 
+			$this->hasStatus($domain,"pending_verification") || 
 			$this->hasStatus($domain,"lock")) {			
 			return "Active"; 
 		}
