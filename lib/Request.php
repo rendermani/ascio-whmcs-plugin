@@ -10,7 +10,6 @@ use ascio\Tools as Tools;
 require_once("Tools.php");
 require_once("ParameterCapture.php");
 require_once("Zone.php");
-
 define("ASCIO_WSDL_LIVE","https://aws.ascio.com/2012/01/01/AscioService.wsdl");
 define("ASCIO_WSDL_TEST","https://aws.demo.ascio.com/2012/01/01/AscioService.wsdl");
 
@@ -265,7 +264,7 @@ Class Request {
 				);	
 				$this->request("AckMessage", $ascioParams);
 			}
-			Tools::log("DomainId: " . $domainId." not found in the WHMCS-Database: " .$order->order->Type. ", Domain: ".$domainName.", Order-Status: ".$orderStatus. ", MessageId" . $messageId . "\n ".$errors);
+			Tools::log("DomainId: " . $domainId." not found in the WHMCS-Database: " .$order->order->Type. ", Domain: ".$domainName.", Order-Status: ".$orderStatus. ", MessageId" . $messageId . "\n ");
 			return;	
 		}
 		if($order->order->Domain->DomaiHandle) {
@@ -412,7 +411,10 @@ Class Request {
 		return false;		
 	}
 	public function getDomainStatus($domain) {	
-		if(!$domain) return "Cancelled";
+		if(!$domain) {
+			logActivity("WHMCS Domain not found, setting status to Cancelled");
+			return "Cancelled";
+		}
 		if($this->hasStatus($domain,"deleted")) {
 			logActivity("WHMCS Domain has Status deleted: ".$domain->Status);
 			return "Cancelled";
@@ -439,6 +441,7 @@ Class Request {
 				$this->setStatus($domain,$this->getDomainStatus($domain));				
 			}
 		} else {
+			logActivity("WHMCS Domain not found, setting status to Cancelled");
 			$this->setStatus($domain,"Cancelled");	
 		}		
 	}
