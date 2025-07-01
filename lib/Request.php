@@ -412,7 +412,7 @@ Class Request {
 	}
 	public function getDomainStatus($domain) {	
 		if(!$domain) {
-			logActivity("WHMCS Domain not found, setting status to Cancelled");
+			logActivity("WHMCS Domain not found, setting status to Cancelled (getDomainStatus)");
 			return "Cancelled";
 		}
 		if($this->hasStatus($domain,"deleted")) {
@@ -441,7 +441,7 @@ Class Request {
 				$this->setStatus($domain,$this->getDomainStatus($domain));				
 			}
 		} else {
-			logActivity("WHMCS Domain not found, setting status to Cancelled");
+			logActivity("WHMCS Domain not found, setting status to Cancelled (setDomainStatus)");
 			$this->setStatus($domain,"Cancelled");	
 		}		
 	}
