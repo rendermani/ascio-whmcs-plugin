@@ -225,17 +225,35 @@ function mapNameservers($ascioNameServers) {
 	return $nameservers;
 }
 function ascio_GetDomainInformation($params) {
+	
 	$request = RequestV2::create($params);
 	$domain = $request->searchDomain();
 	if (is_array($domain)) $domain = $domain[0];
 	$expDate = Carbon::createFromFormat('Y-m-d', Tools::dateFromXsDateTime($domain->ExpDate));
 	$irtpTransferLockExpiryDate = Carbon::createFromFormat('Y-m-d', Tools::dateFromXsDateTime($domain->CreDate));
 	$irtpTransferLockExpiryDate->addDays(90);
-	$request = RequestV2::create($params);
-	$rvInfo = $request->getRegistrantVerificationInfo($domain->Registrant->Email);
+	$daysSinceIrtpTransferLockExpiry = $irtpTransferLockExpiryDate->diffInDays(Carbon::today(), false);
 
-	
-	Tools::setVerificationStatus($params["domainid"], $rvInfo);
+	// If irtp transfer lock expiry is in the past, do not show
+	// the notification about it. However if this is negative
+	// then the expiry is in the future => show the banner
+	if ($daysSinceIrtpTransferLockExpiry >= 0) {
+		$irtpTransferLockStatus = false;
+	}
+	else {
+		$irtpTransferLockStatus = true;
+	}
+
+	// If there is active contact change approval waiting for domain
+	// this request will provide error "Registrar Error: looks like we got no XML document"
+	// so let's prevent that by using try catch
+	try {
+		$request = RequestV2::create($params);
+		$rvInfo = $request->getRegistrantVerificationInfo($domain->Registrant->Email);
+		Tools::setVerificationStatus($params["domainid"], $rvInfo);
+	}
+	catch (\Exception $e) {}
+
 	$result = (new Domain)
         ->setDomain($domain->DomainName)
         ->setNameservers(mapNameservers($domain->Nameservers))
@@ -247,7 +265,7 @@ function ascio_GetDomainInformation($params) {
         ->setEmailForwardingStatus($params['emailforwarding'])
         ->setIsIrtpEnabled(Tools::isIcannTld($domain->DomainName))
         ->setIrtpOptOutStatus(false)
-        ->setIrtpTransferLock(true)
+        ->setIrtpTransferLock($irtpTransferLockStatus)
         ->setIrtpTransferLockExpiryDate($irtpTransferLockExpiryDate)
         ->setRegistrantEmailAddress($domain->Registrant->Email)
         ->setIrtpVerificationTriggerFields(
