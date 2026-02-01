@@ -7,11 +7,11 @@
  * - No explicit renew - use unexpire after autorenew
  */
 
-namespace ascio\v3\domains;
+namespace ascio;
 
-require_once(dirname(__FILE__) . "/../../../lib/RequestV3.php");
+require_once(dirname(__FILE__) . "/../../../lib/Request.php");
 
-class ch extends RequestV3 {
+class ch extends Request {
 
 	/**
 	 * Transfer domain - CH transfers have 0 year period

@@ -14,7 +14,7 @@ namespace ascio;
 
 use Illuminate\Database\Capsule\Manager as Capsule;
 use ascio\Tools as Tools;
-use ascio\v2\domains\Request;
+use ascio\Request;
 
 class AutoExpireService
 {

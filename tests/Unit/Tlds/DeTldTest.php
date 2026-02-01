@@ -4,7 +4,7 @@ namespace Ascio\Tests\Unit\Tlds;
 
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
-use ascio\v2\domains\Request;
+use ascio\Request;
 use Ascio\Tests\Mocks\WhmcsFunctionsMock;
 use Ascio\Tests\Mocks\CapsuleMock;
 use Ascio\Tests\Mocks\SoapClientMock;
@@ -14,7 +14,7 @@ use Ascio\Tests\Mocks\SoapClientMock;
  *
  * Tests EPP code generation, renewal behavior, and fax fallback
  *
- * @covers \ascio\v2\domains\de
+ * @covers \ascio\de
  */
 class DeTldTest extends TestCase
 {
@@ -293,7 +293,7 @@ class DeTldTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('beispiel.de', $order['order']['Domain']['DomainName']);
-        $this->assertEquals('DE123456789', $order['order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('beispiel.de', $order['Order']['Domain']['DomainName']);
+        $this->assertEquals('DE123456789', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
     }
 }

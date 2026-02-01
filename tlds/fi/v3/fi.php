@@ -7,11 +7,11 @@
  * - Identification Number required
  */
 
-namespace ascio\v3\domains;
+namespace ascio;
 
-require_once(dirname(__FILE__) . "/../../../lib/RequestV3.php");
+require_once(dirname(__FILE__) . "/../../../lib/Request.php");
 
-class fi extends RequestV3 {
+class fi extends Request {
 
 	/**
 	 * Legal Type to FICORA code mapping

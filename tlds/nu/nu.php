@@ -1,6 +1,6 @@
 <?php
 
-namespace ascio\v2\domains;
+namespace ascio;
 
 use Illuminate\Database\Capsule\Manager as Capsule;
 class nu extends Request {	

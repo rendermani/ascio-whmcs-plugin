@@ -15,7 +15,7 @@ namespace Ascio\Tests\Integration;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\DataProvider;
-use ascio\v3\domains\RequestV3;
+use ascio\Request;
 use Ascio\Tests\Mocks\MockParamsV3;
 
 #[Group('integration')]
@@ -33,7 +33,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
         $domainName = $this->generateTestDomain('com');
         $params = $this->getRegistrationParams($domainName);
 
-        $request = new RequestV3($params);
+        $request = new Request($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
         // Verify order structure before API call
@@ -65,7 +65,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
         $domainName = $this->generateTestDomain('com');
         $params = $this->getRegistrationParams($domainName, ['idprotection' => true]);
 
-        $request = new RequestV3($params);
+        $request = new Request($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
         // Verify privacy proxy is set
@@ -86,7 +86,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
             'Proxy_Lite' => 'on',
         ]);
 
-        $request = new RequestV3($params);
+        $request = new Request($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
         // Verify privacy (not full proxy) is set
@@ -106,7 +106,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
             'additionalfields' => $additionalFields,
         ]);
 
-        $request = RequestV3::create($params);
+        $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
         $this->assertOrderStructure($order, 'Register_Domain');
@@ -136,7 +136,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
         $domainName = $this->generateTestDomain('com');
         $params = $this->getTransferParams($domainName, 'TRANSFER-EPP-CODE-12345');
 
-        $request = new RequestV3($params);
+        $request = new Request($params);
         $order = $request->mapToOrder($params, 'Transfer_Domain');
 
         $this->assertOrderStructure($order, 'Transfer_Domain');
@@ -152,7 +152,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
         $domainName = $this->generateTestDomain('net');
         $params = $this->getTransferParams($domainName, 'EPP-CODE-NET', ['idprotection' => true]);
 
-        $request = new RequestV3($params);
+        $request = new Request($params);
         $order = $request->mapToOrder($params, 'Transfer_Domain');
 
         // Transfer should include privacy proxy option
@@ -174,7 +174,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
             'regperiod' => 1,
         ]);
 
-        $request = new RequestV3($params);
+        $request = new Request($params);
         $order = $request->mapToOrder($params, 'Renew_Domain');
 
         $this->assertOrderStructure($order, 'Renew_Domain');
@@ -192,7 +192,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
             'regperiod' => 2,
         ]);
 
-        $request = new RequestV3($params);
+        $request = new Request($params);
         $order = $request->mapToOrder($params, 'Renew_Domain');
 
         $this->assertEquals(2, $order['Order']['Domain']['RegPeriod']);
@@ -211,7 +211,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
         $domainName = $this->generateTestDomain('com');
         $params = $this->getRegistrationParams($domainName);
 
-        $request = new RequestV3($params);
+        $request = new Request($params);
         $order = $request->mapToOrder($params, 'Expire_Domain');
 
         $this->assertOrderStructure($order, 'Expire_Domain');
@@ -226,7 +226,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
         $domainName = $this->generateTestDomain('com');
         $params = $this->getRegistrationParams($domainName);
 
-        $request = new RequestV3($params);
+        $request = new Request($params);
         $order = $request->mapToOrder($params, 'Unexpire_Domain');
 
         $this->assertOrderStructure($order, 'Unexpire_Domain');
@@ -251,7 +251,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
             'ns5' => '',
         ]);
 
-        $request = new RequestV3($params);
+        $request = new Request($params);
         $order = $request->mapToOrder($params, 'Nameserver_Update');
 
         $this->assertOrderStructure($order, 'Nameserver_Update');
@@ -277,7 +277,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
             'ns5' => '',
         ]);
 
-        $request = new RequestV3($params);
+        $request = new Request($params);
         $order = $request->mapToOrder($params, 'Nameserver_Update');
 
         // Two nameservers should be sufficient
@@ -301,7 +301,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
             'adminemail' => 'updated-admin@example.com',
         ]));
 
-        $request = new RequestV3($params);
+        $request = new Request($params);
         $order = $request->mapToOrder($params, 'Contact_Update');
 
         $this->assertOrderStructure($order, 'Contact_Update');
@@ -329,7 +329,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
             'email' => 'newowner@example.com',
         ]);
 
-        $request = new RequestV3($params);
+        $request = new Request($params);
         $order = $request->mapToOrder($params, 'Owner_Change');
 
         $this->assertOrderStructure($order, 'Owner_Change');
@@ -354,7 +354,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
             'lockenabled' => 'locked',
         ]);
 
-        $request = new RequestV3($params);
+        $request = new Request($params);
         $order = $request->mapToOrder($params, 'Change_Locks');
 
         $this->assertOrderStructure($order, 'Change_Locks');
@@ -371,7 +371,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
             'lockenabled' => 'unlocked',
         ]);
 
-        $request = new RequestV3($params);
+        $request = new Request($params);
         $params['lockenabled'] = 'unlocked';
         $order = $request->mapToOrder($params, 'Change_Locks');
         $order['Order']['Domain']['TransferLock'] = 'UnLock';
@@ -395,7 +395,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
             'userid' => 67890,
         ]);
 
-        $request = new RequestV3($params);
+        $request = new Request($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
         // Verify transaction comment contains WHMCS identifiers
@@ -418,7 +418,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
         // Use an invalid domain name format
         $params = $this->getRegistrationParams('invalid_domain_with_underscore.com');
 
-        $request = new RequestV3($params);
+        $request = new Request($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
         $result = $this->callApiMethod('ValidateOrder', $order);
@@ -438,7 +438,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
         $domainName = $this->generateTestDomain('com');
         $params = $this->getRegistrationParams($domainName);
 
-        $request = new RequestV3($params);
+        $request = new Request($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
         // Remove required contact

@@ -1,6 +1,6 @@
 <?php
 
-namespace ascio\v2\domains;
+namespace ascio;
 
 class xxx extends Request {	
 	public function registerDomain($params=false) {
@@ -8,9 +8,9 @@ class xxx extends Request {
 		$ascioParams = $this->mapToOrder($params,"Register_Domain");
 		
 		if($params["additionalfields"]["Member of sponsored community"] == "on") {
-			$ascioParams["order"]["Options"] = "member";
+			$ascioParams["Order"]["Options"] = "member";
 		} else {
-			$ascioParams["order"]["Options"] = "non-member";
+			$ascioParams["Order"]["Options"] = "non-member";
 		}		
 		$result = $this->request("CreateOrder",$ascioParams);
 		if (!$result) {

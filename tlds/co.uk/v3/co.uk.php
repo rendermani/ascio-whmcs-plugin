@@ -5,16 +5,16 @@
  * This is a variant of .UK that uses the same UK plugin logic.
  * Nominet (UK Registry) requirements apply.
  *
- * Note: The RequestV3::create() factory method will fall back to uk/v3/uk.php
+ * Note: The Request::create() factory method will fall back to uk/v3/uk.php
  * for co.uk domains if this file doesn't exist. This file is provided for
  * explicit handling if needed.
  */
 
-namespace ascio\v3\domains;
+namespace ascio;
 
-require_once(dirname(__FILE__) . "/../../../lib/RequestV3.php");
+require_once(dirname(__FILE__) . "/../../../lib/Request.php");
 
-class co_uk extends RequestV3 {
+class co_uk extends Request {
 
 	/**
 	 * Legal Type to Nominet code mapping

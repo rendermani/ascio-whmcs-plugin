@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RequiresEnvironment;
-use ascio\v2\domains\Request;
+use ascio\Request;
 use Ascio\Tests\Mocks\WhmcsFunctionsMock;
 use Ascio\Tests\Mocks\CapsuleMock;
 
@@ -204,11 +204,11 @@ class AscioApiIntegrationTest extends TestCase
 
         // Verify order structure is valid
         $this->assertArrayHasKey('order', $orderParams);
-        $this->assertEquals('Register_Domain', $orderParams['order']['Type']);
-        $this->assertArrayHasKey('Domain', $orderParams['order']);
-        $this->assertArrayHasKey('Registrant', $orderParams['order']['Domain']);
-        $this->assertArrayHasKey('AdminContact', $orderParams['order']['Domain']);
-        $this->assertArrayHasKey('NameServers', $orderParams['order']['Domain']);
+        $this->assertEquals('Register_Domain', $orderParams['Order']['Type']);
+        $this->assertArrayHasKey('Domain', $orderParams['Order']);
+        $this->assertArrayHasKey('Registrant', $orderParams['Order']['Domain']);
+        $this->assertArrayHasKey('AdminContact', $orderParams['Order']['Domain']);
+        $this->assertArrayHasKey('NameServers', $orderParams['Order']['Domain']);
     }
 
     // =========================================================================

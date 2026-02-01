@@ -10,11 +10,11 @@
  * Also applies to French territories: .pm, .re, .tf, .wf, .yt
  */
 
-namespace ascio\v3\domains;
+namespace ascio;
 
-require_once(dirname(__FILE__) . "/../../../lib/RequestV3.php");
+require_once(dirname(__FILE__) . "/../../../lib/Request.php");
 
-class fr extends RequestV3 {
+class fr extends Request {
 
 	/**
 	 * Map trademark for individual registrants

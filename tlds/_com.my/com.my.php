@@ -1,12 +1,12 @@
 <?php
 
-namespace ascio\v2\domains;
+namespace ascio;
 
 class com_my extends Request {	
 	public function mapToOrder($params,$orderType) {
 		$ascioParams = parent::mapToOrder($params,$orderType);
 		if($params["additionalfields"]["Local Presence"]=="on"){
-			$ascioParams["order"]["LocalPresence"] = "LocalPresenceRegistrant";		
+			$ascioParams["Order"]["LocalPresence"] = "LocalPresenceRegistrant";		
 		} 
 		
 		return $ascioParams;

@@ -6,11 +6,11 @@
  * - Transfers with 1 year period should use 0 year period
  */
 
-namespace ascio\v3\domains;
+namespace ascio;
 
-require_once(dirname(__FILE__) . "/../../../lib/RequestV3.php");
+require_once(dirname(__FILE__) . "/../../../lib/Request.php");
 
-class at extends RequestV3 {
+class at extends Request {
 
 	/**
 	 * Map order with AT-specific transfer period handling

@@ -1,6 +1,6 @@
 <?php
 
-namespace ascio\v2\domains;
+namespace ascio;
 
 class lotto extends Request {
 	protected function mapToRegistrant($params) {

@@ -13,62 +13,30 @@ use WHMCS\Domains\DomainLookup\ResultsList;
 use WHMCS\Domains\DomainLookup\SearchResult;
 use WHMCS\Domain\TopLevel\ImportItem;
 use WHMCS\Results\ResultsList as PriceResultList;
-use ascio\v2\domains\Request as RequestV2;
-use ascio\v2\domains\createRequest as createRequest;
-use ascio\v3\domains\Request as RequestV3;
+use ascio\Request;
 use ascio\dns\DnsZone as DnsZone;
-use ascio\Tools as Tools; 
+use ascio\Tools as Tools;
 
 //
 //  WHMCS functions
 //
 require_once("lib/Tools.php");
 require_once("lib/Request.php");
-require_once("lib/RequestV3.php");
 require_once("lib/DnsService.php");
 require_once("lib/Zone.php");
 
 /**
- * Determine if API V3 should be used based on configuration or environment
- *
- * @param array $params Module parameters
- * @return bool True if V3 should be used, false for V2
- */
-function ascio_shouldUseV3($params) {
-	// Check environment variable first (allows override for testing)
-	if (getenv('ASCIO_USE_V3') === 'true' || getenv('ASCIO_USE_V3') === '1') {
-		return true;
-	}
-	// Check module configuration
-	return isset($params['ApiVersion']) && $params['ApiVersion'] === 'v3';
-}
-
-/**
- * Get the appropriate Request class instance based on API version configuration
- *
- * This helper function checks the ApiVersion configuration parameter and environment
- * variable ASCIO_USE_V3 to determine which API version to use. V2 is the default
- * for backward compatibility with existing installations.
+ * Get the Request class instance for Ascio v3 API
  *
  * @param array $params Module parameters from WHMCS
  * @param string|null $operation Optional operation name for logging
- * @return RequestV2|RequestV3 The appropriate request class instance
+ * @return Request The request class instance
  */
 function ascio_getRequestClass($params, $operation = null) {
-	$useV3 = ascio_shouldUseV3($params);
-	$apiVersion = $useV3 ? 'v3' : 'v2';
-
-	// Log the API version being used for debugging
 	if ($operation) {
-		logActivity("Ascio: Using API {$apiVersion} for operation: {$operation}");
+		logActivity("Ascio: API operation: {$operation}");
 	}
-
-	if ($useV3) {
-		return new RequestV3($params);
-	}
-
-	// V2 uses the factory method which supports TLD-specific subclasses
-	return RequestV2::create($params);
+	return new Request($params);
 }
 
 /**
@@ -96,13 +64,6 @@ function ascio_getConfigArray() {
 	 "Username" => array( "Type" => "text", "Size" => "20", "Description" => "Enter your username here" ),
 	 "Password" => array( "Type" => "password", "Size" => "20", "Description" => "Enter your password here"),
 	 "TestMode" => array( "Type" => "yesno",  "Description" => "You will need a test-account for this","FriendlyName" =>"Test Mode"),
-	 "ApiVersion" => array(
-		 "FriendlyName" => "API Version",
-		 "Type" => "dropdown",
-		 "Options" => "v2,v3",
-		 "Default" => "v2",
-		 "Description" => "Select Ascio API version (v3 recommended for new installs)"
-	 ),
 	 "AutoExpire" => array( "Type" => "yesno", "Size" => "20", "Description" => "ON: Expire domains immediately after register/transfer (prevents auto-renewal). OFF: Expire at threshold date only if unpaid (recommended for WHMCS-managed billing)","FriendlyName" =>"Auto Expire"),
 	 "Sync_Due_Date" => array( "Type" => "yesno", "Size" => "20", "Description" => "Sync the due-date with thresholds","Default" => "yes","FriendlyName" =>"Sync Due Date"),
 	 "DetailedOrderStatus" => array( "Type" => "yesno", "Size" => "20", "Description" => "Send an detailed order status to the end-customer.", "Default" => "yes","FriendlyName" =>"Detailed order status"),

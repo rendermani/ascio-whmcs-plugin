@@ -11,11 +11,11 @@
  * Also applies to: .net.au, .org.au, .edu.au, .gov.au, .id.au
  */
 
-namespace ascio\v3\domains;
+namespace ascio;
 
-require_once(dirname(__FILE__) . "/../../../lib/RequestV3.php");
+require_once(dirname(__FILE__) . "/../../../lib/Request.php");
 
-class com_au extends RequestV3 {
+class com_au extends Request {
 
 	/**
 	 * Eligibility ID Type to code mapping

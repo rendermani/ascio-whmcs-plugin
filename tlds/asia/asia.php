@@ -1,6 +1,6 @@
 <?php
 
-namespace ascio\v2\domains;
+namespace ascio;
 
 class asia extends Request {	
 	public function registerDomain($params=false) {
@@ -12,10 +12,10 @@ class asia extends Request {
 			"MO","MV","MY","NF","NP","NR","NU","NZ","OM","PG","PH","PK","PS","PW","QA","SA","SB","SG","SY","TH","TJ",
 			"TK","TL","TM","TO","TR","TV","TW","UZ","VN","VU","WS","YE");
 
-		if(!in_array($ascioParams["order"]["Domain"]["Registrant"]["CountryCode"],$asianCountries)) {			
-			$ascioParams["order"]["LocalPresence"] = "LocalPresenceAdmin";						
+		if(!in_array($ascioParams["Order"]["Domain"]["Registrant"]["CountryCode"],$asianCountries)) {			
+			$ascioParams["Order"]["LocalPresence"] = "LocalPresenceAdmin";						
 		}	
-		$ascioParams["order"]["Domain"]["DomainPurpose"] = "Admin";
+		$ascioParams["Order"]["Domain"]["DomainPurpose"] = "Admin";
 		$result = $this->request("CreateOrder",$ascioParams);
 		if (!$result) {
 			$this->setWhmcsStatus($domainName,"Pending","Register_Domain");

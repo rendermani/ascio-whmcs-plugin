@@ -8,13 +8,13 @@
  * - Contact Type set to BGG for admin/tech/billing
  */
 
-namespace ascio\v3\domains;
+namespace ascio;
 
-require_once(dirname(__FILE__) . "/../../../lib/RequestV3.php");
+require_once(dirname(__FILE__) . "/../../../lib/Request.php");
 
 use ascio\AscioException as AscioException;
 
-class nl extends RequestV3 {
+class nl extends Request {
 
 	/**
 	 * Map registrant with NL-specific type handling

@@ -10,11 +10,11 @@
  * Also applies to: .com.sg, .org.sg, .edu.sg, .net.sg, .gov.sg
  */
 
-namespace ascio\v3\domains;
+namespace ascio;
 
-require_once(dirname(__FILE__) . "/../../../lib/RequestV3.php");
+require_once(dirname(__FILE__) . "/../../../lib/Request.php");
 
-class sg extends RequestV3 {
+class sg extends Request {
 
 	/**
 	 * Map order with SG-specific Local Presence option

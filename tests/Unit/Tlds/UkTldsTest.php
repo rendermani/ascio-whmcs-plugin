@@ -5,7 +5,7 @@ namespace Ascio\Tests\Unit\Tlds;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\DataProvider;
-use ascio\v2\domains\Request;
+use ascio\Request;
 use Ascio\Tests\Mocks\WhmcsFunctionsMock;
 use Ascio\Tests\Mocks\CapsuleMock;
 
@@ -14,9 +14,9 @@ use Ascio\Tests\Mocks\CapsuleMock;
  *
  * Tests 10 legal types and Company ID Number requirement
  *
- * @covers \ascio\v2\domains\uk
- * @covers \ascio\v2\domains\co_uk
- * @covers \ascio\v2\domains\org_uk
+ * @covers \ascio\uk
+ * @covers \ascio\co_uk
+ * @covers \ascio\org_uk
  */
 class UkTldsTest extends TestCase
 {
@@ -322,10 +322,10 @@ class UkTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.uk', $order['order']['Domain']['DomainName']);
-        $this->assertEquals('LTD', $order['order']['Domain']['Registrant']['RegistrantType']);
-        $this->assertEquals('12345678', $order['order']['Domain']['Registrant']['RegistrantNumber']);
-        $this->assertEquals('British Ltd', $order['order']['Domain']['Registrant']['OrgName']);
+        $this->assertEquals('example.uk', $order['Order']['Domain']['DomainName']);
+        $this->assertEquals('LTD', $order['Order']['Domain']['Registrant']['RegistrantType']);
+        $this->assertEquals('12345678', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('British Ltd', $order['Order']['Domain']['Registrant']['OrgName']);
     }
 
     #[Test]
@@ -342,7 +342,7 @@ class UkTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('IND', $order['order']['Domain']['Registrant']['RegistrantType']);
-        $this->assertNull($order['order']['Domain']['Registrant']['OrgName']);
+        $this->assertEquals('IND', $order['Order']['Domain']['Registrant']['RegistrantType']);
+        $this->assertNull($order['Order']['Domain']['Registrant']['OrgName']);
     }
 }

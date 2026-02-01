@@ -5,7 +5,7 @@ namespace Ascio\Tests\Unit\Tlds;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\DataProvider;
-use ascio\v2\domains\Request;
+use ascio\Request;
 use Ascio\Tests\Mocks\WhmcsFunctionsMock;
 use Ascio\Tests\Mocks\CapsuleMock;
 use Ascio\Tests\Mocks\SoapClientMock;
@@ -15,7 +15,7 @@ use Ascio\Tests\Mocks\SoapClientMock;
  *
  * Tests 7 registrant types, birth country handling, and renewal behavior
  *
- * @covers \ascio\v2\domains\it
+ * @covers \ascio\it
  */
 class ItTldTest extends TestCase
 {
@@ -344,11 +344,11 @@ class ItTldTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.it', $order['order']['Domain']['DomainName']);
-        $this->assertEquals('1', $order['order']['Domain']['Registrant']['RegistrantType']);
-        $this->assertEquals('RSSMRA80A01H501A', $order['order']['Domain']['Registrant']['RegistrantNumber']);
-        $this->assertArrayHasKey('Trademark', $order['order']['Domain']);
-        $this->assertEquals('IT', $order['order']['Domain']['Trademark']['Country']);
+        $this->assertEquals('example.it', $order['Order']['Domain']['DomainName']);
+        $this->assertEquals('1', $order['Order']['Domain']['Registrant']['RegistrantType']);
+        $this->assertEquals('RSSMRA80A01H501A', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertArrayHasKey('Trademark', $order['Order']['Domain']);
+        $this->assertEquals('IT', $order['Order']['Domain']['Trademark']['Country']);
     }
 
     #[Test]
@@ -365,8 +365,8 @@ class ItTldTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('2', $order['order']['Domain']['Registrant']['RegistrantType']);
-        $this->assertEquals('IT12345678901', $order['order']['Domain']['Registrant']['RegistrantNumber']);
-        $this->assertEquals('Italian SRL', $order['order']['Domain']['Registrant']['OrgName']);
+        $this->assertEquals('2', $order['Order']['Domain']['Registrant']['RegistrantType']);
+        $this->assertEquals('IT12345678901', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('Italian SRL', $order['Order']['Domain']['Registrant']['OrgName']);
     }
 }

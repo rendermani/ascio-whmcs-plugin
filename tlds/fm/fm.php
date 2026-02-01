@@ -1,6 +1,6 @@
 <?php
 
-namespace ascio\v2\domains;
+namespace ascio;
 
 class fm extends Request {
     protected function mapToRegistrant($params) {

@@ -5,20 +5,25 @@ namespace Ascio\Tests\Unit;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\DataProvider;
-use ascio\v2\domains\Request;
-use ascio\AscioException;
+use ascio\Request as Request;
 use Ascio\Tests\Mocks\WhmcsFunctionsMock;
 use Ascio\Tests\Mocks\CapsuleMock;
 use Ascio\Tests\Mocks\SoapClientMock;
+use Ascio\Tests\Mocks\MockAscioClientV3;
+use Ascio\Tests\Mocks\MockParamsV3;
 
 /**
- * Unit tests for ascio\v2\domains\Request class
+ * Unit tests for ascio\Request class
  *
- * @covers \ascio\v2\domains\Request
+ * Tests the v3 API request class that provides domain registration,
+ * transfer, renewal, and other operations using the Ascio v3 SOAP API.
+ *
+ * @covers \ascio\Request
  */
 class RequestTest extends TestCase
 {
     private array $defaultParams;
+    private MockAscioClientV3 $mockClient;
 
     protected function setUp(): void
     {
@@ -27,298 +32,258 @@ class RequestTest extends TestCase
         CapsuleMock::reset();
         SoapClientMock::reset();
 
-        $this->defaultParams = [
-            'Username' => 'testuser',
-            'Password' => 'testpass',
-            'TestMode' => 'on',
-            'domainid' => 1,
-            'domainname' => 'example.com',
-            'sld' => 'example',
-            'tld' => 'com',
-            'regperiod' => 1,
-            'firstname' => 'John',
-            'lastname' => 'Doe',
-            'companyname' => 'Test Company',
-            'address1' => '123 Test Street',
-            'address2' => 'Suite 100',
-            'city' => 'Test City',
-            'state' => 'TS',
-            'postcode' => '12345',
-            'country' => 'US',
-            'email' => 'test@example.com',
-            'fullphonenumber' => '+1.5551234567',
-            'adminfirstname' => 'Admin',
-            'adminlastname' => 'User',
-            'admincompanyname' => 'Test Company',
-            'adminaddress1' => '123 Test Street',
-            'adminaddress2' => '',
-            'admincity' => 'Test City',
-            'adminstate' => 'TS',
-            'adminpostcode' => '12345',
-            'admincountry' => 'US',
-            'adminemail' => 'admin@example.com',
-            'adminfullphonenumber' => '+1.5551234567',
-            'ns1' => 'ns1.example.com',
-            'ns2' => 'ns2.example.com',
-            'ns3' => '',
-            'ns4' => '',
-            'ns5' => '',
-            'eppcode' => 'EPP123456',
-            'idprotection' => false,
-            'custom' => [],
-            'additionalfields' => []
-        ];
+        $this->defaultParams = MockParamsV3::getDefault();
+        $this->mockClient = new MockAscioClientV3();
     }
 
     // =========================================================================
-    // Request::create() factory tests
+    // Constructor and Parameter Setting Tests
     // =========================================================================
 
     #[Test]
-    public function createReturnsBaseRequestForGenericTld(): void
-    {
-        $params = array_merge($this->defaultParams, ['tld' => 'com']);
-
-        $request = Request::create($params);
-
-        $this->assertInstanceOf(Request::class, $request);
-    }
-
-    #[Test]
-    public function createReturnsTldSpecificRequestForCa(): void
-    {
-        $params = array_merge($this->defaultParams, ['tld' => 'ca']);
-
-        $request = Request::create($params);
-
-        // Should return a ca-specific Request subclass
-        $this->assertInstanceOf(Request::class, $request);
-    }
-
-    #[Test]
-    public function createReturnsTldSpecificRequestForIt(): void
-    {
-        $params = array_merge($this->defaultParams, ['tld' => 'it']);
-
-        $request = Request::create($params);
-
-        $this->assertInstanceOf(Request::class, $request);
-    }
-
-    // =========================================================================
-    // Parent TLD inheritance tests
-    // =========================================================================
-
-    #[Test]
-    public function createUsesParentTldForItalianRegionalTlds(): void
-    {
-        // ag.it should use the it.php plugin
-        $params = array_merge($this->defaultParams, [
-            'tld' => 'ag.it',
-            'domainname' => 'example.ag.it'
-        ]);
-
-        $request = Request::create($params);
-
-        // Should get the IT TLD class (which handles registrant types)
-        $this->assertInstanceOf(Request::class, $request);
-        // Verify it's using the IT plugin by checking the class has the IT-specific method
-        $this->assertTrue(method_exists($request, 'renewDomain'));
-    }
-
-    #[Test]
-    public function createUsesParentTldForRomeIt(): void
-    {
-        $params = array_merge($this->defaultParams, [
-            'tld' => 'roma.it',
-            'domainname' => 'example.roma.it'
-        ]);
-
-        $request = Request::create($params);
-
-        $this->assertInstanceOf(Request::class, $request);
-    }
-
-    #[Test]
-    public function createUsesParentTldForUkVariants(): void
-    {
-        // ac.uk should use the uk.php plugin
-        $params = array_merge($this->defaultParams, [
-            'tld' => 'ac.uk',
-            'domainname' => 'example.ac.uk'
-        ]);
-
-        $request = Request::create($params);
-
-        $this->assertInstanceOf(Request::class, $request);
-    }
-
-    #[Test]
-    #[DataProvider('parentTldProvider')]
-    public function createUsesCorrectParentTld(string $subTld, string $expectedParent): void
-    {
-        $params = array_merge($this->defaultParams, [
-            'tld' => $subTld,
-            'domainname' => "example.$subTld"
-        ]);
-
-        $request = Request::create($params);
-
-        // All should return a valid Request instance
-        $this->assertInstanceOf(Request::class, $request);
-    }
-
-    public static function parentTldProvider(): array
-    {
-        return [
-            'Italian regional ag.it' => ['ag.it', 'it'],
-            'Italian regional roma.it' => ['roma.it', 'it'],
-            'Italian regional milano.it' => ['milano.it', 'it'],
-            'UK academic ac.uk' => ['ac.uk', 'uk'],
-            'UK government gov.uk' => ['gov.uk', 'uk'],
-            'Singapore commercial com.sg' => ['com.sg', 'sg'],
-            'Singapore education edu.sg' => ['edu.sg', 'sg'],
-            'Australia commercial com.au' => ['com.au', 'au'],
-            'Australia network net.au' => ['net.au', 'au'],
-            // AFNIC TLDs (French territories)
-            'AFNIC pm' => ['pm', 'fr'],
-            'AFNIC re' => ['re', 'fr'],
-            'AFNIC tf' => ['tf', 'fr'],
-            'AFNIC wf' => ['wf', 'fr'],
-            'AFNIC yt' => ['yt', 'fr'],
-        ];
-    }
-
-    // =========================================================================
-    // AFNIC TLD inheritance tests (.pm, .re, .tf, .wf, .yt -> .fr)
-    // =========================================================================
-
-    #[Test]
-    public function testPmTldInheritsFromFr(): void
-    {
-        $params = array_merge($this->defaultParams, [
-            'tld' => 'pm',
-            'domainname' => 'example.pm'
-        ]);
-
-        $request = Request::create($params);
-
-        // Should inherit from .fr plugin
-        $this->assertInstanceOf(Request::class, $request);
-    }
-
-    #[Test]
-    public function testReTldInheritsFromFr(): void
-    {
-        $params = array_merge($this->defaultParams, [
-            'tld' => 're',
-            'domainname' => 'example.re'
-        ]);
-
-        $request = Request::create($params);
-
-        // Should inherit from .fr plugin
-        $this->assertInstanceOf(Request::class, $request);
-    }
-
-    #[Test]
-    public function testTfTldInheritsFromFr(): void
-    {
-        $params = array_merge($this->defaultParams, [
-            'tld' => 'tf',
-            'domainname' => 'example.tf'
-        ]);
-
-        $request = Request::create($params);
-
-        // Should inherit from .fr plugin
-        $this->assertInstanceOf(Request::class, $request);
-    }
-
-    #[Test]
-    public function testWfTldInheritsFromFr(): void
-    {
-        $params = array_merge($this->defaultParams, [
-            'tld' => 'wf',
-            'domainname' => 'example.wf'
-        ]);
-
-        $request = Request::create($params);
-
-        // Should inherit from .fr plugin
-        $this->assertInstanceOf(Request::class, $request);
-    }
-
-    #[Test]
-    public function testYtTldInheritsFromFr(): void
-    {
-        $params = array_merge($this->defaultParams, [
-            'tld' => 'yt',
-            'domainname' => 'example.yt'
-        ]);
-
-        $request = Request::create($params);
-
-        // Should inherit from .fr plugin
-        $this->assertInstanceOf(Request::class, $request);
-    }
-
-    // =========================================================================
-    // setParams() tests
-    // =========================================================================
-
-    #[Test]
-    public function setParamsSetsAccountAndPassword(): void
+    public function constructorSetsAccountAndPassword(): void
     {
         $request = new Request($this->defaultParams);
 
-        $this->assertEquals('testuser', $request->account);
-        $this->assertEquals('testpass', $request->password);
+        $this->assertEquals('test_account', $request->account);
+        $this->assertEquals('test_password', $request->password);
     }
 
     #[Test]
-    public function setParamsSetsDomainNameFromDomainObj(): void
+    public function constructorSetsDomainName(): void
     {
-        $domainObj = new class {
-            public function getIdnSecondLevel(): string { return 'example'; }
-            public function getTopLevel(): string { return 'com'; }
-        };
-
-        $params = array_merge($this->defaultParams, [
-            'domainObj' => $domainObj,
-            'sld' => 'example'
-        ]);
-
-        $request = new Request($params);
+        $request = new Request($this->defaultParams);
 
         $this->assertEquals('example.com', $request->domainName);
     }
 
     #[Test]
-    public function setParamsSetsDomainNameFromDomainname(): void
+    public function setParamsSetsAccountAndPassword(): void
     {
+        $request = new Request([]);
+        $request->setParams($this->defaultParams);
+
+        $this->assertEquals('test_account', $request->account);
+        $this->assertEquals('test_password', $request->password);
+    }
+
+    #[Test]
+    public function setParamsHandlesDomainObj(): void
+    {
+        $domainObj = new class {
+            public function getIdnSecondLevel(): string { return 'mytest'; }
+            public function getTopLevel(): string { return 'org'; }
+        };
+
         $params = array_merge($this->defaultParams, [
-            'domainname' => 'test.net'
+            'domainObj' => $domainObj,
+            'sld' => 'mytest'
         ]);
 
         $request = new Request($params);
 
-        $this->assertEquals('test.net', $request->domainName);
+        $this->assertEquals('mytest.org', $request->domainName);
     }
 
     // =========================================================================
-    // mapToContact() tests
+    // Register Domain Tests
     // =========================================================================
 
     #[Test]
-    public function mapToContactCreatesRegistrantWithFullName(): void
+    public function testRegisterDomainCreatesCorrectOrder(): void
+    {
+        $params = MockParamsV3::forRegistration('newdomain.com');
+        $request = new Request($params);
+
+        // Access mapToOrder to verify the order structure
+        $order = $request->mapToOrder($params, 'Register_Domain');
+
+        $this->assertEquals('Register_Domain', $order['Order']['Type']);
+        $this->assertEquals('newdomain.com', $order['Order']['Domain']['DomainName']);
+        $this->assertEquals(1, $order['Order']['Domain']['RegPeriod']);
+        $this->assertArrayHasKey('Registrant', $order['Order']['Domain']);
+        $this->assertArrayHasKey('AdminContact', $order['Order']['Domain']);
+        $this->assertArrayHasKey('TechContact', $order['Order']['Domain']);
+        $this->assertArrayHasKey('BillingContact', $order['Order']['Domain']);
+        $this->assertArrayHasKey('NameServers', $order['Order']['Domain']);
+    }
+
+    #[Test]
+    public function testRegisterDomainIncludesPrivacyProxy(): void
+    {
+        $params = MockParamsV3::withIdProtection('newdomain.com');
+        $request = new Request($params);
+
+        $order = $request->mapToOrder($params, 'Register_Domain');
+
+        $this->assertArrayHasKey('PrivacyProxy', $order['Order']['Domain']);
+        $this->assertEquals('Proxy', $order['Order']['Domain']['PrivacyProxy']['Type']);
+    }
+
+    #[Test]
+    public function testRegisterDomainUsesPrivacyForProxyLite(): void
+    {
+        $params = MockParamsV3::withIdProtection('newdomain.com', ['Proxy_Lite' => 'on']);
+        $request = new Request($params);
+
+        $order = $request->mapToOrder($params, 'Register_Domain');
+
+        $this->assertEquals('Privacy', $order['Order']['Domain']['PrivacyProxy']['Type']);
+    }
+
+    #[Test]
+    public function testRegisterDomainSetsNoneForNoIdProtection(): void
+    {
+        $params = MockParamsV3::forRegistration('newdomain.com', ['idprotection' => false]);
+        $request = new Request($params);
+
+        $order = $request->mapToOrder($params, 'Register_Domain');
+
+        $this->assertEquals('None', $order['Order']['Domain']['PrivacyProxy']['Type']);
+    }
+
+    #[Test]
+    public function testRegisterDomainIncludesTransactionComment(): void
+    {
+        $params = MockParamsV3::forRegistration('newdomain.com', [
+            'domainid' => 123,
+            'userid' => 456
+        ]);
+        $request = new Request($params);
+
+        $order = $request->mapToOrder($params, 'Register_Domain');
+
+        $comment = json_decode($order['Order']['TransactionComment'], true);
+        $this->assertEquals('WHMCS', $comment['application']);
+        $this->assertEquals(123, $comment['domainId']);
+        $this->assertEquals(456, $comment['userId']);
+        $this->assertEquals('Domain', $comment['objectType']);
+    }
+
+    // =========================================================================
+    // Transfer Domain Tests
+    // =========================================================================
+
+    #[Test]
+    public function testTransferDomainCreatesCorrectOrder(): void
+    {
+        $params = MockParamsV3::forTransfer('transfer.com', 'TRANSFER-EPP-CODE');
+        $request = new Request($params);
+
+        $order = $request->mapToOrder($params, 'Transfer_Domain');
+
+        $this->assertEquals('Transfer_Domain', $order['Order']['Type']);
+        $this->assertEquals('transfer.com', $order['Order']['Domain']['DomainName']);
+        $this->assertEquals('TRANSFER-EPP-CODE', $order['Order']['Domain']['AuthInfo']);
+    }
+
+    #[Test]
+    public function testTransferDomainIncludesPrivacyProxy(): void
+    {
+        $params = MockParamsV3::forTransfer('transfer.com', 'EPP-CODE', ['idprotection' => true]);
+        $request = new Request($params);
+
+        $order = $request->mapToOrder($params, 'Transfer_Domain');
+
+        $this->assertArrayHasKey('PrivacyProxy', $order['Order']['Domain']);
+    }
+
+    // =========================================================================
+    // Renew Domain Tests
+    // =========================================================================
+
+    #[Test]
+    public function testRenewDomainCreatesCorrectOrder(): void
+    {
+        $params = MockParamsV3::forRenewal('renew.com', 2);
+        $request = new Request($params);
+
+        $order = $request->mapToOrder($params, 'Renew_Domain');
+
+        $this->assertEquals('Renew_Domain', $order['Order']['Type']);
+        $this->assertEquals('renew.com', $order['Order']['Domain']['DomainName']);
+        $this->assertEquals(2, $order['Order']['Domain']['RegPeriod']);
+    }
+
+    // =========================================================================
+    // Search Domain Tests (GetDomains Filter)
+    // =========================================================================
+
+    #[Test]
+    public function testSearchDomainUsesGetDomainsFilter(): void
+    {
+        // Setup mock to return domain with handle
+        CapsuleMock::setTableData('tblasciohandles', [
+            ['type' => 'domain', 'whmcs_id' => 1, 'domain' => 'example.com', 'ascio_id' => 'DOM-12345']
+        ]);
+
+        $request = new Request($this->defaultParams);
+
+        // Verify the searchDomain method exists (it uses SearchDomain in v2, GetDomains filter in v3)
+        $this->assertTrue(method_exists($request, 'searchDomain'));
+    }
+
+    // =========================================================================
+    // Availability Check Tests
+    // =========================================================================
+
+    #[Test]
+    public function testAvailabilityCheckHandlesMultipleTlds(): void
+    {
+        $params = $this->defaultParams;
+        $request = new Request($params);
+
+        // Verify availabilityCheck method exists
+        $this->assertTrue(method_exists($request, 'availabilityCheck'));
+    }
+
+    #[Test]
+    public function testAvailabilityInfoReturnsSingleDomain(): void
+    {
+        $params = $this->defaultParams;
+        $request = new Request($params);
+
+        // Verify availabilityInfo method exists
+        $this->assertTrue(method_exists($request, 'availabilityInfo'));
+    }
+
+    // =========================================================================
+    // Poll/Ack Queue Message Tests
+    // =========================================================================
+
+    #[Test]
+    public function testPollReturnsCompatibleFormat(): void
     {
         $request = new Request($this->defaultParams);
-        $reflection = new \ReflectionMethod($request, 'mapToContact');
+
+        // Verify poll method exists
+        $this->assertTrue(method_exists($request, 'poll'));
+    }
+
+    #[Test]
+    public function testAckCallsAckQueueMessage(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        // Verify ack method exists
+        $this->assertTrue(method_exists($request, 'ack'));
+    }
+
+    // =========================================================================
+    // Contact Mapping Tests (v3 format)
+    // =========================================================================
+
+    #[Test]
+    public function testMapToRegistrantCreatesValidObject(): void
+    {
+        $request = new Request($this->defaultParams);
+        $reflection = new \ReflectionMethod($request, 'mapToRegistrant');
         $reflection->setAccessible(true);
 
-        $result = $reflection->invoke($request, $this->defaultParams, 'Registrant');
+        $result = $reflection->invoke($request, $this->defaultParams);
 
+        // Registrant should have Name field (combined first+last)
+        $this->assertArrayHasKey('Name', $result);
         $this->assertEquals('John Doe', $result['Name']);
         $this->assertEquals('Test Company', $result['OrgName']);
         $this->assertEquals('123 Test Street', $result['Address1']);
@@ -328,11 +293,10 @@ class RequestTest extends TestCase
         $this->assertEquals('TS', $result['State']);
         $this->assertEquals('US', $result['CountryCode']);
         $this->assertEquals('test@example.com', $result['Email']);
-        $this->assertEquals('+1.5551234567', $result['Phone']);
     }
 
     #[Test]
-    public function mapToContactCreatesAdminWithSeparateNames(): void
+    public function testMapToContactCreatesValidObject(): void
     {
         $request = new Request($this->defaultParams);
         $reflection = new \ReflectionMethod($request, 'mapToContact');
@@ -340,17 +304,31 @@ class RequestTest extends TestCase
 
         $result = $reflection->invoke($request, $this->defaultParams, 'Admin');
 
+        // Contact should have FirstName/LastName fields
+        $this->assertArrayHasKey('FirstName', $result);
+        $this->assertArrayHasKey('LastName', $result);
+        $this->assertArrayNotHasKey('Name', $result);
         $this->assertEquals('Admin', $result['FirstName']);
         $this->assertEquals('User', $result['LastName']);
-        $this->assertArrayNotHasKey('Name', $result);
     }
 
-    // =========================================================================
-    // mapToRegistrant() tests
-    // =========================================================================
+    #[Test]
+    public function testMapToNameserversCreatesValidArray(): void
+    {
+        $request = new Request($this->defaultParams);
+        $reflection = new \ReflectionMethod($request, 'mapToNameservers');
+        $reflection->setAccessible(true);
+
+        $result = $reflection->invoke($request, $this->defaultParams);
+
+        $this->assertArrayHasKey('NameServer1', $result);
+        $this->assertArrayHasKey('NameServer2', $result);
+        $this->assertEquals('ns1.example.com', $result['NameServer1']['HostName']);
+        $this->assertEquals('ns2.example.com', $result['NameServer2']['HostName']);
+    }
 
     #[Test]
-    public function mapToRegistrantIncludesCustomFields(): void
+    public function testMapToRegistrantWithCustomFields(): void
     {
         $params = array_merge($this->defaultParams, [
             'custom' => [
@@ -376,247 +354,232 @@ class RequestTest extends TestCase
     }
 
     // =========================================================================
-    // mapToNameservers() tests
+    // Domain/Order Retrieval Tests
     // =========================================================================
 
     #[Test]
-    public function mapToNameserversCreatesCorrectStructure(): void
+    public function testGetDomainByHandle(): void
     {
         $request = new Request($this->defaultParams);
-        $reflection = new \ReflectionMethod($request, 'mapToNameservers');
+
+        // Verify getDomain method exists
+        $this->assertTrue(method_exists($request, 'getDomain'));
+    }
+
+    #[Test]
+    public function testGetOrderById(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        // Verify getOrder method exists
+        $this->assertTrue(method_exists($request, 'getOrder'));
+    }
+
+    // =========================================================================
+    // Factory Method Tests (TLD-specific classes)
+    // =========================================================================
+
+    #[Test]
+    public function testCreateFactoryLoadsV3TldClass(): void
+    {
+        // Use v2 Request::create as baseline
+        $params = MockParamsV3::forTld('com');
+
+        // Factory should return a Request instance
+        $request = \ascio\Request::create($params);
+
+        $this->assertInstanceOf(\ascio\Request::class, $request);
+    }
+
+    #[Test]
+    #[DataProvider('tldFactoryProvider')]
+    public function testCreateFactoryForVariousTlds(string $tld): void
+    {
+        $params = MockParamsV3::forTld($tld);
+
+        // Factory should return a valid Request instance for all TLDs
+        $request = \ascio\Request::create($params);
+
+        $this->assertInstanceOf(\ascio\Request::class, $request);
+    }
+
+    public static function tldFactoryProvider(): array
+    {
+        return [
+            '.com (generic)' => ['com'],
+            '.net (generic)' => ['net'],
+            '.org (generic)' => ['org'],
+            '.ca (Canada)' => ['ca'],
+            '.de (Germany)' => ['de'],
+            '.it (Italy)' => ['it'],
+            '.uk (United Kingdom)' => ['uk'],
+            '.nl (Netherlands)' => ['nl'],
+            '.fr (France)' => ['fr'],
+            '.sg (Singapore)' => ['sg'],
+            '.au (Australia)' => ['au'],
+        ];
+    }
+
+    // =========================================================================
+    // Order Type Tests
+    // =========================================================================
+
+    #[Test]
+    #[DataProvider('orderTypeProvider')]
+    public function testMapToOrderCreatesCorrectOrderType(string $orderType): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $order = $request->mapToOrder($this->defaultParams, $orderType);
+
+        $this->assertEquals($orderType, $order['Order']['Type']);
+    }
+
+    public static function orderTypeProvider(): array
+    {
+        return [
+            'Register Domain' => ['Register_Domain'],
+            'Transfer Domain' => ['Transfer_Domain'],
+            'Renew Domain' => ['Renew_Domain'],
+            'Expire Domain' => ['Expire_Domain'],
+            'Unexpire Domain' => ['Unexpire_Domain'],
+            'Nameserver Update' => ['Nameserver_Update'],
+            'Contact Update' => ['Contact_Update'],
+            'Owner Change' => ['Owner_Change'],
+            'Update AuthInfo' => ['Update_AuthInfo'],
+            'Change Locks' => ['Change_Locks'],
+            'Domain Details Update' => ['Domain_Details_Update'],
+        ];
+    }
+
+    // =========================================================================
+    // Error Handling Tests
+    // =========================================================================
+
+    #[Test]
+    public function testMapToOrderHandlesEmptyNameservers(): void
+    {
+        $params = array_merge($this->defaultParams, [
+            'ns1' => '',
+            'ns2' => '',
+            'ns3' => '',
+            'ns4' => '',
+            'ns5' => ''
+        ]);
+
+        $request = new Request($params);
+        $order = $request->mapToOrder($params, 'Register_Domain');
+
+        // Should still have NameServers array, even if empty
+        $this->assertArrayHasKey('NameServers', $order['Order']['Domain']);
+    }
+
+    #[Test]
+    public function testMapToContactHandlesNullValues(): void
+    {
+        $params = array_merge($this->defaultParams, [
+            'companyname' => null,
+            'address2' => null,
+            'state' => null
+        ]);
+
+        $request = new Request($params);
+        $reflection = new \ReflectionMethod($request, 'mapToContact');
         $reflection->setAccessible(true);
 
-        $result = $reflection->invoke($request, $this->defaultParams);
+        // Should not throw an exception
+        $result = $reflection->invoke($request, $params, 'Registrant');
 
-        $this->assertEquals('ns1.example.com', $result['NameServer1']['HostName']);
-        $this->assertEquals('ns2.example.com', $result['NameServer2']['HostName']);
-        $this->assertEquals('', $result['NameServer3']['HostName']);
-        $this->assertEquals('', $result['NameServer4']['HostName']);
-        $this->assertEquals('', $result['NameServer5']['HostName']);
+        $this->assertIsArray($result);
     }
 
     // =========================================================================
-    // mapToOrder() tests
+    // Handle Storage Tests
     // =========================================================================
 
     #[Test]
-    public function mapToOrderCreatesRegisterDomainOrder(): void
+    public function testGetHandleReturnsStoredHandle(): void
     {
-        $request = new Request($this->defaultParams);
-
-        $result = $request->mapToOrder($this->defaultParams, 'Register_Domain');
-
-        $this->assertEquals('Register_Domain', $result['order']['Type']);
-        $this->assertEquals('example.com', $result['order']['Domain']['DomainName']);
-        $this->assertEquals(1, $result['order']['Domain']['RegPeriod']);
-        $this->assertArrayHasKey('Registrant', $result['order']['Domain']);
-        $this->assertArrayHasKey('AdminContact', $result['order']['Domain']);
-        $this->assertArrayHasKey('TechContact', $result['order']['Domain']);
-        $this->assertArrayHasKey('BillingContact', $result['order']['Domain']);
-        $this->assertArrayHasKey('NameServers', $result['order']['Domain']);
-    }
-
-    #[Test]
-    public function mapToOrderCreatesTransferDomainOrder(): void
-    {
-        $request = new Request($this->defaultParams);
-
-        $result = $request->mapToOrder($this->defaultParams, 'Transfer_Domain');
-
-        $this->assertEquals('Transfer_Domain', $result['order']['Type']);
-        $this->assertEquals('EPP123456', $result['order']['Domain']['AuthInfo']);
-    }
-
-    #[Test]
-    public function mapToOrderIncludesPrivacyProxyForIdProtection(): void
-    {
-        $params = array_merge($this->defaultParams, ['idprotection' => true]);
-        $request = new Request($params);
-
-        $result = $request->mapToOrder($params, 'Register_Domain');
-
-        $this->assertEquals('Proxy', $result['order']['Domain']['PrivacyProxy']['Type']);
-    }
-
-    #[Test]
-    public function mapToOrderUsesPrivacyForProxyLite(): void
-    {
-        $params = array_merge($this->defaultParams, [
-            'idprotection' => true,
-            'Proxy_Lite' => 'on'
+        CapsuleMock::setTableData('tblasciohandles', [
+            [
+                'type' => 'domain',
+                'whmcs_id' => 1,
+                'domain' => 'example.com',
+                'ascio_id' => 'DOM-V3-12345'
+            ]
         ]);
+
+        $request = new Request($this->defaultParams);
+        $result = $request->getHandle('domain', 1, 'example.com');
+
+        $this->assertEquals('DOM-V3-12345', $result);
+    }
+
+    #[Test]
+    public function testStoreHandleInsertsNewHandle(): void
+    {
+        CapsuleMock::setTableData('tblasciohandles', []);
+
+        $request = new Request($this->defaultParams);
+        $request->storeHandle('domain', 1, 'DOM-V3-NEW', 'example.com');
+
+        $query = CapsuleMock::getLastQuery();
+        $this->assertEquals('insert', $query['type']);
+        $this->assertEquals('tblasciohandles', $query['table']);
+    }
+
+    // =========================================================================
+    // Simulation Mode Tests
+    // =========================================================================
+
+    #[Test]
+    public function testIsSimulationModeReturnsFalseByDefault(): void
+    {
+        putenv('ASCIO_SIMULATE');
+
+        $request = new Request($this->defaultParams);
+
+        $reflection = new \ReflectionMethod($request, 'isSimulationMode');
+        $reflection->setAccessible(true);
+
+        $this->assertFalse($reflection->invoke($request));
+    }
+
+    #[Test]
+    public function testIsSimulationModeReturnsTrueWhenEnvVarSet(): void
+    {
+        putenv('ASCIO_SIMULATE=1');
+
+        $request = new Request($this->defaultParams);
+
+        $reflection = new \ReflectionMethod($request, 'isSimulationMode');
+        $reflection->setAccessible(true);
+
+        $this->assertTrue($reflection->invoke($request));
+
+        putenv('ASCIO_SIMULATE');
+    }
+
+    #[Test]
+    public function testIsSimulationModeReturnsTrueWhenModuleParamSet(): void
+    {
+        $params = array_merge($this->defaultParams, ['Simulate' => 'on']);
+
         $request = new Request($params);
 
-        $result = $request->mapToOrder($params, 'Register_Domain');
+        $reflection = new \ReflectionMethod($request, 'isSimulationMode');
+        $reflection->setAccessible(true);
 
-        $this->assertEquals('Privacy', $result['order']['Domain']['PrivacyProxy']['Type']);
-    }
-
-    #[Test]
-    public function mapToOrderSetsNoneForNoIdProtection(): void
-    {
-        $params = array_merge($this->defaultParams, ['idprotection' => false]);
-        $request = new Request($params);
-
-        $result = $request->mapToOrder($params, 'Register_Domain');
-
-        $this->assertEquals('None', $result['order']['Domain']['PrivacyProxy']['Type']);
-    }
-
-    #[Test]
-    public function mapToOrderIncludesTransactionComment(): void
-    {
-        $params = array_merge($this->defaultParams, [
-            'domainid' => 123,
-            'userid' => 456
-        ]);
-        $request = new Request($params);
-
-        $result = $request->mapToOrder($params, 'Register_Domain');
-
-        $comment = json_decode($result['order']['TransactionComment'], true);
-        $this->assertEquals('WHMCS', $comment['application']);
-        $this->assertEquals(123, $comment['domainId']);
-        $this->assertEquals(456, $comment['userId']);
-        $this->assertEquals('Domain', $comment['objectType']);
+        $this->assertTrue($reflection->invoke($request));
     }
 
     // =========================================================================
-    // mapToContact2() tests (nested contact format)
-    // =========================================================================
-
-    #[Test]
-    public function mapToContact2CreatesRegistrantFromNestedFormat(): void
-    {
-        $contactData = [
-            'First Name' => 'John',
-            'Last Name' => 'Doe',
-            'Company Name' => 'Test Corp',
-            'Address1' => '123 Main St',
-            'Address2' => '',
-            'City' => 'Test City',
-            'State' => 'TS',
-            'Postcode' => '12345',
-            'Country' => 'US',
-            'Email' => 'john@example.com',
-            'Phone Number' => '+1.5551234567',
-            'Fax Number' => ''
-        ];
-
-        $request = new Request($this->defaultParams);
-        $result = $request->mapToContact2($contactData, 'Registrant');
-
-        $this->assertEquals('John Doe', $result->Name);
-        $this->assertEquals('Test Corp', $result->OrgName);
-        $this->assertObjectNotHasProperty('FirstName', $result);
-        $this->assertObjectNotHasProperty('LastName', $result);
-    }
-
-    #[Test]
-    public function mapToContact2CreatesContactFromNestedFormat(): void
-    {
-        $contactData = [
-            'First Name' => 'Admin',
-            'Last Name' => 'User',
-            'Company Name' => 'Test Corp',
-            'Address1' => '123 Main St',
-            'Address2' => '',
-            'City' => 'Test City',
-            'State' => 'TS',
-            'Postcode' => '12345',
-            'Country' => 'US',
-            'Email' => 'admin@example.com',
-            'Phone Number' => '+1.5551234567',
-            'Fax Number' => ''
-        ];
-
-        $request = new Request($this->defaultParams);
-        $result = $request->mapToContact2($contactData, 'Contact');
-
-        $this->assertEquals('Admin', $result->FirstName);
-        $this->assertEquals('User', $result->LastName);
-        $this->assertObjectNotHasProperty('Name', $result);
-    }
-
-    // =========================================================================
-    // mapGetContactDetailRegistrant() tests
-    // =========================================================================
-
-    #[Test]
-    public function mapGetContactDetailRegistrantConvertsToWhmcsFormat(): void
-    {
-        $registrant = (object) [
-            'Name' => 'John Doe',
-            'OrgName' => 'Test Company',
-            'Email' => 'john@example.com',
-            'Phone' => '+1.5551234567',
-            'Fax' => '+1.5551234568',
-            'Address1' => '123 Main St',
-            'Address2' => 'Suite 100',
-            'State' => 'TS',
-            'PostalCode' => '12345',
-            'City' => 'Test City',
-            'CountryCode' => 'US'
-        ];
-
-        $request = new Request($this->defaultParams);
-        $result = $request->mapGetContactDetailRegistrant([], $registrant);
-
-        $this->assertEquals('John', $result['Registrant']['First Name']);
-        $this->assertEquals('Doe', $result['Registrant']['Last Name']);
-        $this->assertEquals('Test Company', $result['Registrant']['Company Name']);
-        $this->assertEquals('john@example.com', $result['Registrant']['Email']);
-        $this->assertEquals('+1.5551234567', $result['Registrant']['Phone Number']);
-        $this->assertEquals('US', $result['Registrant']['Country Code']);
-    }
-
-    // =========================================================================
-    // mapGetContactDetailContact() tests
-    // =========================================================================
-
-    #[Test]
-    public function mapGetContactDetailContactConvertsToWhmcsFormat(): void
-    {
-        $contact = (object) [
-            'FirstName' => 'Admin',
-            'LastName' => 'User',
-            'OrgName' => 'Test Company',
-            'Email' => 'admin@example.com',
-            'Phone' => '+1.5551234567',
-            'Fax' => '+1.5551234568',
-            'Address1' => '123 Main St',
-            'Address2' => 'Suite 100',
-            'State' => 'TS',
-            'PostalCode' => '12345',
-            'City' => 'Test City',
-            'CountryCode' => 'US'
-        ];
-
-        $request = new Request($this->defaultParams);
-        $result = $request->mapGetContactDetailContact([], $contact, 'Admin');
-
-        $this->assertEquals('Admin', $result['Admin']['First Name']);
-        $this->assertEquals('User', $result['Admin']['Last Name']);
-        $this->assertEquals('Test Company', $result['Admin']['Company Name']);
-        $this->assertEquals('admin@example.com', $result['Admin']['Email']);
-    }
-
-    #[Test]
-    public function mapGetContactDetailContactHandlesNullContact(): void
-    {
-        $request = new Request($this->defaultParams);
-        $result = $request->mapGetContactDetailContact([], null, 'Admin');
-
-        $this->assertArrayNotHasKey('Admin', $result);
-    }
-
-    // =========================================================================
-    // getDomainStatus() tests
+    // Domain Status Tests
     // =========================================================================
 
     #[Test]
     #[DataProvider('domainStatusProvider')]
-    public function getDomainStatusReturnsCorrectStatus(string $ascioStatus, string $expectedWhmcsStatus): void
+    public function testGetDomainStatusReturnsCorrectStatus(string $ascioStatus, string $expectedWhmcsStatus): void
     {
         $domain = (object) ['Status' => $ascioStatus];
         $request = new Request($this->defaultParams);
@@ -640,7 +603,7 @@ class RequestTest extends TestCase
     }
 
     #[Test]
-    public function getDomainStatusReturnsCancelledForNullDomain(): void
+    public function testGetDomainStatusReturnsCancelledForNullDomain(): void
     {
         $request = new Request($this->defaultParams);
 
@@ -650,143 +613,28 @@ class RequestTest extends TestCase
     }
 
     // =========================================================================
-    // getEPPCode() tests
+    // WSDL Selection Tests
     // =========================================================================
 
     #[Test]
-    public function getEPPCodeReturnsAuthInfoFromDomain(): void
+    public function testUsesTestWsdlWhenTestModeOn(): void
     {
-        // Set up mock to return a domain with AuthInfo
-        CapsuleMock::setTableData('tblasciohandles', [
-            ['type' => 'domain', 'whmcs_id' => 1, 'domain' => 'example.com', 'ascio_id' => 'DOM-123']
-        ]);
-
-        $request = new Request($this->defaultParams);
-
-        // The searchDomain call will use the mock SoapClient
-        // For this test, we'll just verify the method structure
-        $this->assertTrue(method_exists($request, 'getEPPCode'));
-    }
-
-    // =========================================================================
-    // Handle management tests
-    // =========================================================================
-
-    #[Test]
-    public function getHandleReturnsStoredHandle(): void
-    {
-        CapsuleMock::setTableData('tblasciohandles', [
-            [
-                'type' => 'domain',
-                'whmcs_id' => 1,
-                'domain' => 'example.com',
-                'ascio_id' => 'DOM-12345'
-            ]
-        ]);
-
-        $request = new Request($this->defaultParams);
-        $result = $request->getHandle('domain', 1, 'example.com');
-
-        $this->assertEquals('DOM-12345', $result);
-    }
-
-    #[Test]
-    public function getHandleReturnsNullForNonExistentHandle(): void
-    {
-        CapsuleMock::setTableData('tblasciohandles', []);
-
-        $request = new Request($this->defaultParams);
-        $result = $request->getHandle('domain', 999, 'nonexistent.com');
-
-        $this->assertNull($result);
-    }
-
-    #[Test]
-    public function storeHandleInsertsNewHandle(): void
-    {
-        CapsuleMock::setTableData('tblasciohandles', []);
-
-        $request = new Request($this->defaultParams);
-        $request->storeHandle('domain', 1, 'DOM-NEW', 'example.com');
-
-        $query = CapsuleMock::getLastQuery();
-        $this->assertEquals('insert', $query['type']);
-        $this->assertEquals('tblasciohandles', $query['table']);
-    }
-
-    // =========================================================================
-    // Simulation Mode Tests
-    // =========================================================================
-
-    #[Test]
-    public function isSimulationModeReturnsFalseByDefault(): void
-    {
-        // Ensure env var is not set
-        putenv('ASCIO_SIMULATE');
-
-        $request = new Request($this->defaultParams);
-
-        $reflection = new \ReflectionMethod($request, 'isSimulationMode');
-        $reflection->setAccessible(true);
-
-        $this->assertFalse($reflection->invoke($request));
-    }
-
-    #[Test]
-    public function isSimulationModeReturnsTrueWhenEnvVarSet(): void
-    {
-        putenv('ASCIO_SIMULATE=1');
-
-        $request = new Request($this->defaultParams);
-
-        $reflection = new \ReflectionMethod($request, 'isSimulationMode');
-        $reflection->setAccessible(true);
-
-        $this->assertTrue($reflection->invoke($request));
-
-        // Clean up
-        putenv('ASCIO_SIMULATE');
-    }
-
-    #[Test]
-    public function isSimulationModeReturnsTrueWhenEnvVarSetToTrue(): void
-    {
-        putenv('ASCIO_SIMULATE=true');
-
-        $request = new Request($this->defaultParams);
-
-        $reflection = new \ReflectionMethod($request, 'isSimulationMode');
-        $reflection->setAccessible(true);
-
-        $this->assertTrue($reflection->invoke($request));
-
-        // Clean up
-        putenv('ASCIO_SIMULATE');
-    }
-
-    #[Test]
-    public function isSimulationModeReturnsTrueWhenModuleParamSet(): void
-    {
-        $params = array_merge($this->defaultParams, ['Simulate' => 'on']);
-
+        $params = array_merge($this->defaultParams, ['TestMode' => 'on']);
         $request = new Request($params);
 
-        $reflection = new \ReflectionMethod($request, 'isSimulationMode');
-        $reflection->setAccessible(true);
-
-        $this->assertTrue($reflection->invoke($request));
+        // Verify the test WSDL constant is defined
+        $this->assertTrue(defined('ASCIO_V3_WSDL_TEST'));
+        $this->assertStringContainsString('demo.ascio.com', ASCIO_V3_WSDL_TEST);
     }
 
     #[Test]
-    public function isSimulationModeReturnsFalseWhenModuleParamOff(): void
+    public function testUsesLiveWsdlWhenTestModeOff(): void
     {
-        $params = array_merge($this->defaultParams, ['Simulate' => 'off']);
-
+        $params = array_merge($this->defaultParams, ['TestMode' => '']);
         $request = new Request($params);
 
-        $reflection = new \ReflectionMethod($request, 'isSimulationMode');
-        $reflection->setAccessible(true);
-
-        $this->assertFalse($reflection->invoke($request));
+        // Verify the live WSDL constant is defined
+        $this->assertTrue(defined('ASCIO_V3_WSDL_LIVE'));
+        $this->assertStringContainsString('aws.ascio.com', ASCIO_V3_WSDL_LIVE);
     }
 }

@@ -7,11 +7,11 @@
  * - Options: "member" or "non-member"
  */
 
-namespace ascio\v3\domains;
+namespace ascio;
 
-require_once(dirname(__FILE__) . "/../../../lib/RequestV3.php");
+require_once(dirname(__FILE__) . "/../../../lib/Request.php");
 
-class xxx extends RequestV3 {
+class xxx extends Request {
 
 	/**
 	 * Register domain with XXX-specific community membership option

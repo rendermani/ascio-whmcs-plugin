@@ -8,11 +8,11 @@
  * - Domain.DomainPurpose field in order
  */
 
-namespace ascio\v3\domains;
+namespace ascio;
 
-require_once(dirname(__FILE__) . "/../../../lib/RequestV3.php");
+require_once(dirname(__FILE__) . "/../../../lib/Request.php");
 
-class us extends RequestV3 {
+class us extends Request {
 
 	/**
 	 * Map order with US-specific Domain Purpose (Nexus)

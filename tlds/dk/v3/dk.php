@@ -10,13 +10,13 @@
  * - Expire uses "Unconfirmed" comment
  */
 
-namespace ascio\v3\domains;
+namespace ascio;
 
-require_once(dirname(__FILE__) . "/../../../lib/RequestV3.php");
+require_once(dirname(__FILE__) . "/../../../lib/Request.php");
 
 use ascio\AscioException as AscioException;
 
-class dk extends RequestV3 {
+class dk extends Request {
 
 	/**
 	 * Map registrant with DK-specific CVR and type

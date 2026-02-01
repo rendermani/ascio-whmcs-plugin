@@ -1,6 +1,6 @@
 <?php
 
-namespace ascio\v2\domains;
+namespace ascio;
 use ascio\Tools as Tools;
 
 class it extends Request {	

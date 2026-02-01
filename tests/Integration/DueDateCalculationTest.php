@@ -15,7 +15,7 @@ namespace Ascio\Tests\Integration;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\DataProvider;
-use ascio\v3\domains\RequestV3;
+use ascio\Request;
 use Ascio\Tests\Mocks\CapsuleMock;
 use Ascio\Tests\Mocks\WhmcsFunctionsMock;
 
@@ -50,7 +50,7 @@ class DueDateCalculationTest extends IntegrationTestBase
         $expDate = (new \DateTime('+1 year'))->format('Y-m-d\TH:i:s');
         $domain = $this->createDomainWithExpDate('test.com', $expDate);
 
-        $request = new RequestV3(array_merge($this->params, [
+        $request = new Request(array_merge($this->params, [
             'domainid' => 1,
             'domainname' => 'test.com',
             'tld' => 'com',
@@ -86,7 +86,7 @@ class DueDateCalculationTest extends IntegrationTestBase
         $expDate = (new \DateTime('+1 year'))->format('Y-m-d\TH:i:s');
         $domain = $this->createDomainWithExpDate('test.org', $expDate);
 
-        $request = new RequestV3(array_merge($this->params, [
+        $request = new Request(array_merge($this->params, [
             'domainid' => 1,
             'domainname' => 'test.org',
             'tld' => 'org',
@@ -120,7 +120,7 @@ class DueDateCalculationTest extends IntegrationTestBase
         $expDate = (new \DateTime('+1 year'))->format('Y-m-d\TH:i:s');
         $domain = $this->createDomainWithExpDate('test.net', $expDate);
 
-        $request = new RequestV3(array_merge($this->params, [
+        $request = new Request(array_merge($this->params, [
             'domainid' => 1,
             'domainname' => 'test.net',
             'tld' => 'net',
@@ -159,7 +159,7 @@ class DueDateCalculationTest extends IntegrationTestBase
         $domain = $this->createDomainWithExpDate('test.de', $expDate);
         $domain->Status = 'ACTIVE'; // Not expiring
 
-        $request = new RequestV3(array_merge($this->params, [
+        $request = new Request(array_merge($this->params, [
             'domainid' => 1,
             'domainname' => 'test.de',
             'tld' => 'de',
@@ -198,7 +198,7 @@ class DueDateCalculationTest extends IntegrationTestBase
         $domain = $this->createDomainWithExpDate('test.de', $expDate);
         $domain->Status = 'EXPIRING'; // Is expiring
 
-        $request = new RequestV3(array_merge($this->params, [
+        $request = new Request(array_merge($this->params, [
             'domainid' => 1,
             'domainname' => 'test.de',
             'tld' => 'de',
@@ -237,7 +237,7 @@ class DueDateCalculationTest extends IntegrationTestBase
         $domain = $this->createDomainWithExpDate('test.com', $expDate);
 
         // Sync_Due_Date = 'on' (default)
-        $request = new RequestV3(array_merge($this->params, [
+        $request = new Request(array_merge($this->params, [
             'domainid' => 1,
             'domainname' => 'test.com',
             'tld' => 'com',
@@ -267,7 +267,7 @@ class DueDateCalculationTest extends IntegrationTestBase
         $domain = $this->createDomainWithExpDate('test.com', $expDate);
 
         // Sync_Due_Date = 'off' - should not update due date
-        $request = new RequestV3(array_merge($this->params, [
+        $request = new Request(array_merge($this->params, [
             'domainid' => 1,
             'domainname' => 'test.com',
             'tld' => 'com',
@@ -305,7 +305,7 @@ class DueDateCalculationTest extends IntegrationTestBase
             'ExpDate' => '0001-01-01T00:00:00', // Invalid date
         ];
 
-        $request = new RequestV3(array_merge($this->params, [
+        $request = new Request(array_merge($this->params, [
             'domainid' => 1,
             'domainname' => 'test.com',
             'tld' => 'com',
@@ -327,7 +327,7 @@ class DueDateCalculationTest extends IntegrationTestBase
         $expDate = (new \DateTime('+1 year'))->format('Y-m-d\TH:i:s');
         $domain = $this->createDomainWithExpDate('test.xyz', $expDate);
 
-        $request = new RequestV3(array_merge($this->params, [
+        $request = new Request(array_merge($this->params, [
             'domainid' => 1,
             'domainname' => 'test.xyz',
             'tld' => 'xyz',
@@ -351,7 +351,7 @@ class DueDateCalculationTest extends IntegrationTestBase
         $expDate = '2025-12-31T00:00:00';
         $domain = $this->createDomainWithExpDate('test.test', $expDate);
 
-        $request = new RequestV3(array_merge($this->params, [
+        $request = new Request(array_merge($this->params, [
             'domainid' => 1,
             'domainname' => 'test.test',
             'tld' => 'test',

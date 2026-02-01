@@ -12,7 +12,7 @@ namespace Ascio\Tests\Integration;
 require_once __DIR__ . '/bootstrap.php';
 
 use PHPUnit\Framework\TestCase;
-use ascio\v3\domains\RequestV3;
+use ascio\Request;
 use Ascio\Tests\Mocks\WhmcsFunctionsMock;
 use Ascio\Tests\Mocks\CapsuleMock;
 use Ascio\Tests\Mocks\MockParamsV3;
@@ -35,8 +35,8 @@ abstract class IntegrationTestBase extends TestCase
     /** @var ?string Ascio test account password */
     protected ?string $password;
 
-    /** @var ?RequestV3 Request instance (created lazily) */
-    protected ?RequestV3 $request = null;
+    /** @var ?Request Request instance (created lazily) */
+    protected ?Request $request = null;
 
     /** @var bool Enable simulation mode (ValidateOrder instead of CreateOrder) */
     protected bool $simulationMode = true;
@@ -97,12 +97,12 @@ abstract class IntegrationTestBase extends TestCase
     }
 
     /**
-     * Get a configured RequestV3 instance
+     * Get a configured Request instance
      */
-    protected function getRequest(?array $params = null): RequestV3
+    protected function getRequest(?array $params = null): Request
     {
         $params = $params ?? $this->params;
-        return new RequestV3($params);
+        return new Request($params);
     }
 
     /**

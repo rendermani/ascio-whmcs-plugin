@@ -118,7 +118,4 @@ if (!function_exists('autoload_ca5124cc493862de39cebdb26d543f92')) {
     }
 }
 
-// Request and RequestV3 classes are loaded on-demand via ApiVersion.php or autoloader
-// Don't load them here to avoid duplicate class declarations
-
-// AutoExpireService is now autoloaded via composer (namespace ascio)
+// Request class is autoloaded via composer (namespace ascio)

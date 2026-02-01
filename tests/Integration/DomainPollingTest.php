@@ -14,7 +14,7 @@ namespace Ascio\Tests\Integration;
 
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\Group;
-use ascio\v3\domains\RequestV3;
+use ascio\Request;
 
 #[Group('integration')]
 #[Group('v3')]

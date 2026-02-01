@@ -1,6 +1,6 @@
 <?php
 
-namespace ascio\v2\domains;
+namespace ascio;
 
 class jobs extends Request {	
 	protected function mapToRegistrant($params) {
@@ -12,7 +12,7 @@ class jobs extends Request {
 	public function registerDomain($params=false) {		
 		$params = $this->setParams($params);
 		$ascioParams = $this->mapToOrder($params,"Register_Domain");
-		$ascioParams["order"]["Domain"]["DomainPurpose"] = $params["additionalfields"]["Website"];
+		$ascioParams["Order"]["Domain"]["DomainPurpose"] = $params["additionalfields"]["Website"];
 		$result = $this->request("CreateOrder",$ascioParams);
 		if (!$result) {
 			$this->setWhmcsStatus($domainName,"Pending","Register_Domain");

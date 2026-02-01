@@ -26,8 +26,8 @@ if (file_exists($v3AutoloadPath)) {
     require_once $v3AutoloadPath;
 }
 
-// Load RequestV3 class
-require_once __DIR__ . '/../../lib/RequestV3.php';
+// Load Request class
+require_once __DIR__ . '/../../lib/Request.php';
 
 /**
  * Helper class to load test credentials

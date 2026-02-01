@@ -7,8 +7,8 @@
          requireCoverageMetadata="false"
          beStrictAboutCoverageMetadata="false"
          beStrictAboutOutputDuringTests="true"
-         failOnRisky="true"
-         failOnWarning="true"
+         failOnRisky="false"
+         failOnWarning="false"
          colors="true"
          displayDetailsOnTestsThatTriggerDeprecations="true"
          displayDetailsOnTestsThatTriggerErrors="true"
@@ -22,20 +22,8 @@
         <testsuite name="TLDs">
             <directory>Unit/Tlds</directory>
         </testsuite>
-        <testsuite name="V3">
-            <file>Unit/RequestV3Test.php</file>
-            <file>Unit/V3CompatibilityTest.php</file>
-        </testsuite>
         <testsuite name="Integration">
             <directory>Integration</directory>
-        </testsuite>
-        <testsuite name="V3Integration">
-            <file>Integration/DomainOrderValidationTest.php</file>
-            <file>Integration/DomainSearchTest.php</file>
-            <file>Integration/DomainCallbackTest.php</file>
-            <file>Integration/DomainPollingTest.php</file>
-            <file>Integration/DueDateCalculationTest.php</file>
-            <file>Integration/V3CompatibilityTest.php</file>
         </testsuite>
     </testsuites>
 

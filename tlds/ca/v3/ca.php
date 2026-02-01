@@ -8,11 +8,11 @@
  * - Canadian Citizen flag
  */
 
-namespace ascio\v3\domains;
+namespace ascio;
 
-require_once(dirname(__FILE__) . "/../../../lib/RequestV3.php");
+require_once(dirname(__FILE__) . "/../../../lib/Request.php");
 
-class ca extends RequestV3 {
+class ca extends Request {
 
 	/**
 	 * Legal Type to CIRA code mapping

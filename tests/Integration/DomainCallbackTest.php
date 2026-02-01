@@ -15,7 +15,7 @@ namespace Ascio\Tests\Integration;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\DataProvider;
-use ascio\v3\domains\RequestV3;
+use ascio\Request;
 use Ascio\Tests\Mocks\CapsuleMock;
 use Ascio\Tests\Mocks\WhmcsFunctionsMock;
 use Ascio\Tests\Mocks\MockAscioClientV3;
@@ -162,7 +162,7 @@ class DomainCallbackTest extends IntegrationTestBase
         CapsuleMock::reset();
         CapsuleMock::setTableData('tblasciohandles', []);
 
-        $request = new RequestV3(array_merge($this->params, ['domainid' => 1]));
+        $request = new Request(array_merge($this->params, ['domainid' => 1]));
 
         // Create a mock domain with handle
         $domain = (object) [
@@ -194,7 +194,7 @@ class DomainCallbackTest extends IntegrationTestBase
             ],
         ]);
 
-        $request = new RequestV3(array_merge($this->params, ['domainid' => 1]));
+        $request = new Request(array_merge($this->params, ['domainid' => 1]));
 
         // Store new handle (should update)
         $request->storeHandle('domain', 1, 'DOM-V3-OLD', 'test-callback.com');
@@ -217,7 +217,7 @@ class DomainCallbackTest extends IntegrationTestBase
             ],
         ]);
 
-        $request = new RequestV3(array_merge($this->params, ['domainid' => 1]));
+        $request = new Request(array_merge($this->params, ['domainid' => 1]));
 
         // Delete old handles
         $request->deleteOldHandle(1);
@@ -240,7 +240,7 @@ class DomainCallbackTest extends IntegrationTestBase
             ['Tld' => 'com', 'Threshold' => -35, 'Renew' => 1],
         ]);
 
-        $request = new RequestV3(array_merge($this->params, ['domainid' => 1]));
+        $request = new Request(array_merge($this->params, ['domainid' => 1]));
 
         // Create domain with expiry date
         $expDate = (new \DateTime('+1 year'))->format('Y-m-d\TH:i:s');
@@ -346,7 +346,7 @@ class DomainCallbackTest extends IntegrationTestBase
             'domainid' => 1,
         ]);
 
-        $request = new RequestV3($params);
+        $request = new Request($params);
 
         // Verify AutoExpire is configured
         $this->assertEquals('on', $params['AutoExpire']);

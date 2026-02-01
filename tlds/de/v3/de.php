@@ -9,13 +9,13 @@
  * - EPP code generation uses specific character set
  */
 
-namespace ascio\v3\domains;
+namespace ascio;
 
-require_once(dirname(__FILE__) . "/../../../lib/RequestV3.php");
+require_once(dirname(__FILE__) . "/../../../lib/Request.php");
 
 use ascio\Tools as Tools;
 
-class de extends RequestV3 {
+class de extends Request {
 
 	/**
 	 * Transfer domain - DE transfers work same as v2

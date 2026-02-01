@@ -9,13 +9,13 @@
  * - NIC/D handle option
  */
 
-namespace ascio\v3\domains;
+namespace ascio;
 
-require_once(dirname(__FILE__) . "/../../../lib/RequestV3.php");
+require_once(dirname(__FILE__) . "/../../../lib/Request.php");
 
 use ascio\Tools as Tools;
 
-class ru extends RequestV3 {
+class ru extends Request {
 
 	/**
 	 * Map registrant with RU-specific identity requirements

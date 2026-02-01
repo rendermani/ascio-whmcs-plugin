@@ -10,13 +10,13 @@
  * - Transfers have 0 year period
  */
 
-namespace ascio\v3\domains;
+namespace ascio;
 
-require_once(dirname(__FILE__) . "/../../../lib/RequestV3.php");
+require_once(dirname(__FILE__) . "/../../../lib/Request.php");
 
 use ascio\Tools as Tools;
 
-class es extends RequestV3 {
+class es extends Request {
 
 	/**
 	 * Map registrant with ES-specific type codes and ID

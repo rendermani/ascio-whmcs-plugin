@@ -447,7 +447,7 @@ class AscioPluginTest extends TestCase
     }
 
     #[Test]
-    public function getTldPricingCallsRequestV3(): void
+    public function getTldPricingCallsRequest(): void
     {
         $this->assertTrue(function_exists('ascio_GetTldPricing'));
     }

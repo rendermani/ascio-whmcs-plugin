@@ -1,12 +1,12 @@
 <?php
 
-namespace ascio\v2\domains;
+namespace ascio;
 
 class org_sg extends Request {	
 	public function mapToOrder($params,$orderType) {
 		$ascioParams = parent::mapToOrder($params,$orderType);
 		if($params["additionalfields"]["Local Presence"]=="on"){
-			$ascioParams["order"]["LocalPresence"] = "LocalPresenceAdmin";		
+			$ascioParams["Order"]["LocalPresence"] = "LocalPresenceAdmin";		
 		} 
 		
 		return $ascioParams;

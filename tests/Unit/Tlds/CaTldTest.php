@@ -5,7 +5,7 @@ namespace Ascio\Tests\Unit\Tlds;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\DataProvider;
-use ascio\v2\domains\Request;
+use ascio\Request;
 use Ascio\Tests\Mocks\WhmcsFunctionsMock;
 use Ascio\Tests\Mocks\CapsuleMock;
 
@@ -14,7 +14,7 @@ use Ascio\Tests\Mocks\CapsuleMock;
  *
  * Tests all 16 registrant types and trademark handling
  *
- * @covers \ascio\v2\domains\ca
+ * @covers \ascio\ca
  */
 class CaTldTest extends TestCase
 {
@@ -201,7 +201,7 @@ class CaTldTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('CCO', $order['order']['Domain']['Registrant']['RegistrantType']);
+        $this->assertEquals('CCO', $order['Order']['Domain']['Registrant']['RegistrantType']);
     }
 
     #[Test]
@@ -219,8 +219,8 @@ class CaTldTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertArrayHasKey('Trademark', $order['order']['Domain']);
-        $this->assertEquals('TM789', $order['order']['Domain']['Trademark']['Number']);
+        $this->assertArrayHasKey('Trademark', $order['Order']['Domain']);
+        $this->assertEquals('TM789', $order['Order']['Domain']['Trademark']['Number']);
     }
 
     // =========================================================================

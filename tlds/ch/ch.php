@@ -1,6 +1,6 @@
 <?php
 
-namespace ascio\v2\domains;
+namespace ascio;
 
 class ch extends Request {
 	public function transferDomain($params=false) {

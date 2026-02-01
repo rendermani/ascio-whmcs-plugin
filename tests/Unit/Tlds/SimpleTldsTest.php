@@ -5,7 +5,7 @@ namespace Ascio\Tests\Unit\Tlds;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\DataProvider;
-use ascio\v2\domains\Request;
+use ascio\Request;
 use Ascio\Tests\Mocks\WhmcsFunctionsMock;
 use Ascio\Tests\Mocks\CapsuleMock;
 
@@ -83,7 +83,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Transfer_Domain');
 
-        $this->assertEquals(0, $order['order']['Domain']['RegPeriod']);
+        $this->assertEquals(0, $order['Order']['Domain']['RegPeriod']);
     }
 
     #[Test]
@@ -98,7 +98,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Transfer_Domain');
 
-        $this->assertEquals(2, $order['order']['Domain']['RegPeriod']);
+        $this->assertEquals(2, $order['Order']['Domain']['RegPeriod']);
     }
 
     #[Test]
@@ -113,7 +113,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals(1, $order['order']['Domain']['RegPeriod']);
+        $this->assertEquals(1, $order['Order']['Domain']['RegPeriod']);
     }
 
     // =========================================================================
@@ -131,8 +131,8 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.ch', $order['order']['Domain']['DomainName']);
-        $this->assertEquals('Register_Domain', $order['order']['Type']);
+        $this->assertEquals('example.ch', $order['Order']['Domain']['DomainName']);
+        $this->assertEquals('Register_Domain', $order['Order']['Type']);
     }
 
     // =========================================================================
@@ -150,7 +150,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.fi', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.fi', $order['Order']['Domain']['DomainName']);
     }
 
     // =========================================================================
@@ -168,7 +168,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.fr', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.fr', $order['Order']['Domain']['DomainName']);
     }
 
     // =========================================================================
@@ -186,7 +186,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.pl', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.pl', $order['Order']['Domain']['DomainName']);
     }
 
     // =========================================================================
@@ -204,7 +204,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.pro', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.pro', $order['Order']['Domain']['DomainName']);
     }
 
     // =========================================================================
@@ -222,7 +222,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.ru', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.ru', $order['Order']['Domain']['DomainName']);
     }
 
     // =========================================================================
@@ -240,7 +240,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.xxx', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.xxx', $order['Order']['Domain']['DomainName']);
     }
 
     // =========================================================================
@@ -258,7 +258,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.asia', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.asia', $order['Order']['Domain']['DomainName']);
     }
 
     // =========================================================================
@@ -276,7 +276,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.jobs', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.jobs', $order['Order']['Domain']['DomainName']);
     }
 
     // =========================================================================
@@ -294,7 +294,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.nu', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.nu', $order['Order']['Domain']['DomainName']);
     }
 
     // =========================================================================
@@ -312,7 +312,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.se', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.se', $order['Order']['Domain']['DomainName']);
     }
 
     // =========================================================================
@@ -330,7 +330,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.es', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.es', $order['Order']['Domain']['DomainName']);
     }
 
     // =========================================================================
@@ -348,7 +348,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.com.au', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.com.au', $order['Order']['Domain']['DomainName']);
     }
 
     // =========================================================================
@@ -366,7 +366,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.dk', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.dk', $order['Order']['Domain']['DomainName']);
     }
 
     // =========================================================================
@@ -386,7 +386,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals($domainName, $order['order']['Domain']['DomainName']);
+        $this->assertEquals($domainName, $order['Order']['Domain']['DomainName']);
     }
 
     public static function tldListProvider(): array
@@ -441,7 +441,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.al', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.al', $order['Order']['Domain']['DomainName']);
     }
 
     #[Test]
@@ -458,7 +458,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('AL123456789', $order['order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('AL123456789', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
     }
 
     // =========================================================================
@@ -476,7 +476,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.ba', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.ba', $order['Order']['Domain']['DomainName']);
     }
 
     #[Test]
@@ -493,7 +493,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('BA987654321', $order['order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('BA987654321', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
     }
 
     // =========================================================================
@@ -511,7 +511,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.by', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.by', $order['Order']['Domain']['DomainName']);
     }
 
     #[Test]
@@ -528,7 +528,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('BY555666777', $order['order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('BY555666777', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
     }
 
     // =========================================================================
@@ -546,7 +546,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.cn', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.cn', $order['Order']['Domain']['DomainName']);
     }
 
     #[Test]
@@ -563,7 +563,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('CN110101199003076534', $order['order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('CN110101199003076534', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
     }
 
     // =========================================================================
@@ -581,7 +581,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.fm', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.fm', $order['Order']['Domain']['DomainName']);
     }
 
     #[Test]
@@ -598,7 +598,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('FM12345', $order['order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('FM12345', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
     }
 
     // =========================================================================
@@ -616,7 +616,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.is', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.is', $order['Order']['Domain']['DomainName']);
     }
 
     #[Test]
@@ -633,7 +633,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('IS1234567890', $order['order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('IS1234567890', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
     }
 
     // =========================================================================
@@ -651,7 +651,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.no', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.no', $order['Order']['Domain']['DomainName']);
     }
 
     #[Test]
@@ -668,7 +668,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('NO987654321', $order['order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('NO987654321', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
     }
 
     // =========================================================================
@@ -686,7 +686,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.rio', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.rio', $order['Order']['Domain']['DomainName']);
     }
 
     #[Test]
@@ -703,7 +703,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('RIO123456789', $order['order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('RIO123456789', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
     }
 
     // =========================================================================
@@ -721,7 +721,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.sk', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.sk', $order['Order']['Domain']['DomainName']);
     }
 
     #[Test]
@@ -738,7 +738,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('SK12345678', $order['order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('SK12345678', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
     }
 
     // =========================================================================
@@ -756,7 +756,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.swiss', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.swiss', $order['Order']['Domain']['DomainName']);
     }
 
     #[Test]
@@ -773,7 +773,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('CHE123456789', $order['order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('CHE123456789', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
     }
 
     // =========================================================================
@@ -791,7 +791,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.travel', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.travel', $order['Order']['Domain']['DomainName']);
     }
 
     #[Test]
@@ -808,7 +808,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('TRAVEL987654', $order['order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('TRAVEL987654', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
     }
 
     // =========================================================================
@@ -826,7 +826,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.kr', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.kr', $order['Order']['Domain']['DomainName']);
     }
 
     #[Test]
@@ -843,7 +843,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('KR123456789012', $order['order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('KR123456789012', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
     }
 
     // =========================================================================
@@ -861,7 +861,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.lotto', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.lotto', $order['Order']['Domain']['DomainName']);
     }
 
     #[Test]
@@ -878,7 +878,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('LOTTO123456789', $order['order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('LOTTO123456789', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
     }
 
     // =========================================================================
@@ -896,7 +896,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.lv', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.lv', $order['Order']['Domain']['DomainName']);
     }
 
     #[Test]
@@ -913,7 +913,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('LV12345678901', $order['order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('LV12345678901', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
     }
 
     // =========================================================================
@@ -931,7 +931,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.mk', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.mk', $order['Order']['Domain']['DomainName']);
     }
 
     #[Test]
@@ -948,7 +948,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('MK1234567890123', $order['order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('MK1234567890123', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
     }
 
     // =========================================================================
@@ -966,7 +966,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.my', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.my', $order['Order']['Domain']['DomainName']);
     }
 
     #[Test]
@@ -983,7 +983,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('MY890101145678', $order['order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('MY890101145678', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
     }
 
     // =========================================================================
@@ -1001,7 +1001,7 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.nc', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.nc', $order['Order']['Domain']['DomainName']);
     }
 
     #[Test]
@@ -1018,6 +1018,6 @@ class SimpleTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('NC123456789', $order['order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('NC123456789', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace ascio\v2\domains;
+namespace ascio;
 
 /**
  * .US (United States) TLD Plugin
@@ -13,7 +13,7 @@ namespace ascio\v2\domains;
 class us extends Request {
 	public function mapToOrder($params, $orderType) {
 		$order = parent::mapToOrder($params, $orderType);
-		$order['order']['Domain']['DomainPurpose'] = $params["additionalfields"]["Domain Purpose"];
+		$order['Order']['Domain']['DomainPurpose'] = $params["additionalfields"]["Domain Purpose"];
 		return $order;
 	}
 }

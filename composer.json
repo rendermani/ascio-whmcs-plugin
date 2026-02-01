@@ -13,7 +13,6 @@
         },
         "classmap": [
             "lib/Request.php",
-            "lib/RequestV3.php",
             "lib/DnsService.php",
             "lib/Zone.php",
             "lib/TldSync.php"

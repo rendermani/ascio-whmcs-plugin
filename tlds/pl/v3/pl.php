@@ -6,11 +6,11 @@
  * - Transfers have 0 year period
  */
 
-namespace ascio\v3\domains;
+namespace ascio;
 
-require_once(dirname(__FILE__) . "/../../../lib/RequestV3.php");
+require_once(dirname(__FILE__) . "/../../../lib/Request.php");
 
-class pl extends RequestV3 {
+class pl extends Request {
 
 	/**
 	 * Transfer domain - PL transfers have 0 year period

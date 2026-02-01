@@ -1,6 +1,6 @@
 <?php
 
-namespace ascio\v2\domains;
+namespace ascio;
 
 /**
  * .nyc TLD Plugin
@@ -13,7 +13,7 @@ class nyc extends Request {
 		$order = parent::mapToOrder($params, $orderType);
 		
 		if (isset($params["additionalfields"]["Domain Purpose"])) {
-			$order["order"]["Domain"]["DomainPurpose"] = $params["additionalfields"]["Domain Purpose"];
+			$order["Order"]["Domain"]["DomainPurpose"] = $params["additionalfields"]["Domain Purpose"];
 		}
 		
 		return $order;

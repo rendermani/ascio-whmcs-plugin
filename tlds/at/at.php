@@ -1,6 +1,6 @@
 <?php
 
-namespace ascio\v2\domains;
+namespace ascio;
 
 class at extends Request {	
 	public function mapToOrder($params, $orderType) { 

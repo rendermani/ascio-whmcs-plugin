@@ -11,11 +11,11 @@
  * Also applies to: .co.uk, .org.uk, .ac.uk, .gov.uk, .me.uk, .net.uk, .sch.uk
  */
 
-namespace ascio\v3\domains;
+namespace ascio;
 
-require_once(dirname(__FILE__) . "/../../../lib/RequestV3.php");
+require_once(dirname(__FILE__) . "/../../../lib/Request.php");
 
-class uk extends RequestV3 {
+class uk extends Request {
 
 	/**
 	 * Map Legal Type to Nominet registrant type codes

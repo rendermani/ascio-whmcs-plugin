@@ -12,13 +12,13 @@
  * Also applies to regional variants like .tn.it
  */
 
-namespace ascio\v3\domains;
+namespace ascio;
 
-require_once(dirname(__FILE__) . "/../../../lib/RequestV3.php");
+require_once(dirname(__FILE__) . "/../../../lib/Request.php");
 
 use ascio\Tools as Tools;
 
-class it extends RequestV3 {
+class it extends Request {
 
 	/**
 	 * Legal Type to NIC.IT code mapping

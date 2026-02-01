@@ -1,6 +1,6 @@
 <?php
 
-namespace ascio\v2\domains;
+namespace ascio;
 
 /**
  * .aero TLD plugin
@@ -13,7 +13,7 @@ class aero extends Request {
 
 		// Set AuthInfo from additional fields if provided
 		if (isset($params["additionalfields"]["Auth Code"]) && !empty($params["additionalfields"]["Auth Code"])) {
-			$order['order']['Domain']['AuthInfo'] = $params["additionalfields"]["Auth Code"];
+			$order['Order']['Domain']['AuthInfo'] = $params["additionalfields"]["Auth Code"];
 		}
 
 		return $order;

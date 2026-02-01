@@ -5,7 +5,7 @@ namespace Ascio\Tests\Unit\Tlds;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\DataProvider;
-use ascio\v2\domains\Request;
+use ascio\Request;
 use Ascio\Tests\Mocks\WhmcsFunctionsMock;
 use Ascio\Tests\Mocks\CapsuleMock;
 
@@ -14,10 +14,10 @@ use Ascio\Tests\Mocks\CapsuleMock;
  *
  * Tests Registrant ID, Admin ID, and LocalPresence handling
  *
- * @covers \ascio\v2\domains\sg
- * @covers \ascio\v2\domains\com_sg
- * @covers \ascio\v2\domains\edu_sg
- * @covers \ascio\v2\domains\org_sg
+ * @covers \ascio\sg
+ * @covers \ascio\com_sg
+ * @covers \ascio\edu_sg
+ * @covers \ascio\org_sg
  */
 class SgTldsTest extends TestCase
 {
@@ -162,7 +162,7 @@ class SgTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('LocalPresenceAdmin', $order['order']['LocalPresence']);
+        $this->assertEquals('LocalPresenceAdmin', $order['Order']['LocalPresence']);
     }
 
     #[Test]
@@ -179,7 +179,7 @@ class SgTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertArrayNotHasKey('LocalPresence', $order['order']);
+        $this->assertArrayNotHasKey('LocalPresence', $order['Order']);
     }
 
     // =========================================================================
@@ -201,7 +201,7 @@ class SgTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.com.sg', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('example.com.sg', $order['Order']['Domain']['DomainName']);
     }
 
     #[Test]
@@ -245,7 +245,7 @@ class SgTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('school.edu.sg', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('school.edu.sg', $order['Order']['Domain']['DomainName']);
     }
 
     // =========================================================================
@@ -267,7 +267,7 @@ class SgTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('charity.org.sg', $order['order']['Domain']['DomainName']);
+        $this->assertEquals('charity.org.sg', $order['Order']['Domain']['DomainName']);
     }
 
     // =========================================================================
@@ -288,10 +288,10 @@ class SgTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals('example.sg', $order['order']['Domain']['DomainName']);
-        $this->assertEquals('S1234567A', $order['order']['Domain']['Registrant']['RegistrantNumber']);
-        $this->assertEquals('S7654321B', $order['order']['Domain']['AdminContact']['OrganisationNumber']);
-        $this->assertEquals('LocalPresenceAdmin', $order['order']['LocalPresence']);
+        $this->assertEquals('example.sg', $order['Order']['Domain']['DomainName']);
+        $this->assertEquals('S1234567A', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('S7654321B', $order['Order']['Domain']['AdminContact']['OrganisationNumber']);
+        $this->assertEquals('LocalPresenceAdmin', $order['Order']['LocalPresence']);
     }
 
     #[Test]
@@ -311,7 +311,7 @@ class SgTldsTest extends TestCase
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register_Domain');
 
-        $this->assertEquals($domainName, $order['order']['Domain']['DomainName']);
+        $this->assertEquals($domainName, $order['Order']['Domain']['DomainName']);
     }
 
     public static function sgTldListProvider(): array

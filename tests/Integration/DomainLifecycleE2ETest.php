@@ -22,7 +22,7 @@ namespace Ascio\Tests\Integration;
 require_once __DIR__ . '/bootstrap.php';
 
 use PHPUnit\Framework\TestCase;
-use ascio\v3\domains\RequestV3;
+use ascio\Request;
 use IntegrationTestCredentials;
 use TestDomainProvider;
 

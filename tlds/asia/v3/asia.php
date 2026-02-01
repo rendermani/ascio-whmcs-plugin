@@ -9,11 +9,11 @@
  * - LocalPresenceAdmin option for non-Asian registrants
  */
 
-namespace ascio\v3\domains;
+namespace ascio;
 
-require_once(dirname(__FILE__) . "/../../../lib/RequestV3.php");
+require_once(dirname(__FILE__) . "/../../../lib/Request.php");
 
-class asia extends RequestV3 {
+class asia extends Request {
 
 	/**
 	 * List of Asia-Pacific country codes

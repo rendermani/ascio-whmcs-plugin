@@ -15,7 +15,7 @@ namespace Ascio\Tests\Integration;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Depends;
-use ascio\v3\domains\RequestV3;
+use ascio\Request;
 use Ascio\Tests\Mocks\CapsuleMock;
 
 #[Group('integration')]
@@ -419,7 +419,7 @@ class DomainSearchTest extends IntegrationTestBase
     }
 
     // =========================================================================
-    // RequestV3::searchDomain Integration Tests
+    // Request::searchDomain Integration Tests
     // =========================================================================
 
     #[Test]
@@ -450,7 +450,7 @@ class DomainSearchTest extends IntegrationTestBase
         ]);
 
         $params = $this->getRegistrationParams($domainName);
-        $request = new RequestV3($params);
+        $request = new Request($params);
 
         // This should use the cached handle
         $storedHandle = $request->getHandle('domain', 1, $domainName);

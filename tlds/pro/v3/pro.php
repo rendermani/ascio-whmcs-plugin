@@ -6,11 +6,11 @@
  * - Profession field stored in RegistrantType and Details
  */
 
-namespace ascio\v3\domains;
+namespace ascio;
 
-require_once(dirname(__FILE__) . "/../../../lib/RequestV3.php");
+require_once(dirname(__FILE__) . "/../../../lib/Request.php");
 
-class pro extends RequestV3 {
+class pro extends Request {
 
 	/**
 	 * Map registrant with PRO-specific profession fields

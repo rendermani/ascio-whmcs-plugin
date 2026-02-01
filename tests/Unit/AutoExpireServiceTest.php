@@ -13,7 +13,7 @@ use Ascio\Tests\Mocks\SoapClientMock;
 /**
  * Unit tests for ascio\v2\domains\AutoExpireService class
  *
- * @covers \ascio\v2\domains\AutoExpireService
+ * @covers \ascio\AutoExpireService
  */
 class AutoExpireServiceTest extends TestCase
 {
