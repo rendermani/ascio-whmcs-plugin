@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         cacheDirectory="tests/.phpunit.cache"
+         executionOrder="depends,defects"
+         requireCoverageMetadata="false"
+         beStrictAboutCoverageMetadata="false"
+         beStrictAboutOutputDuringTests="true"
+         failOnRisky="true"
+         failOnWarning="false"
+         colors="true"
+         displayDetailsOnTestsThatTriggerDeprecations="true"
+         displayDetailsOnTestsThatTriggerErrors="true"
+         displayDetailsOnTestsThatTriggerNotices="true"
+         displayDetailsOnTestsThatTriggerWarnings="true">
+
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="TLDs">
+            <directory>tests/Unit/Tlds</directory>
+        </testsuite>
+        <testsuite name="V3">
+            <file>tests/Unit/RequestV3Test.php</file>
+            <file>tests/Unit/V3CompatibilityTest.php</file>
+        </testsuite>
+        <testsuite name="Integration">
+            <directory suffix="Test.php">tests/Integration</directory>
+        </testsuite>
+        <testsuite name="V3Integration">
+            <file>tests/Integration/DomainOrderValidationTest.php</file>
+            <file>tests/Integration/DomainSearchTest.php</file>
+            <file>tests/Integration/DomainCallbackTest.php</file>
+            <file>tests/Integration/DomainPollingTest.php</file>
+            <file>tests/Integration/DueDateCalculationTest.php</file>
+            <file>tests/Integration/V3CompatibilityTest.php</file>
+        </testsuite>
+    </testsuites>
+
+    <!-- Source files configuration (only used when coverage is explicitly enabled) -->
+    <source>
+        <include>
+            <directory suffix=".php">./lib</directory>
+            <directory suffix=".php">./tlds</directory>
+            <file>./ascio.php</file>
+        </include>
+    </source>
+
+    <php>
+        <env name="ASCIO_TEST_MODE" value="true"/>
+        <env name="ASCIO_TEST_USERNAME" value=""/>
+        <env name="ASCIO_TEST_PASSWORD" value=""/>
+    </php>
+
+</phpunit>

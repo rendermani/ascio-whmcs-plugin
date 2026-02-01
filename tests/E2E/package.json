@@ -1,0 +1,24 @@
+{
+  "name": "ascio-e2e-tests",
+  "version": "1.0.0",
+  "description": "E2E tests for Ascio WHMCS plugin using Playwright",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  },
+  "keywords": [
+    "e2e",
+    "playwright",
+    "ascio",
+    "whmcs"
+  ],
+  "author": "",
+  "license": "ISC"
+}

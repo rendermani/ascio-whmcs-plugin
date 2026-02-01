@@ -1,0 +1,22 @@
+{
+  "CreateOrderResult": {
+    "ResultCode": 400,
+    "Message": "Validation failed",
+    "Values": {
+      "string": [
+        "Registrant.Email: Invalid email format",
+        "Registrant.Phone: Phone number is required"
+      ]
+    }
+  },
+  "status": {
+    "ResultCode": 400,
+    "Message": "Validation failed",
+    "Values": {
+      "string": [
+        "Registrant.Email: Invalid email format",
+        "Registrant.Phone: Phone number is required"
+      ]
+    }
+  }
+}

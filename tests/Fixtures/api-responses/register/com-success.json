@@ -1,0 +1,22 @@
+{
+  "CreateOrderResult": {
+    "ResultCode": 200,
+    "Message": "Order created successfully"
+  },
+  "order": {
+    "OrderId": "ORD-12345",
+    "Type": "Register_Domain",
+    "Status": "Completed",
+    "Domain": {
+      "DomainName": "example.com",
+      "DomainHandle": "DOM-ABCDEF123",
+      "Status": "ACTIVE",
+      "CreDate": "2024-01-15T10:30:00",
+      "ExpDate": "2025-01-15T10:30:00"
+    },
+    "TransactionComment": "{\"application\":\"WHMCS\",\"domainId\":1,\"userId\":1,\"objectType\":\"Domain\"}"
+  },
+  "status": {
+    "ResultCode": 200
+  }
+}

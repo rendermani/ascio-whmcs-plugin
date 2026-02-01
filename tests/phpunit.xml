@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+         bootstrap="bootstrap.php"
+         cacheDirectory=".phpunit.cache"
+         executionOrder="depends,defects"
+         requireCoverageMetadata="false"
+         beStrictAboutCoverageMetadata="false"
+         beStrictAboutOutputDuringTests="true"
+         failOnRisky="true"
+         failOnWarning="true"
+         colors="true"
+         displayDetailsOnTestsThatTriggerDeprecations="true"
+         displayDetailsOnTestsThatTriggerErrors="true"
+         displayDetailsOnTestsThatTriggerNotices="true"
+         displayDetailsOnTestsThatTriggerWarnings="true">
+
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>Unit</directory>
+        </testsuite>
+        <testsuite name="TLDs">
+            <directory>Unit/Tlds</directory>
+        </testsuite>
+        <testsuite name="V3">
+            <file>Unit/RequestV3Test.php</file>
+            <file>Unit/V3CompatibilityTest.php</file>
+        </testsuite>
+        <testsuite name="Integration">
+            <directory>Integration</directory>
+        </testsuite>
+        <testsuite name="V3Integration">
+            <file>Integration/DomainOrderValidationTest.php</file>
+            <file>Integration/DomainSearchTest.php</file>
+            <file>Integration/DomainCallbackTest.php</file>
+            <file>Integration/DomainPollingTest.php</file>
+            <file>Integration/DueDateCalculationTest.php</file>
+            <file>Integration/V3CompatibilityTest.php</file>
+        </testsuite>
+    </testsuites>
+
+    <source>
+        <include>
+            <directory suffix=".php">../</directory>
+        </include>
+        <exclude>
+            <directory>../vendor</directory>
+            <directory>../tests</directory>
+        </exclude>
+    </source>
+
+    <coverage includeUncoveredFiles="true"
+              pathCoverage="false"
+              ignoreDeprecatedCodeUnits="true"
+              disableCodeCoverageIgnore="true">
+        <report>
+            <html outputDirectory="coverage"/>
+            <text outputFile="coverage/coverage.txt"/>
+            <clover outputFile="coverage/clover.xml"/>
+        </report>
+    </coverage>
+
+    <php>
+        <env name="ASCIO_TEST_MODE" value="true"/>
+        <env name="ASCIO_TEST_USERNAME" value=""/>
+        <env name="ASCIO_TEST_PASSWORD" value=""/>
+    </php>
+
+</phpunit>

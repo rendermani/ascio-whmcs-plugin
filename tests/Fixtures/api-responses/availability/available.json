@@ -1,0 +1,9 @@
+{
+  "AvailabilityInfoResult": {
+    "ResultCode": 200,
+    "Message": "Domain is available"
+  },
+  "status": {
+    "ResultCode": 200
+  }
+}

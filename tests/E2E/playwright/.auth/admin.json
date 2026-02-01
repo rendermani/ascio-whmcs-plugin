@@ -1,0 +1,15 @@
+{
+  "cookies": [
+    {
+      "name": "WHMCSxvT9iFsG3DE9",
+      "value": "1c430bbf3b62b9045da14225fa47cc1d",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

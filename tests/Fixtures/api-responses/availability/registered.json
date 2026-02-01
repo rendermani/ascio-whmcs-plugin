@@ -1,0 +1,9 @@
+{
+  "AvailabilityInfoResult": {
+    "ResultCode": 201,
+    "Message": "Domain is already registered"
+  },
+  "status": {
+    "ResultCode": 201
+  }
+}

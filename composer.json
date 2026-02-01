@@ -1,9 +1,34 @@
 {
     "require": {
-        "giggsey/libphonenumber-for-php": "^7.2",
+        "giggsey/libphonenumber-for-php": "^9.0",
         "fzaninotto/faker": "^1.5"
     },
     "require-dev": {
-        "phpunit/phpunit": "^10.5"
+        "phpunit/phpunit": "^10.5",
+        "mockery/mockery": "^1.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "ascio\\": "lib/"
+        },
+        "classmap": [
+            "lib/Request.php",
+            "lib/RequestV3.php",
+            "lib/DnsService.php",
+            "lib/Zone.php",
+            "lib/TldSync.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Ascio\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit --configuration tests/phpunit.xml",
+        "test:unit": "phpunit --configuration tests/phpunit.xml --testsuite Unit",
+        "test:tlds": "phpunit --configuration tests/phpunit.xml --testsuite TLDs",
+        "test:integration": "phpunit --configuration tests/phpunit.xml --testsuite Integration --group integration",
+        "test:coverage": "phpunit --configuration tests/phpunit.xml --coverage-html tests/coverage"
     }
 }
