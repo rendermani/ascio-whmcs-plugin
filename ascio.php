@@ -82,13 +82,24 @@ function ascio_AdminCustomButtonArray() {
     $buttonarray = array(
 	 "Update EPP Code" => "UpdateEPPCode",
 	 "Autorenew On" => "UnexpireDomain",
-	 "Autorenew Off" => "ExpireDomain"
+	 "Autorenew Off" => "ExpireDomain",
+	 "Delete Domain" => "DeleteDomain",
+	 "Restore Domain" => "RestoreDomain",
+	 "Cancel Order" => "CancelOrder",
+	 "Change Owner" => "ChangeOwner",
+	 "Update Domain Details" => "UpdateDomainDetails"
 	);
 	return $buttonarray;
 }
 function ascio_ClientAreaCustomButtonArray() {
     $buttonarray = array(
-	 "Update EPP Code" => "UpdateEPPCode"
+	 "View Contact Details" => "ClientViewContactDetails",
+	 "Update Contact Details" => "ClientUpdateContactDetails",
+	 "Check Lock Status" => "ClientGetLockStatus",
+	 "View EPP Code" => "ViewEPPCode",
+	 "Update EPP Code" => "UpdateEPPCode",
+	 "Request IRTP Verification" => "ClientRequestIRTP",
+	 "View Nameservers" => "ClientViewNameservers",
 	);
 	return $buttonarray;
 }
@@ -424,7 +435,7 @@ function ascio_ExpireDomain($params) {
 }
 function ascio_UnexpireDomain($params) {
 	$request = ascio_getRequestClass($params, 'UnexpireDomain');
-	$result =  $request->unexpireDomain($params); 
+	$result =  $request->unexpireDomain($params);
 	// has error?
 	if(is_array($result)) {
 		return $result;
@@ -432,7 +443,72 @@ function ascio_UnexpireDomain($params) {
 		return array(
 			'success' => true,
 		);
-	} 
+	}
+}
+
+function ascio_DeleteDomain($params) {
+	$request = ascio_getRequestClass($params, 'DeleteDomain');
+	$result = $request->deleteDomain($params);
+	// has error?
+	if(is_array($result)) {
+		return $result;
+	} else {
+		return array(
+			'success' => true,
+		);
+	}
+}
+
+function ascio_RestoreDomain($params) {
+	$request = ascio_getRequestClass($params, 'RestoreDomain');
+	$result = $request->restoreDomain($params);
+	// has error?
+	if(is_array($result)) {
+		return $result;
+	} else {
+		return array(
+			'success' => true,
+		);
+	}
+}
+
+function ascio_CancelOrder($params) {
+	$request = ascio_getRequestClass($params, 'CancelOrder');
+	$result = $request->cancelOrder($params);
+	// has error?
+	if(is_array($result)) {
+		return $result;
+	} else {
+		return array(
+			'success' => true,
+		);
+	}
+}
+
+function ascio_ChangeOwner($params) {
+	$request = ascio_getRequestClass($params, 'ChangeOwner');
+	$result = $request->changeOwner($params);
+	// has error?
+	if(is_array($result)) {
+		return $result;
+	} else {
+		return array(
+			'success' => true,
+		);
+	}
+}
+
+function ascio_UpdateDomainDetails($params) {
+	$request = ascio_getRequestClass($params, 'UpdateDomainDetails');
+	$result = $request->updateDomainDetails($params);
+	// has error?
+	if(is_array($result)) {
+		return $result;
+	} else {
+		return array(
+			'success' => true,
+		);
+	}
 }
 
 function ascio_GetContactDetails($params) {
@@ -474,7 +550,108 @@ function ascio_UpdateEPPCode($params) {
 		return array(
 			'success' => true,
 		);
-	} 
+	}
+}
+
+/**
+ * Client Area: View EPP Code
+ * Retrieves the current EPP/Auth code without regenerating it
+ *
+ * @param array $params Module parameters from WHMCS
+ * @return array Success with EPP code or error
+ */
+function ascio_ViewEPPCode($params) {
+	$request = ascio_getRequestClass($params, 'ViewEPPCode');
+	$result = $request->getEPPCode($params);
+	// has error?
+	if(isset($result['error'])) {
+		return $result;
+	}
+	$eppCode = $result['eppcode'] ?? '';
+	if(empty($eppCode)) {
+		return array(
+			'error' => 'No EPP code found for this domain. You may need to request a new one using "Update EPP Code".',
+		);
+	}
+	return array(
+		'success' => true,
+		'eppcode' => $eppCode,
+	);
+}
+
+/**
+ * Client Area: View Contact Details
+ * Wrapper for GetContactDetails that formats output for client area display
+ *
+ * @param array $params Module parameters from WHMCS
+ * @return array Contact details or error
+ */
+function ascio_ClientViewContactDetails($params) {
+	return ascio_GetContactDetails($params);
+}
+
+/**
+ * Client Area: Update Contact Details
+ * Wrapper for SaveContactDetails for client area button
+ *
+ * @param array $params Module parameters from WHMCS
+ * @return array Success or error
+ */
+function ascio_ClientUpdateContactDetails($params) {
+	return ascio_SaveContactDetails($params);
+}
+
+/**
+ * Client Area: Get Lock Status
+ * Wrapper for GetRegistrarLock that formats output for client area display
+ *
+ * @param array $params Module parameters from WHMCS
+ * @return array Lock status information or error
+ */
+function ascio_ClientGetLockStatus($params) {
+	$lockstatus = ascio_GetRegistrarLock($params);
+	// Check if error was returned
+	if(is_array($lockstatus) && isset($lockstatus['error'])) {
+		return $lockstatus;
+	}
+	return array(
+		'success' => true,
+		'lockstatus' => $lockstatus,
+	);
+}
+
+/**
+ * Client Area: Request IRTP Verification
+ * Wrapper for ResendIRTPVerificationEmail for client area button
+ *
+ * @param array $params Module parameters from WHMCS
+ * @return array Success or error
+ */
+function ascio_ClientRequestIRTP($params) {
+	return ascio_ResendIRTPVerificationEmail($params);
+}
+
+/**
+ * Client Area: View Nameservers
+ * Wrapper for GetNameservers that formats output for client area display
+ *
+ * @param array $params Module parameters from WHMCS
+ * @return array Nameserver information or error
+ */
+function ascio_ClientViewNameservers($params) {
+	$result = ascio_GetNameservers($params);
+	// Check if error was returned
+	if(isset($result['error'])) {
+		return $result;
+	}
+	return array(
+		'success' => true,
+		'ns1' => $result['ns1'] ?? '',
+		'ns2' => $result['ns2'] ?? '',
+		'ns3' => $result['ns3'] ?? '',
+		'ns4' => $result['ns4'] ?? '',
+		'ns5' => $result['ns5'] ?? '',
+	);
 }
 
 function ascio_ModifyNameserver($params) {

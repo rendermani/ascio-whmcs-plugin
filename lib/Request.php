@@ -680,6 +680,151 @@ Class Request {
 	}
 
 	/**
+	 * Delete a domain (v3 API)
+	 * Creates Delete_Domain order to delete the domain from the registry
+	 */
+	public function deleteDomain($params) {
+		$params = $this->setParams($params);
+		try {
+			$ascioParams = $this->mapToOrder($params, "Delete_Domain");
+		} catch (AscioException $e) {
+			return array("error" => $e->getMessage());
+		}
+		return $this->sendRequest("CreateOrder", $ascioParams);
+	}
+
+	/**
+	 * Restore a domain (v3 API)
+	 * Creates Restore_Domain order for redemption recovery
+	 */
+	public function restoreDomain($params) {
+		$params = $this->setParams($params);
+		try {
+			$ascioParams = $this->mapToOrder($params, "Restore_Domain");
+		} catch (AscioException $e) {
+			return array("error" => $e->getMessage());
+		}
+		return $this->sendRequest("CreateOrder", $ascioParams);
+	}
+
+	/**
+	 * Cancel a pending order (v3 API)
+	 * Calls CancelOrder API to cancel orders that are still pending
+	 *
+	 * @param array $params Module parameters containing orderId or domainid
+	 * @return object|array Result object or error array
+	 */
+	public function cancelOrder($params) {
+		$params = $this->setParams($params);
+
+		// Try to find the pending order for this domain
+		$orderId = $params['orderId'] ?? null;
+
+		if (!$orderId) {
+			// Search for pending orders for this domain
+			$domain = $this->searchDomain();
+			if (isset($domain['error'])) {
+				return $domain;
+			}
+
+			// Get the most recent pending order
+			$orderId = $this->findPendingOrderId($domain);
+			if (!$orderId) {
+				return array('error' => 'No pending order found for this domain');
+			}
+		}
+
+		$ascioParams = array(
+			'OrderId' => $orderId
+		);
+
+		return $this->sendRequest("CancelOrder", $ascioParams);
+	}
+
+	/**
+	 * Find the most recent pending order ID for a domain
+	 *
+	 * @param object $domain Domain object from searchDomain
+	 * @return string|null Order ID or null if not found
+	 */
+	protected function findPendingOrderId($domain) {
+		$domainHandle = $domain->DomainHandle ?? $domain->Handle ?? null;
+		if (!$domainHandle) {
+			return null;
+		}
+
+		// Search for orders on this domain
+		$criteria = array(
+			'Mode' => 'Strict',
+			'Clauses' => array(
+				array(
+					'Attribute' => 'DomainHandle',
+					'Value' => $domainHandle,
+					'Operator' => 'Is'
+				),
+				array(
+					'Attribute' => 'Status',
+					'Value' => 'Pending%',
+					'Operator' => 'Like'
+				)
+			)
+		);
+		$ascioParams = array(
+			'Criteria' => $criteria,
+			'PageInfo' => array(
+				'PageIndex' => 1,
+				'PageSize' => 10
+			)
+		);
+
+		$result = $this->sendRequest("SearchOrder", $ascioParams);
+
+		if (isset($result['error'])) {
+			return null;
+		}
+
+		if (!isset($result->Orders) || !isset($result->Orders->Order)) {
+			return null;
+		}
+
+		$orders = is_array($result->Orders->Order) ? $result->Orders->Order : [$result->Orders->Order];
+		if (count($orders) > 0) {
+			// Return the most recent pending order
+			return $orders[0]->OrderId ?? null;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Change domain owner (v3 API)
+	 * Creates Owner_Change order for registrant transfer
+	 */
+	public function changeOwner($params) {
+		$params = $this->setParams($params);
+		try {
+			$ascioParams = $this->mapToOrder($params, "Owner_Change");
+		} catch (AscioException $e) {
+			return array("error" => $e->getMessage());
+		}
+		return $this->sendRequest("CreateOrder", $ascioParams);
+	}
+
+	/**
+	 * Update domain details (v3 API)
+	 * Creates Domain_Details_Update order for updating domain information
+	 */
+	public function updateDomainDetails($params) {
+		$params = $this->setParams($params);
+		try {
+			$ascioParams = $this->mapToOrder($params, "Domain_Details_Update");
+		} catch (AscioException $e) {
+			return array("error" => $e->getMessage());
+		}
+		return $this->sendRequest("CreateOrder", $ascioParams);
+	}
+
+	/**
 	 * Update nameservers (v3 API)
 	 */
 	public function saveNameservers($params) {
