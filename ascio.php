@@ -28,6 +28,48 @@ require_once("lib/RequestV3.php");
 require_once("lib/DnsService.php");
 require_once("lib/Zone.php");
 
+/**
+ * Determine if API V3 should be used based on configuration or environment
+ *
+ * @param array $params Module parameters
+ * @return bool True if V3 should be used, false for V2
+ */
+function ascio_shouldUseV3($params) {
+	// Check environment variable first (allows override for testing)
+	if (getenv('ASCIO_USE_V3') === 'true' || getenv('ASCIO_USE_V3') === '1') {
+		return true;
+	}
+	// Check module configuration
+	return isset($params['ApiVersion']) && $params['ApiVersion'] === 'v3';
+}
+
+/**
+ * Get the appropriate Request class instance based on API version configuration
+ *
+ * This helper function checks the ApiVersion configuration parameter and environment
+ * variable ASCIO_USE_V3 to determine which API version to use. V2 is the default
+ * for backward compatibility with existing installations.
+ *
+ * @param array $params Module parameters from WHMCS
+ * @param string|null $operation Optional operation name for logging
+ * @return RequestV2|RequestV3 The appropriate request class instance
+ */
+function ascio_getRequestClass($params, $operation = null) {
+	$useV3 = ascio_shouldUseV3($params);
+	$apiVersion = $useV3 ? 'v3' : 'v2';
+
+	// Log the API version being used for debugging
+	if ($operation) {
+		logActivity("Ascio: Using API {$apiVersion} for operation: {$operation}");
+	}
+
+	if ($useV3) {
+		return new RequestV3($params);
+	}
+
+	// V2 uses the factory method which supports TLD-specific subclasses
+	return RequestV2::create($params);
+}
 
 /**
  * Define module related metadata
@@ -42,6 +84,7 @@ function ascio_MetaData()
     return array(
         'DisplayName' => 'Ascio Domains',
         'APIVersion' => '1.1',
+        'SupportsV3Api' => true,
     );
 }
 function ascio_getConfigArray() {
@@ -51,9 +94,16 @@ function ascio_getConfigArray() {
 		'Value' => 'Ascio Domains',
 	],
 	 "Username" => array( "Type" => "text", "Size" => "20", "Description" => "Enter your username here" ),
-	 "Password" => array( "Type" => "password", "Size" => "20", "Description" => "Enter your password here"),	 
+	 "Password" => array( "Type" => "password", "Size" => "20", "Description" => "Enter your password here"),
 	 "TestMode" => array( "Type" => "yesno",  "Description" => "You will need a test-account for this","FriendlyName" =>"Test Mode"),
-	 "AutoExpire" => array( "Type" => "yesno", "Size" => "20", "Description" => "Do not use Ascio's auto-renew feature. Let WHMCS handle the renew","FriendlyName" =>"Auto Expire"),
+	 "ApiVersion" => array(
+		 "FriendlyName" => "API Version",
+		 "Type" => "dropdown",
+		 "Options" => "v2,v3",
+		 "Default" => "v2",
+		 "Description" => "Select Ascio API version (v3 recommended for new installs)"
+	 ),
+	 "AutoExpire" => array( "Type" => "yesno", "Size" => "20", "Description" => "ON: Expire domains immediately after register/transfer (prevents auto-renewal). OFF: Expire at threshold date only if unpaid (recommended for WHMCS-managed billing)","FriendlyName" =>"Auto Expire"),
 	 "Sync_Due_Date" => array( "Type" => "yesno", "Size" => "20", "Description" => "Sync the due-date with thresholds","Default" => "yes","FriendlyName" =>"Sync Due Date"),
 	 "DetailedOrderStatus" => array( "Type" => "yesno", "Size" => "20", "Description" => "Send an detailed order status to the end-customer.", "Default" => "yes","FriendlyName" =>"Detailed order status"),
 	 "AutoCreateDNS" => array( "Type" => "yesno", "Size" => "20", "Description" => "Automaticly create a zone in AscioDNS before registering and transfering a domain", "Default" => "no","FriendlyName" =>"Auto create DNS records"),
@@ -61,7 +111,7 @@ function ascio_getConfigArray() {
 	  "DatalessTransfer" => array( "Type" => "yesno", "Size" => "20", "Description" => "Use dataless transfer when Possible", "Default" => "","FriendlyName" =>"Dataless Transfer"),
 	 "DNS_Default_Zone" => array( "Type" => "text", "Size" => "20", "Description" => "For AutoCreateDNS: Default IP-address for www and @","FriendlyName" =>"Default A Record"),
 	 "DNS_Default_Mailserver" => array( "Type" => "text", "Size" => "20", "Description" => "For AutoCreateDNS: Default IP-address for mx (mail-server)","FriendlyName" =>"Default MX Record"),
-	 "DNS_Default_Mailserver_2" => array( "Type" => "text", "Size" => "20", "Description" => "For AutoCreateDNS: Default IP-address for mx2 (backup mail-server)","FriendlyName" =>"Default MX Record 2"),	
+	 "DNS_Default_Mailserver_2" => array( "Type" => "text", "Size" => "20", "Description" => "For AutoCreateDNS: Default IP-address for mx2 (backup mail-server)","FriendlyName" =>"Default MX Record 2"),
 	 "Proxy_Lite" => array( "Type" => "yesno",  "Description" => "Privacy. Don't hide the name when using ID-Protection. Only the address-data.","FriendlyName" =>"Use Privacy Proxy"),
 	 "MultiBrand_Mode" => array( "Type" => "yesno",  "Description" => "For multiple brands with one account.","FriendlyName" =>"Multi Brand Mode"),
 	);
@@ -92,8 +142,8 @@ function ascio_DomainSuggestionOptions() {
 }
 function ascio_CheckAvailability($params)
 {
-	try {	
-		$request = new RequestV2($params);
+	try {
+		$request = ascio_getRequestClass($params, 'CheckAvailability');
 		// availability check parameters
 		$searchTerm = $params['searchTerm'];
 		$tldsToInclude = $params['tldsToInclude'];
@@ -153,7 +203,7 @@ function ascio_GetDomainSuggestions($params)
 {
 	// user defined configuration values
 
-	$request = RequestV2::create($params);
+	$request = ascio_getRequestClass($params, 'GetDomainSuggestions');
     $searchTerm = $params['searchTerm'];
 	$tlds = $params['suggestionSettings']['tldsToInclude'];
 	$tldsToInclude = explode(", ",$tlds);
@@ -191,8 +241,8 @@ function ascio_GetDomainSuggestions($params)
 }
 
 
-function ascio_GetNameservers($params) {	
-	$request = RequestV2::create($params);	
+function ascio_GetNameservers($params) {
+	$request = ascio_getRequestClass($params, 'GetNameservers');
 	$domain = $request->searchDomain(); 
 	if (is_array($domain)) return $domain;
 	$ns = $domain->NameServers;
@@ -206,7 +256,7 @@ function ascio_GetNameservers($params) {
 	return $values;
 }
 function ascio_SaveNameservers($params) {
-	$request = RequestV2::create($params);
+	$request = ascio_getRequestClass($params, 'SaveNameservers');
 	$result =  $request->saveNameservers($params);
 	// has error?
 	if(is_array($result)) {
@@ -225,13 +275,13 @@ function mapNameservers($ascioNameServers) {
 	return $nameservers;
 }
 function ascio_GetDomainInformation($params) {
-	$request = RequestV2::create($params);
+	$request = ascio_getRequestClass($params, 'GetDomainInformation');
 	$domain = $request->searchDomain();
 	if (is_array($domain)) $domain = $domain[0];
 	$expDate = Carbon::createFromFormat('Y-m-d', Tools::dateFromXsDateTime($domain->ExpDate));
 	$irtpTransferLockExpiryDate = Carbon::createFromFormat('Y-m-d', Tools::dateFromXsDateTime($domain->CreDate));
 	$irtpTransferLockExpiryDate->addDays(90);
-	$request = RequestV2::create($params);
+	$request = ascio_getRequestClass($params, 'GetRegistrantVerificationInfo');
 	$rvInfo = $request->getRegistrantVerificationInfo($domain->Registrant->Email);
 
 	
@@ -293,7 +343,7 @@ function ascio_AdminDomainsTabFields($params){
 function ascio_ResendIRTPVerificationEmail(array $params) {
 	// Perform API call to initiate resending of the IRTP Verification Email
 	// no idea where this is triggered yet
-	$request = RequestV2::create($params);
+	$request = ascio_getRequestClass($params, 'ResendIRTPVerificationEmail');
 	$result = $request->doRegistrantVerification($params);
 	if ($result->ResultCode == 1) {
 		return ['success' => true];
@@ -302,7 +352,7 @@ function ascio_ResendIRTPVerificationEmail(array $params) {
 	}
 }
 function ascio_GetRegistrarLock($params) {
-	$request = RequestV2::create($params);
+	$request = ascio_getRequestClass($params, 'GetRegistrarLock');
 	$domain = $request->searchDomain();
 	$status = $domain->Status;
 
@@ -315,7 +365,7 @@ function ascio_GetRegistrarLock($params) {
 }
 
 function ascio_saveRegistrarLock($params) {
-	$request = RequestV2::create($params);
+	$request = ascio_getRequestClass($params, 'SaveRegistrarLock');
 	$result = $request->saveRegistrarLock();
 	// has error?
 	if(is_array($result)) {
@@ -328,12 +378,12 @@ function ascio_saveRegistrarLock($params) {
 }
 function ascio_IDProtectToggle($params) {
 	$params["idprotection"] = $params["protectenable"] == 1 ? true : false;
-	$request = RequestV2::create($params);
+	$request = ascio_getRequestClass($params, 'IDProtectToggle');
 	return $request->updateDomain();
 }
 
 function ascio_GetEmailForwarding($params) {
-	$request = RequestV2::create($params);
+	$request = ascio_getRequestClass($params, 'GetEmailForwarding');
 	# Put your code to get email forwarding here - the result should be an array of prefixes and forward to emails (max 10)
 	foreach ($result as $value) {
 		$values[$counter]["prefix"] = $value["prefix"];
@@ -343,7 +393,7 @@ function ascio_GetEmailForwarding($params) {
 }
 
 function ascio_SaveEmailForwarding($params) {
-	$request = RequestV2::create($params);
+	$request = ascio_getRequestClass($params, 'SaveEmailForwarding');
 	foreach ($params["prefix"] AS $key=>$value) {
 		$forwardarray[$key]["prefix"] =  $params["prefix"][$key];
 		$forwardarray[$key]["forwardto"] =  $params["forwardto"][$key];
@@ -361,7 +411,7 @@ function ascio_SaveDNS($params) {
 	$result = $zone->update($params);
 }
 function ascio_RegisterDomain($params) {
-	$request = RequestV2::create($params);
+	$request = ascio_getRequestClass($params, 'RegisterDomain');
 	$result =  $request->registerDomain($params); 
 	// has error?
 	if(is_array($result)) {
@@ -374,7 +424,7 @@ function ascio_RegisterDomain($params) {
 }
 
 function ascio_TransferDomain($params) {
-	$request = RequestV2::create($params);
+	$request = ascio_getRequestClass($params, 'TransferDomain');
 	$result =   $request->transferDomain($params); 
 	// has error?
 	if(is_array($result)) {
@@ -387,7 +437,7 @@ function ascio_TransferDomain($params) {
 }
 
 function ascio_RenewDomain($params) {
-	$request = RequestV2::create($params);
+	$request = ascio_getRequestClass($params, 'RenewDomain');
 	$result =  $request->renewDomain($params); 
 	// has error?
 	if(is_array($result)) {
@@ -400,7 +450,7 @@ function ascio_RenewDomain($params) {
 }
 
 function ascio_ExpireDomain($params) {
-	$request = RequestV2::create($params);
+	$request = ascio_getRequestClass($params, 'ExpireDomain');
 	$result =   $request->expireDomain($params); 
 	// has error?
 	if(is_array($result)) {
@@ -412,7 +462,7 @@ function ascio_ExpireDomain($params) {
 	} 
 }
 function ascio_UnexpireDomain($params) {
-	$request = RequestV2::create($params);
+	$request = ascio_getRequestClass($params, 'UnexpireDomain');
 	$result =  $request->unexpireDomain($params); 
 	// has error?
 	if(is_array($result)) {
@@ -425,7 +475,7 @@ function ascio_UnexpireDomain($params) {
 }
 
 function ascio_GetContactDetails($params) {
-	$request = RequestV2::create($params);
+	$request = ascio_getRequestClass($params, 'GetContactDetails');
 	$result = $request->searchDomain();
 	$values = $request->mapGetContactDetailRegistrant([],$result->Registrant);
 	$values = $request->mapGetContactDetailContact($values,$result->AdminContact,"Admin");
@@ -435,7 +485,7 @@ function ascio_GetContactDetails($params) {
 }
 
 function ascio_SaveContactDetails($params) {
-	$request = RequestV2::create($params);
+	$request = ascio_getRequestClass($params, 'SaveContactDetails');
 	$result =   $request->updateContacts($params);
 	// has error?
 	if(is_array($result)) {
@@ -449,12 +499,12 @@ function ascio_SaveContactDetails($params) {
 }
 
 function ascio_GetEPPCode($params) {
-	$request = RequestV2::create($params);	
+	$request = ascio_getRequestClass($params, 'GetEPPCode');
 	$params = $request->getEPPCode($params);
 	return $params;
 }
 function ascio_UpdateEPPCode($params) {
-	$request = RequestV2::create($params);	
+	$request = ascio_getRequestClass($params, 'UpdateEPPCode');
 	$result = $request->updateEPPCode($params);
 	// has error?
 	if(is_array($result)) {
@@ -467,7 +517,7 @@ function ascio_UpdateEPPCode($params) {
 }
 
 function ascio_ModifyNameserver($params) {
-	$request = RequestV2::create($params);
+	$request = ascio_getRequestClass($params, 'ModifyNameserver');
     $nameserver = $params["nameserver"];
     $currentipaddress = $params["currentipaddress"];
     $newipaddress = $params["newipaddress"];
@@ -483,7 +533,7 @@ function ascio_DeleteNameserver($params) {
 // this function is not needed if you have polling or callbacks
 
 function ascio_Sync($params) {
-	$request = RequestV2::create($params);
+	$request = ascio_getRequestClass($params, 'Sync');
 	$domain = $request->searchDomain($params);
 	echo "Syncing ". $params["sld"].".".$params["tld"]. " :".$domain->Status. "\n";
 	if(!$domain) return array("error" => "Domain ".$params["sld"].".".$params["tld"]." not found.");
@@ -520,6 +570,8 @@ function ascio_GetTldPricing(array $params)
 		"Tlds" => $tlds,
 		"PageInfo" => $pageInfo
 	];
+	// GetTldPricing always uses V3 API as it's only available in V3
+	logActivity("Ascio: Using API v3 for operation: GetTldPricing (V3-only feature)");
 	$request = new RequestV3($params);
 	$result = $request->getPrices($ascioParams);
 	$currency = $result->Currency;

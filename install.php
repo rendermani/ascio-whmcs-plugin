@@ -1,85 +1,178 @@
 <?php
-use ascio\Tools as Tools; 
+/**
+ * Ascio WHMCS Registrar Module - Installation Script
+ *
+ * Creates required database tables and syncs TLD data from Ascio TLDKit API.
+ * Uses WHMCS Capsule ORM for database operations (PHP 7.0+ compatible).
+ */
 
-require_once(__DIR__."/../../../init.php");
-require_once(__DIR__."/lib/Tools.php");
+use WHMCS\Database\Capsule;
+use ascio\Tools as Tools;
+
+require_once(__DIR__ . "/../../../init.php");
+require_once(__DIR__ . "/lib/Tools.php");
+
 error_reporting(E_ALL);
 ini_set('error_reporting', E_ERROR);
 ini_set('display_errors', "on");
-$isCLI = ( php_sapi_name() == 'cli' );
+
+$isCLI = (php_sapi_name() == 'cli');
 $lineBreak = $isCLI ? "\n" : "<br>\n";
 
-function check($name,$value) {
-	global $lineBreak;	
-	if($value==true) {
-		$ret =  "ok";
-	} else {
-	 	$ret = "failed";
-	}
-	echo "- Check ".$name.": ".$ret.$lineBreak;
-	if($ret=="failed") die("Please fix the errors and retry".$lineBreak);
+function check($name, $value) {
+    global $lineBreak;
+    $ret = $value ? "ok" : "failed";
+    echo "- Check " . $name . ": " . $ret . $lineBreak;
+    if ($ret == "failed") {
+        die("Please fix the errors and retry" . $lineBreak);
+    }
 }
-echo $lineBreak."* Check requirements *".$lineBreak;
-check("Soap",class_exists("SoapClient"));
-check("init.php",file_exists(__DIR__."/../../../init.php"));
-check("registrarfunctions.php",file_exists(__DIR__."/../../../includes/registrarfunctions.php"));
 
-echo $lineBreak."* Creating email templates *";
+function executeSchema($description, $callback) {
+    global $lineBreak;
+    echo "- " . $description . $lineBreak;
+    try {
+        $callback();
+        echo "  [OK]" . $lineBreak;
+    } catch (\Exception $e) {
+        // Ignore "already exists" errors for idempotent installation
+        if (strpos($e->getMessage(), 'already exists') === false &&
+            strpos($e->getMessage(), 'Duplicate') === false) {
+            echo "  [Warning: " . $e->getMessage() . "]" . $lineBreak;
+        } else {
+            echo "  [Already exists - skipped]" . $lineBreak;
+        }
+    }
+}
+
+echo $lineBreak . "* Check requirements *" . $lineBreak;
+check("Soap", class_exists("SoapClient"));
+check("init.php", file_exists(__DIR__ . "/../../../init.php"));
+check("registrarfunctions.php", file_exists(__DIR__ . "/../../../includes/registrarfunctions.php"));
+check("Capsule ORM", class_exists('WHMCS\Database\Capsule'));
+
+echo $lineBreak . "* Creating email templates *" . $lineBreak;
 Tools::createEmailTemplates();
-echo $lineBreak."* Creating SQL tables".$lineBreak;
-echo "- Creating tblasciotlds table".$lineBreak;
-$q = 'CREATE TABLE IF NOT EXISTS `tblasciotlds` (`Tld` char(255) NOT NULL, `Threshold` int(11) NOT NULL, `Renew` tinyint(1) NOT NULL, `LocalPresenceRequired` tinyint(1) NOT NULL, `LocalPresenceOffered` tinyint(1) NOT NULL, `AuthCodeRequired` tinyint(1) NOT NULL, `Country` char(255) NOT NULL, UNIQUE KEY `tld` (`Tld`) )';
-mysql_query($q);
-if(mysql_error()) echo mysql_error().$lineBreak;
-echo "- Creating tblasciojobs table".$lineBreak;
-$q = 'CREATE TABLE IF NOT EXISTS `tblasciojobs` (`id` int(11) NOT NULL AUTO_INCREMENT, `last_id` int(11) NOT NULL, `order_id` char(255) NOT NULL, `method` char(255) NOT NULL, `request` text NOT NULL, `response` text NOT NULL, `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (`id`), KEY `last_id` (`last_id`), KEY `order_id` (`order_id`) )';
-mysql_query($q);
-if(mysql_error()) echo mysql_error().$lineBreak;
-echo "- Creating tblasciohandles table".$lineBreak;
-$q = 'CREATE TABLE IF NOT EXISTS `tblasciohandles` (`type` varchar(256) NOT NULL, `whmcs_id` int(10) NOT NULL, `ascio_id` varchar(256) NOT NULL, PRIMARY KEY (`whmcs_id`), KEY `ascio_id` (`ascio_id`) )';
-mysql_query($q);
-if(mysql_error()) echo mysql_error().$lineBreak;
-echo "- Creating mod_asciosession table".$lineBreak;
-$q = 'CREATE TABLE IF NOT EXISTS `mod_asciosession` (`account` varchar(255) NOT NULL, `sessionId` varchar(255) NOT NULL, `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, UNIQUE KEY `account` (`account`), KEY `date` (`timestamp`) )';
-mysql_query($q);
 
-if(mysql_error()) echo mysql_error().$lineBreak;
+echo $lineBreak . "* Creating SQL tables *" . $lineBreak;
 
-echo "- Adding domain to tlbasciohandles table (update)".$lineBreak;
-$q = 'ALTER TABLE `tblasciohandles` ADD `domain` VARCHAR(255) NOT NULL AFTER `ascio_id`, ADD INDEX `domain` (`domain`);';
-mysql_query($q);
+// Create tblasciotlds table
+executeSchema("Creating tblasciotlds table", function() {
+    if (!Capsule::schema()->hasTable('tblasciotlds')) {
+        Capsule::schema()->create('tblasciotlds', function($table) {
+            $table->string('Tld', 255)->unique();
+            $table->integer('Threshold')->default(0);
+            $table->boolean('Renew')->default(false);
+            $table->boolean('LocalPresenceRequired')->default(false);
+            $table->boolean('LocalPresenceOffered')->default(false);
+            $table->boolean('AuthCodeRequired')->default(false);
+            $table->string('Country', 255)->nullable();
+            $table->timestamp('LastUpdated')->nullable();
+        });
+    }
+});
 
-echo "- tlbasciohandles: Drop primary key".$lineBreak;
-$q = 'ALTER TABLE `tblasciohandles` DROP PRIMARY KEY';
-mysql_query($q);
-echo "- tlbasciohandles: Add whmcs as primary key replacement".$lineBreak;
-$q = 'ALTER TABLE `tblasciohandles` ADD INDEX(`whmcs_id`);';
-mysql_query($q);
-echo $lineBreak."* Read TLD parameters *".$lineBreak;
-$s = curl_init(); 
-// TODO: handle errors
-curl_setopt($s,CURLOPT_URL,"https://aws.ascio.info/tldkit.xq"); 
-curl_setopt($s,CURLOPT_RETURNTRANSFER,true);
-$tldsString = curl_exec($s);
-$tlds = json_decode($tldsString);
+// Create tblasciojobs table
+executeSchema("Creating tblasciojobs table", function() {
+    if (!Capsule::schema()->hasTable('tblasciojobs')) {
+        Capsule::schema()->create('tblasciojobs', function($table) {
+            $table->increments('id');
+            $table->integer('last_id')->index();
+            $table->string('order_id', 255)->index();
+            $table->string('method', 255);
+            $table->text('request');
+            $table->text('response');
+            $table->timestamp('date')->useCurrent();
+        });
+    }
+});
 
-foreach ($tlds->tld as $key => $tld) {	
-	echo "+ insert: ".$tld->tld.$lineBreak;
-	flush();
-	$result = select_query("tblasciotlds","*",array("Tld" => $tld->tld));
-	if($result) mysql_query("delete from tblasciotlds where Tld='".$tld->tld."'");
-	$data = array(
-		"Tld" => $tld->tld,
-		"Threshold" => $tld->Threshold,
-		"Renew" => $tld->Renew == "true" ? 1 : 0,
-		"LocalPresenceRequired" => $tld->LocalPresenceRequired == "true" ? 1 : 0,
-		"LocalPresenceOffered" => $tld->LocalPresenceOffered == "true" ? 1 : 0,
-		"AuthCodeRequired" => $tld->AuthCodeRequired == "true" ? 1 : 0,
-		"Country" => $tld->Country
-	);
-	insert_query("tblasciotlds",$data);
-	if(mysql_error()) die("error: ".mysql_error());
+// Create tblasciohandles table
+executeSchema("Creating tblasciohandles table", function() {
+    if (!Capsule::schema()->hasTable('tblasciohandles')) {
+        Capsule::schema()->create('tblasciohandles', function($table) {
+            $table->string('type', 256);
+            $table->integer('whmcs_id')->index();
+            $table->string('ascio_id', 256)->index();
+            $table->string('domain', 255)->index();
+        });
+    }
+});
+
+// Add domain column if missing (migration for existing installations)
+executeSchema("Adding domain column to tblasciohandles (if missing)", function() {
+    if (Capsule::schema()->hasTable('tblasciohandles') &&
+        !Capsule::schema()->hasColumn('tblasciohandles', 'domain')) {
+        Capsule::schema()->table('tblasciohandles', function($table) {
+            $table->string('domain', 255)->index()->after('ascio_id');
+        });
+    }
+});
+
+// Create mod_asciosession table
+executeSchema("Creating mod_asciosession table", function() {
+    if (!Capsule::schema()->hasTable('mod_asciosession')) {
+        Capsule::schema()->create('mod_asciosession', function($table) {
+            $table->string('account', 255)->unique();
+            $table->string('sessionId', 255);
+            $table->timestamp('timestamp')->useCurrent();
+            $table->index('timestamp', 'date');
+        });
+    }
+});
+
+echo $lineBreak . "* Syncing TLD data from Ascio TLDKit API *" . $lineBreak;
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, "https://aws.ascio.info/tldkit.xq");
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+$tldsString = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$curlError = curl_error($ch);
+curl_close($ch);
+
+if ($curlError) {
+    echo "Error fetching TLD data: " . $curlError . $lineBreak;
+} elseif ($httpCode !== 200) {
+    echo "Error fetching TLD data: HTTP " . $httpCode . $lineBreak;
+} else {
+    $tlds = json_decode($tldsString);
+
+    if (!$tlds || !isset($tlds->tld)) {
+        echo "Error: Invalid TLD data received" . $lineBreak;
+    } else {
+        $count = 0;
+        foreach ($tlds->tld as $tld) {
+            echo "+ " . $tld->tld;
+            flush();
+
+            try {
+                // Use upsert pattern: delete then insert
+                Capsule::table('tblasciotlds')
+                    ->where('Tld', $tld->tld)
+                    ->delete();
+
+                Capsule::table('tblasciotlds')->insert([
+                    'Tld' => $tld->tld,
+                    'Threshold' => $tld->Threshold ?? 0,
+                    'Renew' => ($tld->Renew ?? '') === 'true' ? 1 : 0,
+                    'LocalPresenceRequired' => ($tld->LocalPresenceRequired ?? '') === 'true' ? 1 : 0,
+                    'LocalPresenceOffered' => ($tld->LocalPresenceOffered ?? '') === 'true' ? 1 : 0,
+                    'AuthCodeRequired' => ($tld->AuthCodeRequired ?? '') === 'true' ? 1 : 0,
+                    'Country' => $tld->Country ?? null,
+                    'LastUpdated' => date('Y-m-d H:i:s')
+                ]);
+
+                echo " [OK]" . $lineBreak;
+                $count++;
+            } catch (\Exception $e) {
+                echo " [Error: " . $e->getMessage() . "]" . $lineBreak;
+            }
+        }
+
+        echo $lineBreak . "* Synced " . $count . " TLDs *" . $lineBreak;
+    }
 }
 
-
-?>
+echo $lineBreak . "* Installation complete *" . $lineBreak;
