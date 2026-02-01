@@ -1,0 +1,286 @@
+{
+    "_description": "Sample Ascio v2 API responses for compatibility testing",
+    "_version": "v2 (2012/01/01)",
+    "_wsdl": "https://aws.ascio.com/2012/01/01/AscioService.wsdl",
+
+    "LogIn": {
+        "LogInResult": {
+            "ResultCode": 200,
+            "ResultMessage": "Login successful",
+            "sessionId": "abc123-session-token-xyz"
+        }
+    },
+
+    "CreateOrder_Success": {
+        "CreateOrderResult": {
+            "ResultCode": 200,
+            "ResultMessage": "Order created successfully",
+            "Values": null
+        },
+        "order": {
+            "OrderId": "ORD123456",
+            "Type": "Register_Domain",
+            "Status": "Pending",
+            "TransactionComment": "{\"application\":\"WHMCS\",\"domainId\":12345,\"userId\":100,\"objectType\":\"Domain\"}",
+            "Domain": {
+                "DomainName": "example.com",
+                "DomainHandle": "DOM789",
+                "RegPeriod": 1,
+                "Status": "ACTIVE",
+                "ExpDate": "2025-12-31T00:00:00",
+                "CreDate": "2024-12-31T00:00:00",
+                "Registrant": {
+                    "Name": "John Doe",
+                    "OrgName": "Example Corp",
+                    "Address1": "123 Main St",
+                    "City": "New York",
+                    "State": "NY",
+                    "PostalCode": "10001",
+                    "CountryCode": "US",
+                    "Email": "john@example.com",
+                    "Phone": "+1.5551234567"
+                },
+                "AdminContact": {
+                    "FirstName": "Jane",
+                    "LastName": "Smith",
+                    "OrgName": "Example Corp",
+                    "Address1": "123 Main St",
+                    "City": "New York",
+                    "State": "NY",
+                    "PostalCode": "10001",
+                    "CountryCode": "US",
+                    "Email": "jane@example.com",
+                    "Phone": "+1.5551234567"
+                },
+                "TechContact": {
+                    "FirstName": "Tech",
+                    "LastName": "Support",
+                    "OrgName": "Example Corp",
+                    "Address1": "123 Main St",
+                    "City": "New York",
+                    "State": "NY",
+                    "PostalCode": "10001",
+                    "CountryCode": "US",
+                    "Email": "tech@example.com",
+                    "Phone": "+1.5551234567"
+                },
+                "NameServers": {
+                    "NameServer1": {"HostName": "ns1.example.com"},
+                    "NameServer2": {"HostName": "ns2.example.com"}
+                }
+            }
+        }
+    },
+
+    "CreateOrder_Error": {
+        "CreateOrderResult": {
+            "ResultCode": 400,
+            "ResultMessage": "Validation failed",
+            "Values": {
+                "string": [
+                    "Invalid email address",
+                    "Phone number format incorrect"
+                ]
+            }
+        }
+    },
+
+    "ValidateOrder_Success": {
+        "ValidateOrderResult": {
+            "ResultCode": 200,
+            "ResultMessage": "Order is valid",
+            "Values": null
+        }
+    },
+
+    "ValidateOrder_Error": {
+        "ValidateOrderResult": {
+            "ResultCode": 400,
+            "ResultMessage": "Validation failed",
+            "Values": {
+                "string": "Domain name already registered"
+            }
+        }
+    },
+
+    "GetOrder": {
+        "GetOrderResult": {
+            "ResultCode": 200,
+            "ResultMessage": "Success"
+        },
+        "order": {
+            "OrderId": "ORD123456",
+            "Type": "Register_Domain",
+            "Status": "Completed",
+            "TransactionComment": "{\"application\":\"WHMCS\",\"domainId\":12345}",
+            "Domain": {
+                "DomainName": "example.com",
+                "DomainHandle": "DOM789",
+                "Status": "ACTIVE"
+            }
+        }
+    },
+
+    "GetDomain": {
+        "GetDomainResult": {
+            "ResultCode": 200,
+            "ResultMessage": "Success"
+        },
+        "domain": {
+            "DomainName": "example.com",
+            "DomainHandle": "DOM789",
+            "RegPeriod": 1,
+            "AuthInfo": "EPP123456",
+            "Status": "ACTIVE,LOCK",
+            "ExpDate": "2025-12-31T00:00:00",
+            "CreDate": "2024-12-31T00:00:00",
+            "TransferLock": "Lock",
+            "Registrant": {
+                "Name": "John Doe",
+                "OrgName": "Example Corp",
+                "Email": "john@example.com"
+            },
+            "NameServers": {
+                "NameServer1": {"HostName": "ns1.example.com"},
+                "NameServer2": {"HostName": "ns2.example.com"}
+            }
+        }
+    },
+
+    "SearchDomain": {
+        "SearchDomainResult": {
+            "ResultCode": 200,
+            "ResultMessage": "Found 1 domain"
+        },
+        "domains": {
+            "Domain": {
+                "DomainName": "example.com",
+                "DomainHandle": "DOM789",
+                "Status": "ACTIVE"
+            }
+        }
+    },
+
+    "SearchDomain_Multiple": {
+        "SearchDomainResult": {
+            "ResultCode": 200,
+            "ResultMessage": "Found 2 domains"
+        },
+        "domains": {
+            "Domain": [
+                {
+                    "DomainName": "example1.com",
+                    "DomainHandle": "DOM001",
+                    "Status": "ACTIVE"
+                },
+                {
+                    "DomainName": "example2.com",
+                    "DomainHandle": "DOM002",
+                    "Status": "ACTIVE"
+                }
+            ]
+        }
+    },
+
+    "SearchDomain_NotFound": {
+        "SearchDomainResult": {
+            "ResultCode": 200,
+            "ResultMessage": "No domains found"
+        },
+        "domains": {}
+    },
+
+    "AvailabilityInfo_Available": {
+        "AvailabilityInfoResult": {
+            "ResultCode": 200,
+            "ResultMessage": "Success",
+            "DomainName": "available-domain.com",
+            "DomainNameAvailable": true,
+            "QualityType": "Live"
+        }
+    },
+
+    "AvailabilityInfo_Unavailable": {
+        "AvailabilityInfoResult": {
+            "ResultCode": 200,
+            "ResultMessage": "Success",
+            "DomainName": "taken-domain.com",
+            "DomainNameAvailable": false,
+            "QualityType": "Live"
+        }
+    },
+
+    "PollMessage_HasMessage": {
+        "PollMessageResult": {
+            "ResultCode": 200,
+            "ResultMessage": "Message available"
+        },
+        "item": {
+            "MsgId": 12345,
+            "OrderId": "ORD123456",
+            "OrderStatus": "Completed",
+            "DomainName": "example.com",
+            "Msg": "Registration completed successfully",
+            "StatusList": {
+                "CallbackStatus": [
+                    {
+                        "Status": "Completed",
+                        "Message": "Domain registered"
+                    }
+                ]
+            }
+        }
+    },
+
+    "PollMessage_Empty": {
+        "PollMessageResult": {
+            "ResultCode": 201,
+            "ResultMessage": "No messages in queue"
+        }
+    },
+
+    "GetMessageQueue": {
+        "GetMessageQueueResult": {
+            "ResultCode": 200,
+            "ResultMessage": "Success"
+        },
+        "item": {
+            "MsgId": 12345,
+            "OrderId": "ORD123456",
+            "OrderStatus": "Completed",
+            "DomainName": "example.com",
+            "Msg": "Registration completed successfully"
+        }
+    },
+
+    "AckMessage": {
+        "AckMessageResult": {
+            "ResultCode": 200,
+            "ResultMessage": "Message acknowledged"
+        }
+    },
+
+    "Auth_Error": {
+        "ResultCode": 401,
+        "ResultMessage": "Invalid credentials",
+        "Values": {
+            "string": "Login failed: invalid account or password"
+        }
+    },
+
+    "Server_Error": {
+        "ResultCode": 500,
+        "ResultMessage": "Internal server error",
+        "Values": {
+            "string": "An unexpected error occurred"
+        }
+    },
+
+    "Temporary_Error": {
+        "ResultCode": 554,
+        "ResultMessage": "Temporary error",
+        "Values": {
+            "string": "Service temporarily unavailable. Please try again later."
+        }
+    }
+}

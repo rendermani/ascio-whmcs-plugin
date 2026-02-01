@@ -1,0 +1,398 @@
+{
+	"comodocsc": {
+		"id": "comodocsc",
+		"vendor": "COMODO",
+		"type": "OV",
+		"wildcard": false,
+		"multiDomain": false,
+		"name": "Comodo Code Signing"
+	},
+	"comododvucc": {
+		"id": "comododvucc",
+		"vendor": "COMODO",
+		"type": "DV",
+		"wildcard": false,
+		"multiDomain": true,
+		"maxSans": 100,
+		"freeSans": 2,
+		"name": "Comodo Domain Validated UCC"
+	},
+	"elitessl": {
+		"id": "elitessl",
+		"vendor": "COMODO",
+		"type": "OV",
+		"wildcard": false,
+		"multiDomain": false,
+		"name": "Comodo Elite SSL"
+	},
+	"essentialssl": {
+		"id": "essentialssl",
+		"vendor": "COMODO",
+		"type": "DV",
+		"wildcard": false,
+		"multiDomain": false,
+		"name": "Comodo Essential SSL Certificate"
+	},
+	"essentialwildcard": {
+		"id": "essentialwildcard",
+		"vendor": "COMODO",
+		"type": "DV",
+		"wildcard": true,
+		"multiDomain": false,
+		"name": "Comodo EssentialSSL Wildcard Certificate"
+	},
+	"comodoevmdc": {
+		"id": "comodoevmdc",
+		"vendor": "COMODO",
+		"type": "EV",
+		"wildcard": false,
+		"multiDomain": true,
+		"maxSans": 100,
+		"freeSans": 2,
+		"name": "Comodo EV Multi-Domain SSL Certificate"
+	},
+	"comodoevssl": {
+		"id": "comodoevssl",
+		"vendor": "COMODO",
+		"type": "EV",
+		"wildcard": false,
+		"multiDomain": false,
+		"name": "Comodo EV SSL Certificate"
+	},
+	"hgpcicontrolscan": {
+		"id": "hgpcicontrolscan",
+		"vendor": "COMODO",
+		"type": "OV",
+		"wildcard": false,
+		"multiDomain": false,
+		"name": "Comodo HackerGuardian PCI Scan Control Center"
+	},
+	"instantssl": {
+		"id": "instantssl",
+		"vendor": "COMODO",
+		"type": "OV",
+		"wildcard": false,
+		"multiDomain": false,
+		"name": "Comodo InstantSSL Certificate"
+	},
+	"instantsslpro": {
+		"id": "instantsslpro",
+		"vendor": "COMODO",
+		"type": "OV",
+		"wildcard": false,
+		"multiDomain": false,
+		"name": "Comodo InstantSSL Pro Certificate"
+	},
+	"comodomdc": {
+		"id": "comodomdc",
+		"vendor": "COMODO",
+		"type": "OV",
+		"wildcard": false,
+		"multiDomain": true,
+		"maxSans": 100,
+		"freeSans": 4,
+		"name": "Comodo Multi-Domain SSL Certificate"
+	},
+	"comodomdcwildcard": {
+		"id": "comodomdcwildcard",
+		"vendor": "COMODO",
+		"type": "EV",
+		"wildcard": true,
+		"multiDomain": true,
+		"maxSans": 100,
+		"freeSans": 2,
+		"name": "Comodo Multi-Domain Wildcard SSL Certificate"
+	},
+	"positiveevmdc": {
+		"id": "positiveevmdc",
+		"vendor": "COMODO",
+		"type": "EV",
+		"wildcard": false,
+		"multiDomain": true,
+		"maxSans": 247,
+		"freeSans": 2,
+		"name": "Comodo Positive SSL EV Multi-Domain"
+	},
+	"positivessl": {
+		"id": "positivessl",
+		"vendor": "COMODO",
+		"type": "DV",
+		"wildcard": false,
+		"multiDomain": false,
+		"name": "Comodo PositiveSSL Certificate"
+	},
+	"positiveevssl": {
+		"id": "positiveevssl",
+		"vendor": "COMODO",
+		"type": "EV",
+		"wildcard": false,
+		"multiDomain": false,
+		"name": "Comodo PositiveSSL EV"
+	},
+	"positivemdcssl": {
+		"id": "positivemdcssl",
+		"vendor": "COMODO",
+		"type": "DV",
+		"wildcard": false,
+		"multiDomain": true,
+		"maxSans": 100,
+		"freeSans": 2,
+		"name": "Comodo PositiveSSL Multi-Domain Certificate"
+	},
+	"positivesslwildcard": {
+		"id": "positivesslwildcard",
+		"vendor": "COMODO",
+		"type": "DV",
+		"wildcard": true,
+		"multiDomain": false,
+		"name": "Comodo PositiveSSL Wildcard Certificate"
+	},
+	"comodopremiumwildcard": {
+		"id": "comodopremiumwildcard",
+		"vendor": "COMODO",
+		"type": "OV",
+		"wildcard": true,
+		"multiDomain": false,
+		"name": "Comodo PremiumSSL Wildcard Certificate"
+	},
+	"comodossl": {
+		"id": "comodossl",
+		"vendor": "COMODO",
+		"type": "DV",
+		"wildcard": false,
+		"multiDomain": false,
+		"name": "Comodo SSL Certificate"
+	},
+	"comodoucc": {
+		"id": "comodoucc",
+		"vendor": "COMODO",
+		"type": "OV",
+		"wildcard": false,
+		"multiDomain": true,
+		"maxSans": 100,
+		"freeSans": 4,
+		"name": "Comodo Unified Communications Certificate"
+	},
+	"comodouccwildcard": {
+		"id": "comodouccwildcard",
+		"vendor": "COMODO",
+		"type": "EV",
+		"wildcard": true,
+		"multiDomain": true,
+		"maxSans": 100,
+		"freeSans": 2,
+		"name": "Comodo Unified Communications Wildcard Certificate"
+	},
+	"comodowildcard": {
+		"id": "comodowildcard",
+		"vendor": "COMODO",
+		"type": "DV",
+		"wildcard": true,
+		"multiDomain": false,
+		"name": "Comodo Wildcard SSL Certificate"
+	},
+	"truebusinessidevmd": {
+		"id": "truebusinessidevmd",
+		"vendor": "GEOTRUST",
+		"type": "EV",
+		"wildcard": false,
+		"multiDomain": true,
+		"maxSans": 99,
+		"freeSans": 4,
+		"name": "Geo Trust True Business ID with EV Multi-Domain"
+	},
+	"quicksslpremium": {
+		"id": "quicksslpremium",
+		"vendor": "GEOTRUST",
+		"type": "DV",
+		"wildcard": false,
+		"multiDomain": false,
+		"name": "GeoTrust QuickSSL Premium Certificate"
+	},
+	"quicksslpremiummd": {
+		"id": "quicksslpremiummd",
+		"vendor": "GEOTRUST",
+		"type": "DV",
+		"wildcard": false,
+		"multiDomain": true,
+		"maxSans": 4,
+		"freeSans": 4,
+		"name": "GeoTrust QuickSSL Premium Multi Domain Certificate"
+	},
+	"quicksslpremiumwildcard": {
+		"id": "quicksslpremiumwildcard",
+		"vendor": "GEOTRUST",
+		"type": "DV",
+		"wildcard": true,
+		"multiDomain": false,
+		"name": "GeoTrust QuickSSL Premium Wildcard"
+	},
+	"truebizid": {
+		"id": "truebizid",
+		"vendor": "GEOTRUST",
+		"type": "OV",
+		"wildcard": false,
+		"multiDomain": false,
+		"name": "GeoTrust True BusinessID Certificate"
+	},
+	"truebusinessidwildcard": {
+		"id": "truebusinessidwildcard",
+		"vendor": "GEOTRUST",
+		"type": "OV",
+		"wildcard": true,
+		"multiDomain": false,
+		"name": "GeoTrust True BusinessID Wildcard Certificate"
+	},
+	"truebusinessidev": {
+		"id": "truebusinessidev",
+		"vendor": "GEOTRUST",
+		"type": "EV",
+		"wildcard": false,
+		"multiDomain": false,
+		"name": "GeoTrust True BusinessID with EV"
+	},
+	"truebizidmd": {
+		"id": "truebizidmd",
+		"vendor": "GEOTRUST",
+		"type": "OV",
+		"wildcard": false,
+		"multiDomain": true,
+		"maxSans": 99,
+		"freeSans": 4,
+		"name": "GeoTrust True BusinessID with Multi-Domain"
+	},
+	"positivemdcwildcard": {
+		"id": "positivemdcwildcard",
+		"vendor": "COMODO",
+		"type": "DV",
+		"wildcard": true,
+		"multiDomain": true,
+		"maxSans": 100,
+		"freeSans": 2,
+		"name": "PositiveSSL Multi-Domain Wildcard Certificate"
+	},
+	"rapidssl": {
+		"id": "rapidssl",
+		"vendor": "RAPIDSSL",
+		"type": "DV",
+		"wildcard": false,
+		"multiDomain": false,
+		"name": "RapidSSL Certificate"
+	},
+	"rapidsslwildcard": {
+		"id": "rapidsslwildcard",
+		"vendor": "RAPIDSSL",
+		"type": "DV",
+		"wildcard": true,
+		"multiDomain": false,
+		"name": "RapidSSL Wildcard Certificate"
+	},
+	"verisigncsc": {
+		"id": "verisigncsc",
+		"vendor": "SYMANTEC",
+		"type": "OV",
+		"wildcard": false,
+		"multiDomain": false,
+		"name": "Symantec Code Signing"
+	},
+	"securesite": {
+		"id": "securesite",
+		"vendor": "SYMANTEC",
+		"type": "OV",
+		"wildcard": false,
+		"multiDomain": true,
+		"maxSans": 24,
+		"freeSans": 0,
+		"name": "Symantec Secure Site"
+	},
+	"securesitepro": {
+		"id": "securesitepro",
+		"vendor": "SYMANTEC",
+		"type": "OV",
+		"wildcard": false,
+		"multiDomain": true,
+		"maxSans": 24,
+		"freeSans": 0,
+		"name": "Symantec Secure Site Pro"
+	},
+	"securesiteproev": {
+		"id": "securesiteproev",
+		"vendor": "SYMANTEC",
+		"type": "EV",
+		"wildcard": false,
+		"multiDomain": true,
+		"maxSans": 24,
+		"freeSans": 0,
+		"name": "Symantec Secure Site Pro with EV"
+	},
+	"securesitewildcard": {
+		"id": "securesitewildcard",
+		"vendor": "SYMANTEC",
+		"type": "OV",
+		"wildcard": true,
+		"multiDomain": false,
+		"name": "Symantec Secure Site Wildcard Certificate"
+	},
+	"securesiteev": {
+		"id": "securesiteev",
+		"vendor": "SYMANTEC",
+		"type": "EV",
+		"wildcard": false,
+		"multiDomain": true,
+		"maxSans": 24,
+		"freeSans": 0,
+		"name": "Symantec Secure Site with EV"
+	},
+	"thawtecsc": {
+		"id": "thawtecsc",
+		"vendor": "THAWTE",
+		"type": "OV",
+		"wildcard": false,
+		"multiDomain": false,
+		"name": "Thawte Code Signing Certificate"
+	},
+	"sslwebserver": {
+		"id": "sslwebserver",
+		"vendor": "THAWTE",
+		"type": "OV",
+		"wildcard": false,
+		"multiDomain": true,
+		"maxSans": 24,
+		"freeSans": 0,
+		"name": "Thawte SSL Web Server Certificates"
+	},
+	"ssl123": {
+		"id": "ssl123",
+		"vendor": "THAWTE",
+		"type": "DV",
+		"wildcard": false,
+		"multiDomain": false,
+		"name": "Thawte SSL123 Certificates"
+	},
+	"ssl123wildcard": {
+		"id": "ssl123wildcard",
+		"vendor": "THAWTE",
+		"type": "DV",
+		"wildcard": false,
+		"multiDomain": false,
+		"name": "Thawte SSL123 Wildcard"
+	},
+	"sslwebserverev": {
+		"id": "sslwebserverev",
+		"vendor": "THAWTE",
+		"type": "EV",
+		"wildcard": false,
+		"multiDomain": true,
+		"maxSans": 24,
+		"freeSans": 0,
+		"name": "Thawte SSLWebserver EV"
+	},
+	"sslwebserverwildcard": {
+		"id": "sslwebserverwildcard",
+		"vendor": "THAWTE",
+		"type": "OV",
+		"wildcard": true,
+		"multiDomain": false,
+		"name": "Thawte Wildcard SSL Certificate"
+	}
+}

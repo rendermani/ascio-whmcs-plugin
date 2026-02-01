@@ -1,0 +1,25 @@
+{
+    "id" : "ssl",
+    "repository" : "ascio-ssl-whmcs-plugin",
+    "fs" : {
+        "versions" : [
+            {
+                "version" : 0.2,
+                "description" : "Full SSL, Multi-Verification, SANs"
+            },
+            {
+                "version" : 0.1,
+                "description" : "AutoInstallSsl"
+            }
+        ]
+    },    
+    "db" : {
+        "versions" : [
+            {
+                "version" : 0.1,
+                "description" : "AutoInstallSsl"
+            }
+        ]
+    }
+    
+}
