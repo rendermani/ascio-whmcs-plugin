@@ -140,8 +140,9 @@ class AscioApiIntegrationTest extends TestCase
         $result = $request->availabilityInfo('test-domain-12345.com');
 
         // Should not return an error array
+        // sendRequest() unwraps the SOAP response, so the result IS the AvailabilityInfoResult directly
         $this->assertIsObject($result);
-        $this->assertObjectHasProperty('AvailabilityInfoResult', $result);
+        $this->assertObjectHasProperty('ResultCode', $result);
     }
 
     // =========================================================================
@@ -159,8 +160,9 @@ class AscioApiIntegrationTest extends TestCase
 
         $this->assertIsObject($result);
 
+        // sendRequest() unwraps the SOAP response, so ResultCode is directly on the result
         // Result code 200 = available, 201 = registered
-        $resultCode = $result->AvailabilityInfoResult->ResultCode ?? 0;
+        $resultCode = $result->ResultCode;
         $this->assertContains($resultCode, [200, 201, 203]);
     }
 
@@ -172,8 +174,9 @@ class AscioApiIntegrationTest extends TestCase
         // google.com should always be registered
         $result = $request->availabilityInfo('google.com');
 
+        // sendRequest() unwraps the SOAP response, so ResultCode is directly on the result
         $this->assertIsObject($result);
-        $this->assertEquals(201, $result->AvailabilityInfoResult->ResultCode);
+        $this->assertEquals(201, $result->ResultCode);
     }
 
     #[Test]
@@ -181,13 +184,20 @@ class AscioApiIntegrationTest extends TestCase
     {
         $request = new Request($this->params);
 
+        // AvailabilityCheck is not a valid v3 API method, so we test
+        // multiple TLD availability by calling availabilityInfo for each TLD
         $searchTerm = 'test-bulk-' . uniqid();
         $tlds = ['com', 'net', 'org'];
+        $results = [];
 
-        $result = $request->availabilityCheck([$searchTerm], $tlds);
+        foreach ($tlds as $tld) {
+            $result = $request->availabilityInfo($searchTerm . '.' . $tld);
+            $this->assertIsObject($result);
+            $this->assertObjectHasProperty('ResultCode', $result);
+            $results[$tld] = $result->ResultCode;
+        }
 
-        $this->assertIsObject($result);
-        $this->assertObjectHasProperty('results', $result);
+        $this->assertCount(3, $results);
     }
 
     // =========================================================================
@@ -202,8 +212,8 @@ class AscioApiIntegrationTest extends TestCase
         // Create order params but don't submit - just validate structure
         $orderParams = $request->mapToOrder($this->params, 'Register_Domain');
 
-        // Verify order structure is valid
-        $this->assertArrayHasKey('order', $orderParams);
+        // mapToOrder returns array('Order' => ...) with uppercase key
+        $this->assertArrayHasKey('Order', $orderParams);
         $this->assertEquals('Register_Domain', $orderParams['Order']['Type']);
         $this->assertArrayHasKey('Domain', $orderParams['Order']);
         $this->assertArrayHasKey('Registrant', $orderParams['Order']['Domain']);
@@ -244,10 +254,11 @@ class AscioApiIntegrationTest extends TestCase
         $request = new Request($badParams);
         $result = $request->availabilityInfo('test.com');
 
-        // Should return error array with login failure message
+        // Should return error array with authorization failure message
+        // v3 API returns "Authorization failed" for invalid credentials (ResultCode 401)
         $this->assertIsArray($result);
         $this->assertArrayHasKey('error', $result);
-        $this->assertStringContainsString('Login failed', $result['error']);
+        $this->assertStringContainsString('Authorization failed', $result['error']);
     }
 
     // =========================================================================
@@ -316,8 +327,10 @@ class AscioApiIntegrationTest extends TestCase
         $request = new Request($this->params);
         $result = $request->availabilityInfo('example.com');
 
+        // sendRequest() unwraps the SOAP response, so the result IS the AvailabilityInfoResult directly
         $this->assertIsObject($result);
-        $this->assertObjectHasProperty('AvailabilityInfoResult', $result);
-        $this->assertObjectHasProperty('ResultCode', $result->AvailabilityInfoResult);
+        $this->assertObjectHasProperty('ResultCode', $result);
+        $this->assertObjectHasProperty('ResultMessage', $result);
+        $this->assertObjectHasProperty('DomainName', $result);
     }
 }

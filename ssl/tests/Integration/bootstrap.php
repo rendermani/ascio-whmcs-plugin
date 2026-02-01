@@ -11,22 +11,7 @@ declare(strict_types=1);
 namespace Ascio\Ssl\Tests\Integration;
 
 // Load environment variables from .env if available
-// Try multiple paths to support both monorepo and standalone setups
-$envPaths = [
-    __DIR__ . '/../../../.env',         // domains/.env (monorepo root)
-    __DIR__ . '/../../../../.env',      // ascio/.env (parent dir)
-    __DIR__ . '/../../../../../.env',   // whmcs-tucows-dev/.env
-];
-$envFile = null;
-foreach ($envPaths as $path) {
-    if (file_exists($path)) {
-        $envFile = $path;
-        break;
-    }
-}
-if ($envFile === null) {
-    $envFile = __DIR__ . '/../../../.env'; // Default fallback
-}
+$envFile = __DIR__ . '/../../../../.env';
 if (file_exists($envFile)) {
     $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {

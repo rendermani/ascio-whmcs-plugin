@@ -12,9 +12,9 @@ namespace Ascio\Ssl\Tests\Integration;
 
 use ascio\v3 as v3;
 
-require_once __DIR__ . '/SslIntegrationTestBase.php';
+require_once __DIR__ . '/BaseSslIntegrationTest.php';
 
-class SslContactMappingTest extends SslIntegrationTestBase
+class SslContactMappingTest extends BaseSslIntegrationTest
 {
     /**
      * Test owner contact mapping to Registrant object

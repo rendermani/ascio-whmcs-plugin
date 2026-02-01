@@ -90,7 +90,7 @@ Ssl Order Validation (Ascio\Ssl\Tests\Integration\SslOrderValidation)
  [x] Validate fails with invalid product code
  [x] Validate with file verification
  [x] Validate with different web server types with data set "ApacheSsl"
- [x] Validate with different web server types with data set "Apache2"
+ [ ] Validate with different web server types with data set "Apache2"
  [x] Validate with different web server types with data set "Iis"
  [x] Validate with different web server types with data set "Tomcat"
  [x] Validate with different web server types with data set "Other"

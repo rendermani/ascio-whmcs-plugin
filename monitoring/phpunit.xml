@@ -3,12 +3,23 @@
          xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.0/phpunit.xsd"
          bootstrap="tests/bootstrap.php"
          colors="true"
-         stopOnFailure="false">
+         stopOnFailure="false"
+         cacheDirectory=".phpunit.cache">
     <testsuites>
-        <testsuite name="Monitoring Unit Tests">
-            <directory>tests</directory>
+        <testsuite name="Unit Tests">
+            <directory>tests/Unit</directory>
+            <file>tests/MonitoringTest.php</file>
+        </testsuite>
+        <testsuite name="Integration Tests">
+            <directory>tests/Integration</directory>
         </testsuite>
     </testsuites>
+    <groups>
+        <exclude>
+            <group>integration</group>
+            <group>e2e</group>
+        </exclude>
+    </groups>
     <coverage>
         <include>
             <directory suffix=".php">lib</directory>

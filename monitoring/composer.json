@@ -1,0 +1,21 @@
+{
+    "name": "ascio/monitoring",
+    "description": "Ascio Monitoring WHMCS Module",
+    "type": "whmcs-module",
+    "require": {
+        "php": ">=8.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Ascio\\Monitoring\\": "lib/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Ascio\\Monitoring\\Tests\\": "tests/"
+        }
+    }
+}

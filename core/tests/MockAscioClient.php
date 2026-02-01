@@ -372,6 +372,14 @@ class MockAscioClient implements AscioClientInterface
             private $handle;
             public function __construct($handle) { $this->handle = $handle; }
             public function getHandle() { return $this->handle; }
+            public function getName() { return 'testbrand'; }
+            public function getStatus() { return 'Active'; }
+            public function getTier() { return 3; }
+            public function getCreated() { return new \DateTime('2024-01-01'); }
+            public function getExpires() { return new \DateTime('2025-12-31'); }
+            public function getNotificationFrequency() { return 'Daily'; }
+            public function getEmailNotification1() { return 'admin@test.com'; }
+            public function getLabels() { return null; }
             public function getExpDate() { return '2025-12-31'; }
         };
 
@@ -412,7 +420,7 @@ class MockAscioClient implements AscioClientInterface
             public function __construct($handle) { $this->handle = $handle; }
             public function getHandle() { return $this->handle; }
             public function getExpDate() { return '2025-12-31'; }
-            public function getMarkId() { return 'TMCH' . $handle; }
+            public function getMarkId() { return 'TMCH' . $this->handle; }
             public function getAuthInfo() { return 'AUTH456'; }
         };
 

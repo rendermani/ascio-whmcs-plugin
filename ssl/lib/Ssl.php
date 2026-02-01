@@ -215,7 +215,7 @@ class Ssl {
         return $cert; 
     }
     /**
-     * @param string $certificateHandle 
+     * @param string $certificateHandle
      * @return  v3\SslCertificate
      */
     public function getCertificate(string $certificateHandle) : v3\SslCertificateInfo {
@@ -224,11 +224,157 @@ class Ssl {
 	    try {
 		    $response = $this->client->GetSslCertificate(new v3\GetSslCertificate($request));
         } catch (\Exception $e) {
-            throw  new AscioSystemException($e->faultstring, $e->faultcode);    
+            throw  new AscioSystemException($e->faultstring, $e->faultcode);
         }
         $result = $response->GetSslCertificateResult;
         $cert = $result->getSslCertificateInfo();
         return $cert;
+    }
+
+    /**
+     * Get the full certificate chain (root + intermediate + certificate).
+     *
+     * @param string $certificateHandle The certificate handle
+     * @return v3\SslCertificateChainInfo
+     * @throws AscioSystemException
+     */
+    public function getCertificateChain(string $certificateHandle) : v3\SslCertificateChainInfo {
+        $request = new v3\GetSslCertificateChainRequest();
+        $request->setHandle($certificateHandle);
+        try {
+            $response = $this->client->GetSslCertificateChain(new v3\GetSslCertificateChain($request));
+        } catch (\Exception $e) {
+            logModuleCall(
+                'asciossl',
+                'getCertificateChain',
+                ['handle' => $certificateHandle],
+                $e->getMessage(),
+                $e->getTraceAsString()
+            );
+            throw new AscioSystemException($e->faultstring ?? $e->getMessage(), $e->faultcode ?? 0);
+        }
+
+        $result = $response->GetSslCertificateChainResult;
+        if ($result->getResultCode() != 200) {
+            $errors = $result->getErrors();
+            $errorMsg = is_object($errors) && method_exists($errors, 'getString')
+                ? implode(', ', $errors->getString())
+                : $result->getResultMessage();
+            throw new AscioSystemException($errorMsg, $result->getResultCode());
+        }
+
+        return $result->getSslCertificateChainInfo();
+    }
+
+    /**
+     * Get valid approver email addresses for domain validation.
+     *
+     * Calls the Ascio GetSslApprovers API to retrieve the list of valid
+     * email addresses that can be used for SSL domain validation.
+     *
+     * @param string $domain The domain name to get approvers for
+     * @param string|null $productCode Optional SSL product code (uses current certificate type if not provided)
+     * @return array List of valid approver email addresses
+     * @throws AscioSystemException On API errors
+     */
+    public function getApprovers(string $domain, ?string $productCode = null) : array {
+        $request = new v3\GetSslApproversRequest();
+        $request->setName($domain);
+        $request->setProductCode($productCode ?? $this->certificateType);
+
+        try {
+            $response = $this->client->GetSslApprovers(new v3\GetSslApprovers($request));
+        } catch (\Exception $e) {
+            logModuleCall(
+                'asciossl',
+                'getApprovers',
+                ['domain' => $domain, 'productCode' => $productCode ?? $this->certificateType],
+                $e->getMessage(),
+                $e->getTraceAsString()
+            );
+            throw new AscioSystemException($e->faultstring ?? $e->getMessage(), $e->faultcode ?? 0);
+        }
+
+        $result = $response->GetSslApproversResult;
+        if ($result->getResultCode() != 200) {
+            $errors = $result->getErrors();
+            $errorMsg = is_object($errors) && method_exists($errors, 'getString')
+                ? implode(', ', $errors->getString())
+                : $result->getResultMessage();
+            logModuleCall(
+                'asciossl',
+                'getApprovers',
+                ['domain' => $domain, 'productCode' => $productCode ?? $this->certificateType],
+                $errorMsg,
+                'API returned error code: ' . $result->getResultCode()
+            );
+            throw new AscioSystemException($errorMsg, $result->getResultCode());
+        }
+
+        $approverEmails = $result->getApproverEmails();
+        if ($approverEmails === null) {
+            return [];
+        }
+
+        $emails = $approverEmails->getString();
+        return is_array($emails) ? $emails : [];
+    }
+
+    /**
+     * Check if an email address is a valid approver for domain validation.
+     *
+     * @param string $email The email address to validate
+     * @param string $domain The domain name
+     * @param string|null $productCode Optional SSL product code
+     * @return bool True if the email is a valid approver, false otherwise
+     */
+    public function isValidApprover(string $email, string $domain, ?string $productCode = null) : bool {
+        try {
+            $approvers = $this->getApprovers($domain, $productCode);
+            return in_array(strtolower($email), array_map('strtolower', $approvers), true);
+        } catch (\Exception $e) {
+            logModuleCall(
+                'asciossl',
+                'isValidApprover',
+                ['email' => $email, 'domain' => $domain, 'productCode' => $productCode],
+                $e->getMessage(),
+                'Failed to validate approver email'
+            );
+            return false;
+        }
+    }
+
+    /**
+     * Get approver email addresses formatted as HTML options.
+     *
+     * Retrieves valid approver emails from Ascio API and formats them
+     * as HTML option elements for use in select dropdowns.
+     *
+     * @param string $domain The domain name to get approvers for
+     * @param string|null $productCode Optional SSL product code
+     * @return string HTML options string
+     */
+    public function getApproversAsHtmlOptions(string $domain, ?string $productCode = null) : string {
+        try {
+            $approvers = $this->getApprovers($domain, $productCode);
+        } catch (\Exception $e) {
+            // Fall back to local generation on API failure
+            logModuleCall(
+                'asciossl',
+                'getApproversAsHtmlOptions',
+                ['domain' => $domain, 'productCode' => $productCode],
+                $e->getMessage(),
+                'Falling back to local approver generation'
+            );
+            $fqdn = new Fqdn($domain);
+            return $this->getApprovalAddresses($fqdn);
+        }
+
+        $out = "";
+        foreach ($approvers as $email) {
+            $out .= "<option>" . htmlspecialchars($email, ENT_QUOTES, 'UTF-8') . "</option>";
+        }
+        return $out;
     }
     private function writeStatus($data) {
         Capsule::Table("mod_asciossl")

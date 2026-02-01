@@ -13,9 +13,9 @@ namespace Ascio\Ssl\Tests\Integration;
 
 use ascio\v3 as v3;
 
-require_once __DIR__ . '/SslIntegrationTestBase.php';
+require_once __DIR__ . '/BaseSslIntegrationTest.php';
 
-class SslDnsVerificationTest extends SslIntegrationTestBase
+class SslDnsVerificationTest extends BaseSslIntegrationTest
 {
     /**
      * Test parsing DNS verification tokens from Pending_End_User_Action callback message

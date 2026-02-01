@@ -12,9 +12,9 @@ namespace Ascio\Ssl\Tests\Integration;
 
 use ascio\v3 as v3;
 
-require_once __DIR__ . '/SslIntegrationTestBase.php';
+require_once __DIR__ . '/BaseSslIntegrationTest.php';
 
-class SslPollingTest extends SslIntegrationTestBase
+class SslPollingTest extends BaseSslIntegrationTest
 {
     /**
      * Test polling queue for SSL certificate messages

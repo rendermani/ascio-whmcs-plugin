@@ -268,7 +268,12 @@ class Tmch
     {
         $owner = new v3\Registrant();
 
-        $owner->setName($contactData['name'] ?? $contactData['owner_name'] ?? '');
+        // Split name into first and last name for v3 API
+        $name = $contactData['name'] ?? $contactData['owner_name'] ?? '';
+        $nameParts = explode(' ', $name, 2);
+        $owner->setFirstName($nameParts[0] ?? '');
+        $owner->setLastName($nameParts[1] ?? ($nameParts[0] ?? ''));
+
         $owner->setEmail($contactData['email'] ?? $contactData['owner_email'] ?? '');
         $owner->setOrgName($contactData['company'] ?? $contactData['owner_company'] ?? '');
         $owner->setAddress1($contactData['address1'] ?? $contactData['owner_address1'] ?? '');
@@ -290,19 +295,19 @@ class Tmch
      */
     protected function buildDocuments(array $documents): v3\ArrayOfMarkOrderDocument
     {
-        $arrayOfDocs = new v3\ArrayOfMarkOrderDocument();
+        $docs = [];
 
         foreach ($documents as $doc) {
             $markDoc = new v3\MarkOrderDocument();
             $markDoc->setDocType($doc['type']);
+            $markDoc->setContent(base64_encode($doc['content']));
+            $markDoc->setFileName($doc['filename']);
 
-            $attachment = new v3\Attachment();
-            $attachment->setData(base64_encode($doc['content']));
-            $attachment->setFilename($doc['filename']);
-            $markDoc->setAttachment($attachment);
-
-            $arrayOfDocs->addMarkOrderDocument($markDoc);
+            $docs[] = $markDoc;
         }
+
+        $arrayOfDocs = new v3\ArrayOfMarkOrderDocument();
+        $arrayOfDocs->setMarkOrderDocument($docs);
 
         return $arrayOfDocs;
     }
@@ -317,16 +322,15 @@ class Tmch
     {
         $data = $this->readDb();
 
-        if (empty($data->handle)) {
+        if (empty($data->order_id)) {
             return [
                 'success' => false,
-                'error' => 'Cannot upload documents: mark handle not yet assigned',
+                'error' => 'Cannot upload documents: order not yet created',
             ];
         }
 
         $request = new v3\UploadDocumentationRequest();
-        $request->setHandle($data->handle);
-        $request->setObjectType('MarkType');
+        $request->setOrderId($data->order_id);
         $request->setDocuments($this->buildDocuments($documents));
 
         try {
@@ -494,6 +498,50 @@ class Tmch
         $response = $this->client->getMark($handle);
         $result = $this->responseHandler->handleResponse($response, 'GetMark');
         return $result->getMarkInfo();
+    }
+
+    /**
+     * Get SMD (Signed Mark Data) file content.
+     *
+     * @return array Result with 'success', 'content', 'filename' or 'error'
+     */
+    public function getSMD(): array
+    {
+        $data = $this->readDb();
+
+        if (empty($data->handle)) {
+            return [
+                'success' => false,
+                'error' => 'Cannot retrieve SMD: mark handle not yet assigned',
+            ];
+        }
+
+        try {
+            $info = $this->getInfo($data->handle);
+            $smd = $info->getSmd();
+
+            if (empty($smd)) {
+                return [
+                    'success' => false,
+                    'error' => 'SMD file not available - mark may not be verified yet',
+                ];
+            }
+
+            $filename = 'smd_' . preg_replace('/[^a-zA-Z0-9]/', '_', $data->mark_name ?? 'mark') . '.smd';
+
+            return [
+                'success' => true,
+                'content' => $smd,
+                'filename' => $filename,
+            ];
+
+        } catch (\Exception $e) {
+            $this->responseHandler->logCall('GetSMD', ['handle' => $data->handle], $e, $e->getMessage());
+            return [
+                'success' => false,
+                'error' => 'Error retrieving SMD: ' . $e->getMessage(),
+            ];
+        }
     }
 
     /**

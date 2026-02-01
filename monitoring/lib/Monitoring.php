@@ -193,7 +193,12 @@ class Monitoring
     {
         $owner = new v3\Registrant();
 
-        $owner->setName($contactData['name'] ?? '');
+        // Split name into first and last name for v3 API
+        $name = $contactData['name'] ?? '';
+        $nameParts = explode(' ', $name, 2);
+        $owner->setFirstName($nameParts[0] ?? '');
+        $owner->setLastName($nameParts[1] ?? ($nameParts[0] ?? ''));
+
         $owner->setEmail($contactData['email'] ?? '');
         $owner->setOrgName($contactData['company'] ?? '');
         $owner->setAddress1($contactData['address1'] ?? '');
@@ -240,10 +245,11 @@ class Monitoring
 
         if ($data) {
             $this->hasDbData = true;
-            $this->data = (array)$data;
+            // Merge DB data as base, preserving any data already set (e.g. from fromForm)
+            $this->data = array_merge((array)$data, $this->data);
         }
 
-        return $data;
+        return !empty($this->data) ? (object)$this->data : null;
     }
 
     /**
@@ -372,5 +378,133 @@ class Monitoring
     public function getData(): array
     {
         return $this->data;
+    }
+
+    /**
+     * Change monitoring tier.
+     *
+     * @param int $newTier New tier level (1-5)
+     * @param array $contactData Owner contact information
+     * @return array Result
+     */
+    public function changeTier(int $newTier, array $contactData): array
+    {
+        $data = $this->readDb();
+
+        if (empty($data->handle)) {
+            return [
+                'success' => false,
+                'error' => 'Cannot change tier: No active monitoring handle found',
+            ];
+        }
+
+        // Update local tier
+        $this->data['tier'] = $newTier;
+        $this->writeDb();
+
+        // Build owner contact
+        $owner = $this->buildOwner($contactData);
+
+        // Build NameWatch object with new tier
+        $nameWatch = new v3\NameWatch();
+        $nameWatch->setHandle($data->handle);
+        $nameWatch->setName($data->name);
+        $nameWatch->setTier($newTier);
+        $nameWatch->setNotificationFrequency($data->notification_frequency);
+        $nameWatch->setOwner($owner);
+
+        // Set notification emails
+        if (!empty($data->email_notification_1)) {
+            $nameWatch->setEmailNotification1($data->email_notification_1);
+        }
+
+        // Build update order request
+        $orderRequest = new v3\NameWatchOrderRequest(OrderType::DETAILS_UPDATE);
+        $orderRequest->setType(OrderType::DETAILS_UPDATE);
+        $orderRequest->setTransactionComment('WHMCS Tier Change');
+        $orderRequest->setNameWatch($nameWatch);
+
+        try {
+            $response = $this->client->createOrder($orderRequest);
+            $result = $response->CreateOrderResult;
+
+            if ($result->getResultCode() === 200) {
+                $orderInfo = $result->getOrderInfo();
+                $orderId = $this->formatOrderId($orderInfo->getOrderId());
+
+                $updateData = [
+                    'code' => $result->getResultCode(),
+                    'message' => $result->getResultMessage(),
+                    'status' => $orderInfo->getStatus(),
+                    'tier' => $newTier,
+                ];
+                $this->writeStatus($updateData);
+
+                return array_merge($updateData, ['success' => true, 'order_id' => $orderId]);
+
+            } else {
+                $errors = $this->responseHandler->extractErrors($result);
+                return [
+                    'success' => false,
+                    'error' => $this->responseHandler->formatErrors($errors),
+                    'code' => $result->getResultCode(),
+                ];
+            }
+
+        } catch (\SoapFault $e) {
+            $this->responseHandler->logCall('ChangeTier', $orderRequest, $e, $e->getMessage());
+            return [
+                'success' => false,
+                'error' => 'Temporary error. Please retry later: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Get alerts/notifications from the API.
+     * Note: The Ascio API doesn't have a direct "get alerts" endpoint.
+     * Alerts are delivered via polling queue or email notifications.
+     * This method retrieves the current monitoring info which includes status.
+     *
+     * @return array Result with monitoring info
+     */
+    public function getAlerts(): array
+    {
+        $data = $this->readDb();
+
+        if (empty($data->handle)) {
+            return [
+                'success' => false,
+                'error' => 'No active monitoring handle found',
+                'alerts' => [],
+            ];
+        }
+
+        try {
+            $info = $this->getInfo($data->handle);
+
+            return [
+                'success' => true,
+                'handle' => $info->getHandle(),
+                'name' => $info->getName(),
+                'status' => $info->getStatus(),
+                'tier' => $info->getTier(),
+                'created' => $info->getCreated()?->format('Y-m-d'),
+                'expires' => $info->getExpires()?->format('Y-m-d'),
+                'notification_frequency' => $info->getNotificationFrequency(),
+                'email_notification_1' => $info->getEmailNotification1(),
+                'labels' => $info->getLabels(),
+                // Note: Actual alerts come via polling queue, not direct API call
+                'alerts' => [],
+                'message' => 'Alerts are delivered via email at your configured frequency (' . ($info->getNotificationFrequency() ?? 'Daily') . ')',
+            ];
+
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'alerts' => [],
+            ];
+        }
     }
 }

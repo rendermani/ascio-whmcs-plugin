@@ -36,9 +36,9 @@ class SslLifecycleE2ETest extends TestCase
     private ?int $createdDnsRecordId = null;
 
     /**
-     * Maximum time to wait for order completion (5 minutes)
+     * Maximum time to wait for order completion (10 minutes)
      */
-    private const MAX_POLL_TIME = 300;
+    private const MAX_POLL_TIME = 600;
 
     /**
      * Poll interval in seconds
@@ -78,8 +78,10 @@ class SslLifecycleE2ETest extends TestCase
 
     protected function tearDown(): void
     {
-        // Clean up any DNS records created during the test
-        $this->deleteDnsRecord();
+        // Note: DNS records are NOT cleaned up during tearDown because
+        // Sectigo may still need them for validation. Records are cleaned
+        // up only after the certificate reaches a terminal status.
+        // Old test records can be cleaned up manually via the DNS API.
 
         $this->client = null;
         $this->liveClient = null;
@@ -178,11 +180,23 @@ class SslLifecycleE2ETest extends TestCase
         $challenge = $this->pollForChallenge($orderId);
 
         if ($challenge === null) {
-            echo "  No DNS challenge received (order may have completed or failed)\n";
-        } else {
+            echo "  No DNS challenge could be extracted from queue or order\n";
+            echo "  Attempting to retrieve DCV info via GetOrder...\n";
+            $challenge = $this->getChallengeFromOrder($orderId);
+        }
+
+        // If still no challenge, compute it from the CSR (Sectigo CNAME DCV)
+        if ($challenge === null && $this->csrPem !== null) {
+            echo "  Computing Sectigo CNAME DCV from CSR...\n";
+            $challenge = $this->computeSectigoCnameDcv($this->csrPem, $testCommonName);
+            echo "  Computed CNAME: {$challenge['authName']} -> {$challenge['authValue']}\n";
+        }
+
+        if ($challenge !== null) {
             echo "  DNS Challenge received:\n";
             echo "    AuthName: {$challenge['authName']}\n";
             echo "    AuthValue: {$challenge['authValue']}\n";
+            echo "    Type: {$challenge['type']}\n";
 
             // Step 7: Create DNS record
             echo "\nStep 7: Creating DNS record...\n";
@@ -192,6 +206,9 @@ class SslLifecycleE2ETest extends TestCase
             } else {
                 echo "  DNS record creation failed (may already exist)\n";
             }
+        } else {
+            echo "  WARNING: Could not extract DNS challenge. Order will remain pending.\n";
+            echo "  This may require manual DNS record creation or email validation.\n";
         }
 
         // Step 8: Poll until completion
@@ -260,7 +277,7 @@ class SslLifecycleE2ETest extends TestCase
     }
 
     /**
-     * Generate a CSR for the test domain
+     * Generate a CSR for the test domain and store the PEM for DCV computation
      */
     private function generateCsr(string $commonName): string
     {
@@ -270,7 +287,7 @@ class SslLifecycleE2ETest extends TestCase
             'localityName' => 'Munich',
             'organizationName' => 'Test Organization',
             'commonName' => $commonName,
-            'emailAddress' => 'admin@' . $commonName,
+            'emailAddress' => 'admin@' . $this->testDomain,
         ];
 
         $privkey = openssl_pkey_new([
@@ -281,7 +298,53 @@ class SslLifecycleE2ETest extends TestCase
         $csr = openssl_csr_new($dn, $privkey, ['digest_alg' => 'sha256']);
         openssl_csr_export($csr, $csrOut);
 
+        // Store CSR PEM for DCV CNAME computation
+        $this->csrPem = $csrOut;
+
         return $csrOut;
+    }
+
+    /** @var string|null CSR PEM for DCV computation */
+    private ?string $csrPem = null;
+
+    /**
+     * Compute the Sectigo/Comodo CNAME DCV challenge from a CSR.
+     *
+     * For CNAME-based DCV, Sectigo uses:
+     *   Name:  _<MD5(DER(CSR))>.<domain>
+     *   Value: <SHA256(DER(CSR))>.comodoca.com
+     *
+     * @param string $csrPem The PEM-encoded CSR
+     * @param string $domain The domain being validated
+     * @return array{authName: string, authValue: string, type: string}
+     */
+    private function computeSectigoCnameDcv(string $csrPem, string $domain): array
+    {
+        // Convert PEM to DER
+        $csrLines = explode("\n", trim($csrPem));
+        // Remove header/footer lines
+        $csrBase64 = '';
+        foreach ($csrLines as $line) {
+            if (strpos($line, '-----') === false) {
+                $csrBase64 .= trim($line);
+            }
+        }
+        $csrDer = base64_decode($csrBase64);
+
+        $md5Hash = md5($csrDer);
+        $sha256Hash = hash('sha256', $csrDer);
+
+        // Sectigo CNAME format
+        // SHA256 hash is 64 chars but DNS labels max 63 chars
+        // Split into two 32-char labels: first_half.second_half.comodoca.com
+        $sha256Part1 = substr($sha256Hash, 0, 32);
+        $sha256Part2 = substr($sha256Hash, 32);
+
+        return [
+            'authName' => "_{$md5Hash}.{$domain}",
+            'authValue' => "{$sha256Part1}.{$sha256Part2}.comodoca.com",
+            'type' => 'cname',
+        ];
     }
 
     /**
@@ -378,7 +441,7 @@ class SslLifecycleE2ETest extends TestCase
     {
         $startTime = time();
 
-        while ((time() - $startTime) < 60) {  // Max 60 seconds for challenge
+        while ((time() - $startTime) < 120) {  // Max 120 seconds for challenge
             $request = new v3\PollQueueRequest();
             $request->setObjectType(v3\ObjectType::SslCertificateType);
 
@@ -395,9 +458,17 @@ class SslLifecycleE2ETest extends TestCase
                     echo "    Message: {$messageId}, Order: {$msgOrderId}, Status: {$status}\n";
 
                     if ($msgOrderId === $orderId && $status === 'PendingEndUserAction') {
-                        // Get message text content
+                        // Get message text content and dump it for debugging
                         $messageText = $queueMessage->getMessage() ?? '';
+                        echo "    Message content: " . substr($messageText, 0, 500) . "\n";
+
                         $challenge = $this->parseDnsChallenge($messageText);
+
+                        // If challenge not in message text, try to get it from the order
+                        if ($challenge === null) {
+                            echo "    Challenge not found in message, trying GetSslCertificate...\n";
+                            $challenge = $this->getChallengeFromOrder($orderId);
+                        }
 
                         // Acknowledge message
                         $this->ackQueueMessage($messageId);
@@ -418,7 +489,10 @@ class SslLifecycleE2ETest extends TestCase
             sleep(5);
         }
 
-        return null;
+        // Last attempt: check order status directly and try to extract challenge
+        echo "    Timeout reached, checking order status directly...\n";
+        $challenge = $this->getChallengeFromOrder($orderId);
+        return $challenge;
     }
 
     /**
@@ -438,7 +512,7 @@ class SslLifecycleE2ETest extends TestCase
     private function parseDnsChallenge(string $message): ?array
     {
         // Try CNAME format: AuthName: xxx\nAuthValue: xxx
-        if (preg_match('/AuthName:\s*(.+)\nAuthValue:\s*(.+)/', $message, $matches)) {
+        if (preg_match('/AuthName:\s*(.+?)[\r\n]+AuthValue:\s*(.+)/i', $message, $matches)) {
             return [
                 'authName' => trim($matches[1]),
                 'authValue' => trim($matches[2]),
@@ -447,7 +521,7 @@ class SslLifecycleE2ETest extends TestCase
         }
 
         // Try TXT format: AuthFileName: xxx\nAuthFileContent: xxx
-        if (preg_match('/AuthFileName:\s*(.+)\nAuthFileContent:\s*(.+)/', $message, $matches)) {
+        if (preg_match('/AuthFileName:\s*(.+?)[\r\n]+AuthFileContent:\s*(.+)/i', $message, $matches)) {
             return [
                 'authName' => trim($matches[1]),
                 'authValue' => trim($matches[2]),
@@ -455,7 +529,103 @@ class SslLifecycleE2ETest extends TestCase
             ];
         }
 
+        // Sectigo/Comodo CNAME format: _hash.domain CNAME hash.comodoca.com
+        if (preg_match('/(_[a-f0-9]+\.[^\s]+)\s+(?:IN\s+)?CNAME\s+([^\s]+)/i', $message, $matches)) {
+            return [
+                'authName' => trim($matches[1]),
+                'authValue' => trim($matches[2]),
+                'type' => 'cname',
+            ];
+        }
+
+        // Generic: look for any CNAME record pattern in the message
+        if (preg_match('/CNAME[:\s]+(.+?)[\r\n\s]+(?:to|value|point)[:\s]+(.+)/i', $message, $matches)) {
+            return [
+                'authName' => trim($matches[1]),
+                'authValue' => trim($matches[2]),
+                'type' => 'cname',
+            ];
+        }
+
+        // Try to find _dnsauth pattern (Sectigo DCV)
+        if (preg_match('/(_dnsauth\.[^\s]+)\s+.*?([a-f0-9]{32,}\.[^\s]+)/i', $message, $matches)) {
+            return [
+                'authName' => trim($matches[1]),
+                'authValue' => trim($matches[2]),
+                'type' => 'cname',
+            ];
+        }
+
         return null;
+    }
+
+    /**
+     * Try to get DCV challenge info from the order/certificate
+     */
+    private function getChallengeFromOrder(string $orderId): ?array
+    {
+        try {
+            // Get the order to find certificate handle
+            $orderRequest = new v3\GetOrderRequest();
+            $orderRequest->setOrderId($orderId);
+            $orderResponse = $this->client->GetOrder(new v3\GetOrder($orderRequest));
+            $orderResult = $orderResponse->GetOrderResult;
+
+            if ($orderResult->getResultCode() !== 200) {
+                echo "    GetOrder failed: " . $orderResult->getResultMessage() . "\n";
+                return null;
+            }
+
+            $orderInfo = $orderResult->getOrderInfo();
+            $sslCert = $orderInfo->getOrderRequest()->getSslCertificate();
+            $handle = $sslCert->getHandle();
+            $commonName = $sslCert->getCommonName();
+
+            echo "    Certificate handle: {$handle}\n";
+            echo "    Common name: {$commonName}\n";
+
+            // For Sectigo DNS validation, the CNAME record is typically:
+            // _<MD5 hash of CSR>.domain → <SHA256 hash>.comodoca.com
+            // This info may be in the certificate's Extensions or ObjectComment
+            $objectComment = $sslCert->getObjectComment() ?? '';
+            if (!empty($objectComment)) {
+                echo "    ObjectComment: {$objectComment}\n";
+                $challenge = $this->parseDnsChallenge($objectComment);
+                if ($challenge) {
+                    return $challenge;
+                }
+            }
+
+            // Try to get certificate info if handle exists
+            if (!empty($handle)) {
+                $certRequest = new v3\GetSslCertificateRequest();
+                $certRequest->setHandle($handle);
+                $certResponse = $this->client->GetSslCertificate(new v3\GetSslCertificate($certRequest));
+                $certResult = $certResponse->GetSslCertificateResult;
+
+                if ($certResult->getResultCode() === 200) {
+                    $certInfo = $certResult->getSslCertificateInfo();
+                    echo "    Certificate status: " . $certInfo->getStatus() . "\n";
+
+                    // Check object comment for DCV data
+                    $comment = $certInfo->getObjectComment() ?? '';
+                    if (!empty($comment)) {
+                        echo "    CertInfo ObjectComment: {$comment}\n";
+                        $challenge = $this->parseDnsChallenge($comment);
+                        if ($challenge) {
+                            return $challenge;
+                        }
+                    }
+                }
+            }
+
+            echo "    Could not extract DCV challenge from order/certificate\n";
+            return null;
+
+        } catch (\Exception $e) {
+            echo "    Error getting challenge from order: " . $e->getMessage() . "\n";
+            return null;
+        }
     }
 
     /**
@@ -463,10 +633,20 @@ class SslLifecycleE2ETest extends TestCase
      */
     private function createDnsRecord(string $authName, string $authValue): bool
     {
+        // Use full FQDN for Source (matches existing records in zone)
+        $source = $authName;
+        // Ensure Source includes the zone suffix
+        if (!str_ends_with($source, '.' . $this->testDomain)) {
+            $source = $source . '.' . $this->testDomain;
+        }
+
+        // Use target as-is (no trailing dot - Ascio DNS API handles FQDN internally)
+        $target = rtrim($authValue, '.');
+
         echo "    Creating DNS record:\n";
-        echo "      Name: {$authName}\n";
-        echo "      Value: {$authValue}\n";
         echo "      Zone: {$this->testDomain}\n";
+        echo "      Source: {$source}\n";
+        echo "      Target: {$target}\n";
 
         try {
             // Load DNS service class
@@ -485,25 +665,11 @@ class SslLifecycleE2ETest extends TestCase
             $zoneResponse = $dnsClient->GetZone($getZone);
 
             $zoneExists = ($zoneResponse->GetZoneResult->StatusCode == 200);
-
-            // Determine record type based on authName
-            if ($authName === 'DNS TXT Record' || strpos($authName, '_dnsauth') !== false) {
-                // TXT record for DCV
-                $record = new \TXT();
-                $record->Source = $authName;
-                $record->Target = $authValue;
-                $record->TTL = 3600;
-            } else {
-                // CNAME record
-                $record = new \CNAME();
-                $record->Source = $authName;
-                $record->Target = $authValue;
-                $record->TTL = 3600;
-            }
+            echo "      Zone exists: " . ($zoneExists ? 'yes' : 'no') . "\n";
 
             if (!$zoneExists) {
                 // Create zone first
-                echo "      Zone does not exist, creating...\n";
+                echo "      Creating zone...\n";
                 $createZone = new \CreateZone();
                 $createZone->zoneName = $this->testDomain;
                 $createZone->owner = $this->liveAccount;
@@ -513,7 +679,14 @@ class SslLifecycleE2ETest extends TestCase
                     echo "      Failed to create zone: {$createZoneResponse->CreateZoneResult->StatusMessage}\n";
                     return false;
                 }
+                echo "      Zone created successfully\n";
             }
+
+            // CNAME record with full FQDN source
+            $record = new \CNAME();
+            $record->Source = $source;
+            $record->Target = $target;
+            $record->TTL = 3600;
 
             // Create the record
             $createRecord = new \CreateRecord();
@@ -527,14 +700,21 @@ class SslLifecycleE2ETest extends TestCase
                 echo "      DNS record created successfully (ID: {$this->createdDnsRecordId})\n";
                 return true;
             } else {
-                echo "      DNS creation failed: {$response->CreateRecordResult->StatusMessage}\n";
+                $msg = $response->CreateRecordResult->StatusMessage ?? 'Unknown error';
+                echo "      DNS creation failed ({$response->CreateRecordResult->StatusCode}): {$msg}\n";
                 // Record might already exist - not a failure
-                if (strpos($response->CreateRecordResult->StatusMessage, 'already exists') !== false) {
+                if (strpos($msg, 'already exists') !== false) {
                     echo "      Record already exists, continuing...\n";
                     return true;
                 }
                 return false;
             }
+        } catch (\SoapFault $e) {
+            echo "      DNS SOAP Error: " . $e->getMessage() . "\n";
+            if (isset($e->detail)) {
+                echo "      Detail: " . print_r($e->detail, true) . "\n";
+            }
+            return false;
         } catch (\Exception $e) {
             echo "      DNS Error: " . $e->getMessage() . "\n";
             return false;

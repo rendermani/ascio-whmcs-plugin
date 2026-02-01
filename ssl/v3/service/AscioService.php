@@ -25,6 +25,10 @@ class AscioService extends \SoapClient
       'GetNameWatchResponse' => 'ascio\\v3\\GetNameWatchResponse',
       'GetSslCertificate' => 'ascio\\v3\\GetSslCertificate',
       'GetSslCertificateResponse' => 'ascio\\v3\\GetSslCertificateResponse',
+      'GetSslCertificateChain' => 'ascio\\v3\\GetSslCertificateChain',
+      'GetSslCertificateChainResponse' => 'ascio\\v3\\GetSslCertificateChainResponse',
+      'GetSslApprovers' => 'ascio\\v3\\GetSslApprovers',
+      'GetSslApproversResponse' => 'ascio\\v3\\GetSslApproversResponse',
       'GetAutoInstallSsl' => 'ascio\\v3\\GetAutoInstallSsl',
       'GetAutoInstallSslResponse' => 'ascio\\v3\\GetAutoInstallSslResponse',
       'GetMessages' => 'ascio\\v3\\GetMessages',
@@ -78,6 +82,9 @@ class AscioService extends \SoapClient
       'NameWatchInfo' => 'ascio\\v3\\NameWatchInfo',
       'GetSslCertificateRequest' => 'ascio\\v3\\GetSslCertificateRequest',
       'SslCertificateInfo' => 'ascio\\v3\\SslCertificateInfo',
+      'GetSslCertificateChainRequest' => 'ascio\\v3\\GetSslCertificateChainRequest',
+      'SslCertificateChainInfo' => 'ascio\\v3\\SslCertificateChainInfo',
+      'GetSslApproversRequest' => 'ascio\\v3\\GetSslApproversRequest',
       'GetAutoInstallSslRequest' => 'ascio\\v3\\GetAutoInstallSslRequest',
       'AutoInstallSslInfo' => 'ascio\\v3\\AutoInstallSslInfo',
       'GetMessagesRequest' => 'ascio\\v3\\GetMessagesRequest',
@@ -183,6 +190,24 @@ class AscioService extends \SoapClient
     public function GetSslCertificate(GetSslCertificate $parameters)
     {
       return $this->__soapCall('GetSslCertificate', array($parameters));
+    }
+
+    /**
+     * @param GetSslCertificateChain $parameters
+     * @return GetSslCertificateChainResponse
+     */
+    public function GetSslCertificateChain(GetSslCertificateChain $parameters)
+    {
+      return $this->__soapCall('GetSslCertificateChain', array($parameters));
+    }
+
+    /**
+     * @param GetSslApprovers $parameters
+     * @return GetSslApproversResponse
+     */
+    public function GetSslApprovers(GetSslApprovers $parameters)
+    {
+      return $this->__soapCall('GetSslApprovers', array($parameters));
     }
 
     /**

@@ -12,9 +12,9 @@ namespace Ascio\Ssl\Tests\Integration;
 
 use ascio\v3 as v3;
 
-require_once __DIR__ . '/SslIntegrationTestBase.php';
+require_once __DIR__ . '/BaseSslIntegrationTest.php';
 
-class SslCertificateRetrievalTest extends SslIntegrationTestBase
+class SslCertificateRetrievalTest extends BaseSslIntegrationTest
 {
     /**
      * Test retrieving an SSL certificate by handle

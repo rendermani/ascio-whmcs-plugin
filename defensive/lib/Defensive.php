@@ -184,7 +184,12 @@ class Defensive
     {
         $registrant = new v3\Registrant();
 
-        $registrant->setName($contactData["{$prefix}_name"] ?? $contactData['name'] ?? '');
+        // Split name into first and last name for v3 API
+        $name = $contactData["{$prefix}_name"] ?? $contactData['name'] ?? '';
+        $nameParts = explode(' ', $name, 2);
+        $registrant->setFirstName($nameParts[0] ?? '');
+        $registrant->setLastName($nameParts[1] ?? ($nameParts[0] ?? ''));
+
         $registrant->setEmail($contactData["{$prefix}_email"] ?? $contactData['email'] ?? '');
         $registrant->setOrgName($contactData["{$prefix}_company"] ?? $contactData['company'] ?? '');
         $registrant->setAddress1($contactData["{$prefix}_address1"] ?? $contactData['address1'] ?? '');
@@ -215,7 +220,11 @@ class Defensive
         $company = $contactData["{$prefix}_company"] ?? $contactData['owner_company'] ?? $contactData['company'] ?? '';
         $phone = $contactData["{$prefix}_phone"] ?? $contactData['owner_phone'] ?? $contactData['phone'] ?? '';
 
-        $contact->setName($name);
+        // Split name into first and last name for v3 API
+        $nameParts = explode(' ', $name, 2);
+        $contact->setFirstName($nameParts[0] ?? '');
+        $contact->setLastName($nameParts[1] ?? ($nameParts[0] ?? ''));
+
         $contact->setEmail($email);
         $contact->setOrgName($company);
         $contact->setPhone($phone);

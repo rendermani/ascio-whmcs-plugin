@@ -1,103 +1,133 @@
 <?php
+
 /**
- * Ascio Callback Handler
+ * Unified Ascio Callback Handler
  *
- * Processes callbacks from Ascio for order status updates.
- * Supports both v2 and v3 APIs with automatic version detection.
+ * Handles incoming callbacks from Ascio for all product types.
+ * Routes to appropriate module callback handler based on object type.
  *
- * v2 API: Uses GetMessageQueue to retrieve callback data
- * v3 API: Uses GetQueueMessage to retrieve callback data
+ * URL Parameters:
+ *   - OrderId: The Ascio order ID
+ *   - MessageId: The queue message ID
+ *   - OrderStatus: Current order status
+ *   - ObjectType: (optional) Type of object (SslCertificateType, NameWatchType, etc.)
+ *   - Object: (optional) Object identifier (domain name, etc.)
  *
- * The API version is determined by:
- * 1. Environment variable ASCIO_USE_V3 (true/1/yes)
- * 2. Registrar config setting ApiVersion ('v3')
- * 3. Default: v2 for backward compatibility
+ * For backward compatibility with existing domain callbacks, requests without
+ * ObjectType are routed to the domain callback handler.
  */
 
-use ascio\v2\domains\Request as RequestV2;
-use ascio\v3\domains\Request as RequestV3;
-use ascio\ApiVersion;
-
 try {
-	require_once("../../../init.php");
-	require_once "../../../includes/registrarfunctions.php";
-	require_once("lib/Request.php");
-	require_once("lib/RequestV3.php");
-	require_once("lib/ApiVersion.php");
+    require_once __DIR__ . '/../init.php';
+    require_once __DIR__ . '/core/lib/autoload.php';
 
-	$type = $_POST ? "POST" : "GET";
-	syslog(LOG_INFO, $type . ": Callback received from ".$_SERVER['REMOTE_ADDR']);
-	syslog(LOG_INFO, print_r($_GET, 1));
-	syslog(LOG_INFO, print_r($_POST, 1));
+    use Ascio\Core\Params;
+    use Ascio\Core\ObjectType;
 
-	$orderId = $_GET["OrderId"];
-	$messageId = $_GET["MessageId"];
-	$orderStatus = $_GET["OrderStatus"];
-	$domain = $_GET["Object"];
+    $type = $_POST ? 'POST' : 'GET';
+    $params = $_POST ?: $_GET;
 
-	if(!($orderId && $messageId && $orderStatus)) {
-		throw new Exception("Please provide callback parameters: OrderId, MessageId, and OrderStatus are required", 1);
-	}
+    syslog(LOG_INFO, "{$type}: Unified callback received from " . $_SERVER['REMOTE_ADDR']);
+    syslog(LOG_INFO, print_r($params, true));
 
-	echo "Callback received, ";
-	echo "OrderId: ".$orderId. ", ";
-	echo "MessageId: ".$messageId. ", ";
-	echo "OrderStatus: ".$orderStatus;
+    $orderId = $params['OrderId'] ?? null;
+    $messageId = $params['MessageId'] ?? null;
+    $orderStatus = $params['OrderStatus'] ?? null;
+    $objectType = $params['ObjectType'] ?? null;
+    $object = $params['Object'] ?? null;
 
-	// Determine which account to use (for multi-brand setup)
-	// This allows a second registrar module (ascio_usd) to be installed
-	$pathArr = explode("/", $_SERVER['PHP_SELF']);
-	$account = $pathArr[count($pathArr)-1] == "callbacks_usd.php" ? "ascio_usd" : "ascio";
-	$cfg = getRegistrarConfigOptions($account);
+    if (!$orderId || !$messageId || !$orderStatus) {
+        throw new Exception('Missing required callback parameters: OrderId, MessageId, OrderStatus');
+    }
 
-	// Determine API version and process callback accordingly
-	$apiVersion = ApiVersion::getVersion($cfg);
-	syslog(LOG_INFO, "Ascio callback: Using API version " . $apiVersion);
+    echo "Callback received\n";
+    echo "OrderId: {$orderId}\n";
+    echo "MessageId: {$messageId}\n";
+    echo "OrderStatus: {$orderStatus}\n";
 
-	if ($apiVersion === ApiVersion::VERSION_V3) {
-		// Use v3 API
-		$request = new RequestV3($cfg);
+    // Route based on object type
+    if ($objectType) {
+        echo "ObjectType: {$objectType}\n";
 
-		try {
-			// v3 uses getQueueMessage instead of getMessageQueue
-			$result = $request->getQueueMessage($messageId);
+        $coreParams = new Params();
 
-			if (is_array($result) && isset($result['error'])) {
-				throw new Exception("v3 API error: " . $result['error']);
-			}
+        switch ($objectType) {
+            case ObjectType::SSL_CERTIFICATE:
+            case 'SslCertificateType':
+                require_once __DIR__ . '/ssl/lib/Params.php';
+                require_once __DIR__ . '/ssl/lib/SslCallback.php';
+                $sslParams = new \ascio\whmcs\ssl\Params();
+                $callback = new \ascio\whmcs\ssl\SslCallback($sslParams, $orderId);
+                $callback->process($orderId, $orderStatus, $messageId);
+                echo "SSL callback processed\n";
+                break;
 
-			// Process the callback data using v2 request for compatibility
-			// (v2 Request has all the WHMCS integration logic)
-			$requestV2 = new RequestV2($cfg);
-			$requestV2->getCallbackData($orderStatus, $messageId, $orderId, $type);
+            case ObjectType::NAME_WATCH:
+            case 'NameWatchType':
+                require_once __DIR__ . '/monitoring/lib/MonitoringCallback.php';
+                $callback = new \Ascio\Monitoring\MonitoringCallback($coreParams, $orderId);
+                $callback->process($orderId, $orderStatus, $messageId);
+                echo "Monitoring callback processed\n";
+                break;
 
-			// Acknowledge the message using v3 API
-			$ackResult = $request->ackQueueMessage($messageId);
+            case ObjectType::DEFENSIVE:
+            case 'DefensiveType':
+                require_once __DIR__ . '/defensive/lib/DefensiveCallback.php';
+                $callback = new \Ascio\Defensive\DefensiveCallback($coreParams, $orderId);
+                $callback->process($orderId, $orderStatus, $messageId);
+                echo "Defensive callback processed\n";
+                break;
 
-			if (is_array($ackResult) && isset($ackResult['error'])) {
-				syslog(LOG_WARNING, "Ascio v3: Failed to acknowledge message " . $messageId . ": " . $ackResult['error']);
-			} else {
-				syslog(LOG_INFO, "Ascio v3: Successfully acknowledged message " . $messageId);
-			}
-		} catch (Exception $v3Error) {
-			// Log the v3 error
-			syslog(LOG_WARNING, "Ascio v3 callback error, falling back to v2: " . $v3Error->getMessage());
+            case ObjectType::MARK:
+            case 'MarkType':
+                require_once __DIR__ . '/tmch/lib/TmchCallback.php';
+                $callback = new \Ascio\Tmch\TmchCallback($coreParams, $orderId);
+                $callback->process($orderId, $orderStatus, $messageId);
+                echo "TMCH callback processed\n";
+                break;
 
-			// Fallback to v2 API during transition period
-			$request = new RequestV2($cfg);
-			$request->getCallbackData($orderStatus, $messageId, $orderId, $type);
-		}
-	} else {
-		// Use v2 API (default)
-		$request = new RequestV2($cfg);
-		$request->getCallbackData($orderStatus, $messageId, $orderId, $type);
-	}
+            case 'DomainType':
+            default:
+                // Fall back to domain callback for domains and unknown types
+                routeToDomainCallback($orderId, $messageId, $orderStatus, $object, $type);
+                break;
+        }
+    } else {
+        // No ObjectType specified - assume domain (backward compatibility)
+        routeToDomainCallback($orderId, $messageId, $orderStatus, $object, $type);
+    }
 
-	echo " - Callback received and processed by WHMCS";
+    echo "Callback processed successfully\n";
+
 } catch (Exception $e) {
-	echo "Something unexpected happened: ";
-	syslog(LOG_ERR, "Error processing callback: " . $e->getMessage());
-	var_dump($e->getMessage());
+    syslog(LOG_ERR, "Error processing callback: " . $e->getMessage());
+    echo "Error: " . $e->getMessage() . "\n";
+    http_response_code(500);
 }
 
-?>
+/**
+ * Route to legacy domain callback handler.
+ *
+ * @param string $orderId
+ * @param string $messageId
+ * @param string $orderStatus
+ * @param string|null $object
+ * @param string $type
+ */
+function routeToDomainCallback($orderId, $messageId, $orderStatus, $object, $type): void
+{
+    require_once __DIR__ . '/../includes/registrarfunctions.php';
+    require_once __DIR__ . '/domains/lib/Request.php';
+
+    use ascio\v2\domains\Request;
+
+    // Determine account based on request path
+    $pathArr = explode('/', $_SERVER['PHP_SELF']);
+    $account = (end($pathArr) === 'callbacks_usd.php') ? 'ascio_usd' : 'ascio';
+
+    $cfg = getRegistrarConfigOptions($account);
+    $request = new Request($cfg);
+    $request->getCallbackData($orderStatus, $messageId, $orderId, $type);
+
+    echo "Domain callback processed\n";
+}

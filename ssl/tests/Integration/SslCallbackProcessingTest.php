@@ -13,9 +13,9 @@ namespace Ascio\Ssl\Tests\Integration;
 
 use ascio\v3 as v3;
 
-require_once __DIR__ . '/SslIntegrationTestBase.php';
+require_once __DIR__ . '/BaseSslIntegrationTest.php';
 
-class SslCallbackProcessingTest extends SslIntegrationTestBase
+class SslCallbackProcessingTest extends BaseSslIntegrationTest
 {
     /**
      * Test processing a Pending callback

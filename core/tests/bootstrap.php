@@ -12,13 +12,13 @@
  *   - ASCIO_TEST_MESSAGE_ID: (optional) Known message ID for queue tests
  */
 
-// Autoload test helpers
+// Autoload core library FIRST (so interfaces are available)
+require_once dirname(__DIR__) . '/lib/autoload.php';
+
+// Autoload test helpers (after interfaces are loaded)
 require_once __DIR__ . '/MockDatabase.php';
 require_once __DIR__ . '/MockAscioClient.php';
 require_once __DIR__ . '/MockParams.php';
-
-// Autoload core library
-require_once dirname(__DIR__) . '/lib/autoload.php';
 
 // Try to load v2 Request class for compatibility tests
 $v2RequestPath = dirname(__DIR__, 2) . '/domains/lib/Request.php';
