@@ -2,17 +2,19 @@
 
 namespace ascio\v2\domains;
 
-class nl extends Request {	
+use ascio\AscioException;
+
+class nl extends Request {
 	protected function mapToRegistrant($params) {
 		$contact = parent::mapToRegistrant($params);
 		$contact["RegistrantNumber"] = $params["additionalfields"]["Organisation Number"];
-		$contact["RegistrantType"] = "PERSOON";	
+		$contact["RegistrantType"] = "PERSOON";
 		if($contact["OrgName"] && $contact["CountryCode"] == "NL") {
-			$contact["RegistrantType"] = "BV";	
+			$contact["RegistrantType"] = "BV";
 		} else if($contact["OrgName"]) {
-			$contact["RegistrantType"] = "BGG";	
+			$contact["RegistrantType"] = "BGG";
 		} else {
-			$contact["RegistrantType"] = "PERSOON";	
+			$contact["RegistrantType"] = "PERSOON";
 		}
 		if($contact["OrgName"] && ($contact["RegistrantNumber"]==""))	throw new AscioException("Please enter a valid Organization Number");
 		return $contact;
