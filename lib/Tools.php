@@ -18,8 +18,14 @@ class Tools {
 	public static function splitName($name) {
 		$spacePos = strpos($name," ");
 		$out = array();
-		$out["first"] = substr($name,0,$spacePos);
-		$out["last"] = substr($name, $spacePos+1);
+		if ($spacePos === false) {
+			// Single name - use entire name as last name
+			$out["first"] = "";
+			$out["last"] = $name;
+		} else {
+			$out["first"] = substr($name,0,$spacePos);
+			$out["last"] = substr($name, $spacePos+1);
+		}
 		return $out;
 	}	
 	public static function formatError($items,$message) {		
@@ -33,12 +39,26 @@ class Tools {
 		}
 		return $html;	
 	}
-	public static function cleanString($string) {		
+	public static function cleanString($string) {
+		if ($string === null) {
+			return "";
+		}
 		$string = str_replace("$240A", ":", $string);
 		$string = str_replace("$240D", ".", $string);
 		$string = str_replace("$0A", ":", $string);
 		$string = str_replace("$0D", ".", $string);
-		return $string;	
+		return $string;
+	}
+	/**
+	 * Safe trim that handles null values (PHP 8.1+ compatibility)
+	 * @param mixed $string The string to trim
+	 * @return string Trimmed string or empty string if null
+	 */
+	public static function safeTrim($string) {
+		if ($string === null) {
+			return "";
+		}
+		return trim($string);
 	}
 	public static function formatOK($message) {
 		$html = "<h2>Order completed:".$message.":</h2>";
@@ -68,14 +88,15 @@ class Tools {
 			$orderType = " [".$requestData["order"]["Type"] ."]"; 
 		} else $orderType ="";
 		$password = isset($requestData["session"]) ? $requestData["session"]["Password"] : null;
+		$sessionId = $requestData["sessionId"] ?? null;
 		logModuleCall(
 			'ascio',
 			$action . $orderType,
-			$requestData ,			
+			$requestData ,
 			$responseData,
-			json_encode($responseData), 
+			json_encode($responseData),
 			array(
-				$requestData["sessionId"],
+				$sessionId,
 				$password
 				)
 			);
@@ -101,6 +122,9 @@ class Tools {
 		}
 	}	
 	public static function replaceSpecialCharacters($string) {
+		if ($string === null) {
+			return "";
+		}
 		$string = str_replace("ü", "u", $string);
 		$string = str_replace("ä", "a", $string);
 		$string = str_replace("ö", "o", $string);
@@ -108,11 +132,11 @@ class Tools {
 		$string = str_replace("Ü", "U", $string);
 		$string = str_replace("Ä", "A", $string);
 		$string = str_replace("Ö", "O", $string);
-		return $string; 
+		return $string;
 	}
 	public static function fixPhone($number,$country) {
-		if($number=="") return "";
-		$country = strtoupper($country);
+		if($number === null || $number === "") return "";
+		$country = strtoupper($country ?? "");
 		if(preg_match("/^[\+][1-9]{2}\.[0-9]*/",$number)) return $number;
 		if((!$number) || (strlen($number)<5)) throw new AscioException("Phone number too short: ".$number);
 		if(!(substr($number,0,1) == "+" || substr($number,0,1) == "0")) throw new AscioException("Phone numbers should start with 0 or +: ".$number);
@@ -160,10 +184,11 @@ class Tools {
  		}
  		foreach($usedTemplates as $key => $name) {
  			if(!$existingTemplates[$name]) {
- 				mysql_query($templates[$name]);
- 				if(mysql_error()) {
- 					echo "Error writing email-templates (".$name."): ". mysql_error()."\n";
- 				}				
+ 				try {
+ 					Capsule::statement($templates[$name]);
+ 				} catch (\Exception $e) {
+ 					echo "Error writing email-templates (".$name."): ". $e->getMessage()."\n";
+ 				}
  			}
  		}
 	}
@@ -182,18 +207,25 @@ class Tools {
 		return  localAPI($command, $values, $adminuser);
 	}
 	public static function getDomainId($domain) {
-		$query = 'SELECT id FROM  `tbldomains` WHERE domain =  "'.$domain.'"  and   status !=  "Cancelled" ORDER BY status ASC, id DESC LIMIT 0 , 1 ';
-		$result = mysql_query($query);
-		$row = mysql_fetch_assoc($result);		
-		$id = $row["id"];
-		// if there are cancelled domains. But Active and pending domains have priority
-		if(!$id) {
-			$query = 'SELECT id FROM  `tbldomains` WHERE domain =  "'.$domain.'"  ORDER BY status ASC, id DESC LIMIT 0 , 1 ';
-			$result = mysql_query($query);
-			$row = mysql_fetch_assoc($result);		
-			$id = $row["id"];
+		$row = Capsule::table('tbldomains')
+			->where('domain', $domain)
+			->where('status', '!=', 'Cancelled')
+			->orderBy('status', 'asc')
+			->orderBy('id', 'desc')
+			->first();
+
+		if ($row) {
+			return $row->id;
 		}
-	    return $id; 
+
+		// if there are cancelled domains. But Active and pending domains have priority
+		$row = Capsule::table('tbldomains')
+			->where('domain', $domain)
+			->orderBy('status', 'asc')
+			->orderBy('id', 'desc')
+			->first();
+
+		return $row ? $row->id : null;
 	}
 	public static function getDomainIdFromOrder($order) {
 		$comment = json_decode($order->TransactionComment);

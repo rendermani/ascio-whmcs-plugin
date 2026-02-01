@@ -2,7 +2,13 @@
 namespace ascio; 
 use ascio\v2\domains\Request as Request;
 
-class ParameterCapture {   
+class ParameterCapture {
+    public $params;
+    public $method;
+    public $orderType;
+    public $domainName;
+    public $active;
+
     public function __construct($params,$method,$orderType)
     {
         $this->setActive(true);

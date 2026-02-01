@@ -16,20 +16,27 @@ define("ASCIO_WSDL_TEST","https://aws.demo.ascio.com/2012/01/01/AscioService.wsd
 Class SessionCache {
 	public static function get($account) {
 		try {
-			$result = Capsule::select("select sessionId from mod_asciosession where account='$account'");
-		} catch (Exception $e) {
-			logActivity("Error session-cache query: ". $e);	
+			$result = Capsule::table('mod_asciosession')
+				->where('account', $account)
+				->first();
+			if ($result && isset($result->sessionId)) {
+				return $result->sessionId;
+			}
+		} catch (\Exception $e) {
+			logActivity("Error session-cache query: ". $e->getMessage());
 		}
-		return  $result[0]->sessionId;
+		return null;
 	}
 	public static function put($sessionId,$account) {
-		$query = "	INSERT INTO  mod_asciosession (account, sessionId) 
-					VALUES('$account', '$sessionId') 
-					ON DUPLICATE KEY UPDATE account='$account', sessionId='$sessionId'";
-		mysql_query($query); 		
-		if(mysql_error()) {
-			Tools::log("Error writing session: ".mysql_error());
-		}		
+		try {
+			Capsule::table('mod_asciosession')
+				->updateOrInsert(
+					['account' => $account],
+					['sessionId' => $sessionId, 'timestamp' => date('Y-m-d H:i:s')]
+				);
+		} catch (\Exception $e) {
+			Tools::log("Error writing session: " . $e->getMessage());
+		}
 	}
 	public static function clear($account) {
 		SessionCache::put("false",$account);
@@ -58,16 +65,89 @@ Class Request {
 	}
 	public static function  create($params) {
 		$tld = $params["tld"];
-		$filename = realpath(dirname(__FILE__))."/../tlds/$tld/$tld.php";
-		$defExists = file_exists($filename);	
-		if($tld && $defExists) {
+		$tldDir = realpath(dirname(__FILE__))."/../tlds/";
+
+		// Try exact TLD match first
+		$filename = $tldDir . "$tld/$tld.php";
+		if($tld && file_exists($filename)) {
 			require_once($filename);
 			$className = "\ascio\\v2\\domains\\" . str_replace(".", "_", $tld);
 			$tldRequest = new $className($params);
 			return $tldRequest;
-		} else {
-			return new Request($params);
 		}
+
+		// Try parent TLD (e.g., "ag.it" -> "it", "co.uk" -> "uk")
+		$parentTld = self::getParentTld($tld);
+		if($parentTld) {
+			$parentFilename = $tldDir . "$parentTld/$parentTld.php";
+			if(file_exists($parentFilename)) {
+				require_once($parentFilename);
+				$className = "\ascio\\v2\\domains\\" . str_replace(".", "_", $parentTld);
+				$tldRequest = new $className($params);
+				return $tldRequest;
+			}
+		}
+
+		return new Request($params);
+	}
+
+	/**
+	 * Get the parent TLD for sub-TLDs
+	 * Examples: "ag.it" -> "it", "co.uk" -> "uk", "com.sg" -> "sg"
+	 *
+	 * @param string $tld The full TLD
+	 * @return string|null The parent TLD or null if not applicable
+	 */
+	private static function getParentTld($tld) {
+		if(!$tld) {
+			return null;
+		}
+
+		// Known parent TLD mappings (includes single-part TLDs that inherit from others)
+		$parentMappings = [
+			// UK variants
+			'co.uk' => 'uk',
+			'org.uk' => 'uk',
+			'ac.uk' => 'uk',
+			'gov.uk' => 'uk',
+			'me.uk' => 'uk',
+			'net.uk' => 'uk',
+			'sch.uk' => 'uk',
+			// Singapore variants
+			'com.sg' => 'sg',
+			'edu.sg' => 'sg',
+			'org.sg' => 'sg',
+			'net.sg' => 'sg',
+			'gov.sg' => 'sg',
+			// Australia variants
+			'com.au' => 'au',
+			'net.au' => 'au',
+			'org.au' => 'au',
+			'edu.au' => 'au',
+			'gov.au' => 'au',
+			'id.au' => 'au',
+			// AFNIC TLDs (French territories - inherit from .fr)
+			'pm' => 'fr',
+			're' => 'fr',
+			'tf' => 'fr',
+			'wf' => 'fr',
+			'yt' => 'fr',
+		];
+
+		// Check explicit mappings first
+		if(isset($parentMappings[$tld])) {
+			return $parentMappings[$tld];
+		}
+
+		// For multi-part TLDs, extract the last part (e.g., "ag.it" -> "it")
+		if(strpos($tld, '.') !== false) {
+			$parts = explode('.', $tld);
+			if(count($parts) >= 2) {
+				return $parts[count($parts) - 1];
+			}
+		}
+
+		return null;
 	}
 	private function login() {
 		$session = array(
@@ -78,17 +158,42 @@ Class Request {
 		SessionCache::put($result->sessionId,$this->account);
 		return $result;
 	}
-	public function request($functionName, $ascioParams)  {	
-		$sessionId = SessionCache::get($this->account);	
-		if (!$sessionId || $sessionId == "false") {		
-			$loginResult = $this->login(); 
+	public function request($functionName, $ascioParams)  {
+		$sessionId = SessionCache::get($this->account);
+		if (!$sessionId || $sessionId == "false") {
+			$loginResult = $this->login();
 			if(is_array($loginResult) && $loginResult["error"]) return $loginResult;
-			$ascioParams["sessionId"] = $loginResult->sessionId; 				
+			$ascioParams["sessionId"] = $loginResult->sessionId;
 			SessionCache::put($loginResult->sessionId, $this->account);
-		} else {		
-			$ascioParams["sessionId"] = $sessionId; 
+		} else {
+			$ascioParams["sessionId"] = $sessionId;
 		}
+
+		// Simulation mode: replace CreateOrder with ValidateOrder for testing
+		// Enable via environment variable ASCIO_SIMULATE=1 or module param 'Simulate'
+		if ($functionName === 'CreateOrder' && $this->isSimulationMode()) {
+			$functionName = 'ValidateOrder';
+			logActivity("Ascio: Simulation mode - using ValidateOrder instead of CreateOrder");
+		}
+
 		return $this->sendRequest($functionName,$ascioParams);
+	}
+
+	/**
+	 * Check if simulation mode is enabled
+	 * Simulation mode validates orders without creating them
+	 * @return bool
+	 */
+	protected function isSimulationMode(): bool {
+		// Check environment variable first (for e2e tests)
+		if (getenv('ASCIO_SIMULATE') === '1' || getenv('ASCIO_SIMULATE') === 'true') {
+			return true;
+		}
+		// Check module config (for UI-based testing)
+		if (isset($this->params['Simulate']) && $this->params['Simulate'] === 'on') {
+			return true;
+		}
+		return false;
 	}
 	private function sendRequest($functionName,$ascioParams) {			
 		if(isset($ascioParams["order"])) {
@@ -114,8 +219,7 @@ Class Request {
 			return $this->request($functionName, $ascioParams);
 		} elseif ($status->ResultCode==401) {
 			logActivity("Ascio registrar plugin settings - Login failed, invalid account or password: ".$this->account);
-			die("Ascio registrar plugin settings - Login failed, invalid account or password: ".$this->account);
-			return array('error' => $status->Message );     
+			return array('error' => 'Login failed: invalid account or password for ' . $this->account);
 		} else if (is_array($status->Values->string) && count($status->Values->string) > 1 ){
 			$messages = join(", \r\n",$status->Values->string);	
 		}  else {
@@ -817,16 +921,16 @@ Class Request {
 		$country =  $params[$prefix . "country"];	
 		try {
 			$contact = Array(
-				'OrgName' 		=>  trim($params[$prefix . "companyname"]),
-				'Address1' 		=>  trim($params[$prefix . "address1"]),
-				'Address2' 		=>  trim($params[$prefix . "address2"]),
-				'PostalCode' 	=>  trim($params[$prefix . "postcode"]),
-				'City' 			=>  trim($params[$prefix . "city"]),
-				'State' 		=>  trim($params[$prefix . "state"]),
+				'OrgName' 		=>  Tools::safeTrim($params[$prefix . "companyname"] ?? null),
+				'Address1' 		=>  Tools::safeTrim($params[$prefix . "address1"] ?? null),
+				'Address2' 		=>  Tools::safeTrim($params[$prefix . "address2"] ?? null),
+				'PostalCode' 	=>  Tools::safeTrim($params[$prefix . "postcode"] ?? null),
+				'City' 			=>  Tools::safeTrim($params[$prefix . "city"] ?? null),
+				'State' 		=>  Tools::safeTrim($params[$prefix . "state"] ?? null),
 				'CountryCode' 	=>  $country,
-				'Email' 		=>  trim($params[$prefix . "email"]),
-				'Phone'			=>  Tools::fixPhone($params[$prefix . "fullphonenumber"],$country),
-				'Fax' 			=> 	Tools::fixPhone($params[$prefix . "custom"]["Fax"],$country)
+				'Email' 		=>  Tools::safeTrim($params[$prefix . "email"] ?? null),
+				'Phone'			=>  Tools::fixPhone($params[$prefix . "fullphonenumber"] ?? null,$country),
+				'Fax' 			=> 	Tools::fixPhone($params[$prefix . "custom"]["Fax"] ?? null,$country)
 			);
 		} catch (AscioException $e) {
 			throw new AscioException($type . ", ". $e->getMessage());			
@@ -838,22 +942,22 @@ Class Request {
 	public function mapToContact2($params,$type) {
 
 		$ascio = (object) array(
-			'OrgName'  				=> trim($params["Company Name"]),
-			'Address1'  			=> trim($params["Address1"] ?  $params["Address1"] : $params["Address 1"]),
-			'Address2'  			=> trim($params["Address2"] ?  $params["Address2"] : $params["Address 2"]),
-			'PostalCode'  			=> trim($params["Postcode"]),
-			'City'  				=> trim($params["City"]),
-			'State'	  				=> trim($params["State"]),
-			'CountryCode'  			=> trim($params["Country Code"] ? $params["Country Code"] : $params["Country"] ),
-			'Email'  				=> trim($params["Email"]),
-			'Phone'  				=> Tools::fixPhone($params["Phone Number"],$params["Country"]), 
-			'Fax'  					=> Tools::fixPhone($params["Fax Number"],$params["Country"]),
+			'OrgName'  				=> Tools::safeTrim($params["Company Name"] ?? null),
+			'Address1'  			=> Tools::safeTrim(($params["Address1"] ?? null) ?: ($params["Address 1"] ?? null)),
+			'Address2'  			=> Tools::safeTrim(($params["Address2"] ?? null) ?: ($params["Address 2"] ?? null)),
+			'PostalCode'  			=> Tools::safeTrim($params["Postcode"] ?? null),
+			'City'  				=> Tools::safeTrim($params["City"] ?? null),
+			'State'	  				=> Tools::safeTrim($params["State"] ?? null),
+			'CountryCode'  			=> Tools::safeTrim(($params["Country Code"] ?? null) ?: ($params["Country"] ?? null)),
+			'Email'  				=> Tools::safeTrim($params["Email"] ?? null),
+			'Phone'  				=> Tools::fixPhone($params["Phone Number"] ?? null, $params["Country"] ?? null),
+			'Fax'  					=> Tools::fixPhone($params["Fax Number"] ?? null, $params["Country"] ?? null),
 		);
 		if($type=="Registrant") {
-			$ascio->Name = trim($params["First Name"]. " ". $params["Last Name"]);		
+			$ascio->Name = Tools::safeTrim(($params["First Name"] ?? ''). " ". ($params["Last Name"] ?? ''));
 		} else {
-			$ascio->FirstName 	= trim($params["First Name"]);
-			$ascio->LastName 	= trim($params["Last Name"]);
+			$ascio->FirstName 	= Tools::safeTrim($params["First Name"] ?? null);
+			$ascio->LastName 	= Tools::safeTrim($params["Last Name"] ?? null);
 		}
 		return $ascio; 
 	}

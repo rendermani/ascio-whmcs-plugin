@@ -122,6 +122,9 @@ class Record {
 }
 
 class WebForward {
+  public $Source; // string
+  public $Target; // string
+  public $TTL; // int
   public $RedirectionType; // RedirectionType
 }
 
@@ -138,6 +141,9 @@ class SRV {
 }
 
 class CNAME {
+  public $Source; // string
+  public $Target; // string
+  public $TTL; // int
 }
 
 class SOA {
@@ -150,19 +156,31 @@ class SOA {
 }
 
 class TXT {
+  public $Source; // string
+  public $Target; // string
+  public $TTL; // int
 }
 
 class PTR {
 }
 
 class MX {
+  public $Source; // string
+  public $Target; // string
+  public $TTL; // int
   public $Priority; // int
 }
 
 class A {
+  public $Source; // string
+  public $Target; // string
+  public $TTL; // int
 }
 
 class AAAA {
+  public $Source; // string
+  public $Target; // string
+  public $TTL; // int
 }
 
 class NS {
