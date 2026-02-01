@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+         bootstrap="tests/Integration/bootstrap.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         executionOrder="depends,defects"
+         requireCoverageMetadata="false"
+         beStrictAboutCoverageMetadata="false"
+         beStrictAboutOutputDuringTests="true"
+         failOnRisky="true"
+         failOnWarning="true">
+
+    <testsuites>
+        <testsuite name="Integration Tests">
+            <directory>tests/Integration</directory>
+        </testsuite>
+    </testsuites>
+
+    <php>
+        <!-- Ascio Test Account Credentials -->
+        <!-- Set these via environment variables for security -->
+        <env name="ASCIO_TEST_ACCOUNT" value="" force="false"/>
+        <env name="ASCIO_TEST_PASSWORD" value="" force="false"/>
+        <env name="ASCIO_TEST_MODE" value="true"/>
+
+        <!-- Existing certificate handle for retrieval tests -->
+        <env name="ASCIO_TEST_CERT_HANDLE" value="" force="false"/>
+
+        <!-- Enable message acknowledgment tests (destructive - removes messages from queue) -->
+        <env name="ASCIO_TEST_ACK_MESSAGES" value="false"/>
+    </php>
+
+    <source>
+        <include>
+            <directory suffix=".php">lib</directory>
+            <directory suffix=".php">v3/service</directory>
+        </include>
+        <exclude>
+            <file>asciossl.php</file>
+            <file>hooks.php</file>
+        </exclude>
+    </source>
+
+
+    <logging>
+        <testdoxText outputFile="tests/logs/testdox.txt"/>
+    </logging>
+</phpunit>

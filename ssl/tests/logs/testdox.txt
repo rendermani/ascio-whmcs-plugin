@@ -1,0 +1,113 @@
+Ssl Callback Processing (Ascio\Ssl\Tests\Integration\SslCallbackProcessing)
+ [x] Process pending callback
+ [x] Process pending end user action
+ [x] Process completed callback
+ [x] Process failed callback
+ [x] Callback updates database status
+ [x] Callback updates whmcs service status
+ [x] Callback stores certificate handle
+ [x] Process invalid callback
+ [x] Callback dns data extraction
+ [x] Callback stores error message
+ [x] Callback timestamp handling
+ [x] Callback with san dns data
+ [x] Callback sequence
+
+Ssl Certificate Retrieval (Ascio\Ssl\Tests\Integration\SslCertificateRetrieval)
+ [ ] Get ssl certificate by handle
+ [ ] Get ssl certificate chain
+ [ ] Certificate expiry
+ [x] Certificate not found
+ [x] Get certificate with empty handle
+ [ ] Certificate status
+ [ ] Certificate owner retrieval
+ [ ] Certificate csr retrieval
+ [ ] Certificate product code
+ [ ] Certificate san names
+ [ ] Certificate creation date
+
+Ssl Contact Mapping (Ascio\Ssl\Tests\Integration\SslContactMapping)
+ [x] Owner contact mapping
+ [x] Admin contact mapping
+ [x] Tech contact mapping
+ [x] Phone formatting with data set "german_standard"
+ [x] Phone formatting with data set "german_with_spaces"
+ [x] Phone formatting with data set "us_standard"
+ [x] Phone formatting with data set "us_with_spaces"
+ [x] Phone formatting with data set "uk_standard"
+ [x] Phone formatting with data set "prefix_without_plus"
+ [x] Phone formatting with data set "prefix_with_plus"
+ [x] Phone formatting with data set "multiple_spaces"
+ [x] Phone formatting with data set "tabs_and_spaces"
+ [x] Address mapping
+ [x] Minimal contact mapping
+ [x] All contacts built
+ [x] Organization type contact
+ [x] Individual type contact
+ [x] Country code mapping with data set "germany"
+ [x] Country code mapping with data set "united_states"
+ [x] Country code mapping with data set "united_kingdom"
+ [x] Country code mapping with data set "france"
+ [x] Country code mapping with data set "netherlands"
+ [x] Country code mapping with data set "austria"
+ [x] Country code mapping with data set "switzerland"
+ [x] Country code mapping with data set "canada"
+ [x] Country code mapping with data set "australia"
+ [x] Country code mapping with data set "japan"
+ [x] Email format mapping
+ [x] Default values applied
+
+Ssl Dns Verification (Ascio\Ssl\Tests\Integration\SslDnsVerification)
+ [x] Pending end user action callback
+ [x] Dns token extraction
+ [x] Dns token extraction returns null for invalid format
+ [x] Dns record creation
+ [x] San dns verification
+ [x] Dns verification complete
+ [x] File verification token extraction
+ [x] Callback with multiple verification options
+ [x] Wildcard dns verification
+ [x] Subdomain dns verification
+ [x] Dns token formats with data set "standard"
+ [x] Dns token formats with data set "with_hyphen_in_value"
+ [x] Dns token formats with data set "long_subdomain"
+ [x] Dns token formats with data set "alphanumeric_token"
+
+Ssl Lifecycle E2E (Ascio\Ssl\Tests\Integration\SslLifecycleE2E)
+ [x] Validate order with real domain
+ [x] Poll queue connection
+
+Ssl Order Validation (Ascio\Ssl\Tests\Integration\SslOrderValidation)
+ [x] Validate positive ssl
+ [x] Validate true biz id
+ [x] Validate wildcard
+ [x] Validate multi domain
+ [x] Validate with dns verification
+ [x] Validate with email verification
+ [ ] Validate reissue
+ [ ] Validate renewal
+ [x] Validate fails with missing csr
+ [x] Validate fails with invalid product code
+ [x] Validate with file verification
+ [x] Validate with different web server types with data set "ApacheSsl"
+ [x] Validate with different web server types with data set "Apache2"
+ [x] Validate with different web server types with data set "Iis"
+ [x] Validate with different web server types with data set "Tomcat"
+ [x] Validate with different web server types with data set "Other"
+ [x] Validate with two year period
+
+Ssl Polling (Ascio\Ssl\Tests\Integration\SslPolling)
+ [x] Poll queue for ssl
+ [x] Poll queue with message type
+ [x] Get queue message for ssl
+ [ ] Ack queue message for ssl
+ [x] Poll empty queue
+ [x] Poll different object types with data set "ssl_certificate"
+ [x] Poll different object types with data set "domain"
+ [x] Ssl poll request object type
+ [x] Poll all object types
+ [x] Get queue message invalid id
+ [x] Ack queue message invalid id
+ [x] Queue message structure
+ [x] Consecutive polls
+
