@@ -320,12 +320,12 @@ class UkTldsTest extends TestCase
         ]);
 
         $request = Request::create($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
-        $this->assertEquals('example.uk', $order['Order']['Domain']['DomainName']);
-        $this->assertEquals('LTD', $order['Order']['Domain']['Registrant']['RegistrantType']);
-        $this->assertEquals('12345678', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
-        $this->assertEquals('British Ltd', $order['Order']['Domain']['Registrant']['OrgName']);
+        $this->assertEquals('example.uk', $order['Order']['Domain']['Name']);
+        $this->assertEquals('LTD', $order['Order']['Domain']['Owner']['RegistrantType']);
+        $this->assertEquals('12345678', $order['Order']['Domain']['Owner']['RegistrantNumber']);
+        $this->assertEquals('British Ltd', $order['Order']['Domain']['Owner']['OrgName']);
     }
 
     #[Test]
@@ -340,9 +340,9 @@ class UkTldsTest extends TestCase
         ]);
 
         $request = Request::create($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
-        $this->assertEquals('IND', $order['Order']['Domain']['Registrant']['RegistrantType']);
-        $this->assertNull($order['Order']['Domain']['Registrant']['OrgName']);
+        $this->assertEquals('IND', $order['Order']['Domain']['Owner']['RegistrantType']);
+        $this->assertNull($order['Order']['Domain']['Owner']['OrgName']);
     }
 }

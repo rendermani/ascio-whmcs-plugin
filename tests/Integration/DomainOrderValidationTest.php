@@ -34,21 +34,22 @@ class DomainOrderValidationTest extends IntegrationTestBase
         $params = $this->getRegistrationParams($domainName);
 
         $request = new Request($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
         // Verify order structure before API call
-        $this->assertOrderStructure($order, 'Register_Domain');
-        $this->assertEquals($domainName, $order['Order']['Domain']['DomainName']);
+        $this->assertOrderStructure($order, 'Register');
+        $this->assertEquals($domainName, $order['Order']['Domain']['Name']);
 
         // Verify contacts are present
-        $this->assertArrayHasKey('Registrant', $order['Order']['Domain']);
-        $this->assertArrayHasKey('AdminContact', $order['Order']['Domain']);
-        $this->assertArrayHasKey('TechContact', $order['Order']['Domain']);
-        $this->assertArrayHasKey('BillingContact', $order['Order']['Domain']);
+        $this->assertArrayHasKey('Owner', $order['Order']['Domain']);
+        $this->assertArrayHasKey('Admin', $order['Order']['Domain']);
+        $this->assertArrayHasKey('Tech', $order['Order']['Domain']);
+        $this->assertArrayHasKey('Billing', $order['Order']['Domain']);
         $this->assertArrayHasKey('NameServers', $order['Order']['Domain']);
 
-        // Verify registrant has Name (v3 format)
-        $this->assertArrayHasKey('Name', $order['Order']['Domain']['Registrant']);
+        // Verify registrant has FirstName/LastName (v3 format)
+        $this->assertArrayHasKey('FirstName', $order['Order']['Domain']['Owner']);
+        $this->assertArrayHasKey('LastName', $order['Order']['Domain']['Owner']);
 
         // Verify nameserver structure
         $this->assertArrayHasKey('NameServer1', $order['Order']['Domain']['NameServers']);
@@ -66,7 +67,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
         $params = $this->getRegistrationParams($domainName, ['idprotection' => true]);
 
         $request = new Request($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
         // Verify privacy proxy is set
         $this->assertArrayHasKey('PrivacyProxy', $order['Order']['Domain']);
@@ -87,7 +88,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
         ]);
 
         $request = new Request($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
         // Verify privacy (not full proxy) is set
         $this->assertArrayHasKey('PrivacyProxy', $order['Order']['Domain']);
@@ -107,9 +108,9 @@ class DomainOrderValidationTest extends IntegrationTestBase
         ]);
 
         $request = Request::create($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
-        $this->assertOrderStructure($order, 'Register_Domain');
+        $this->assertOrderStructure($order, 'Register');
 
         $result = $this->callApiMethod('ValidateOrder', $order);
         $this->assertValidationSuccess($result);
@@ -137,9 +138,9 @@ class DomainOrderValidationTest extends IntegrationTestBase
         $params = $this->getTransferParams($domainName, 'TRANSFER-EPP-CODE-12345');
 
         $request = new Request($params);
-        $order = $request->mapToOrder($params, 'Transfer_Domain');
+        $order = $request->mapToOrder($params, 'Transfer');
 
-        $this->assertOrderStructure($order, 'Transfer_Domain');
+        $this->assertOrderStructure($order, 'Transfer');
         $this->assertEquals('TRANSFER-EPP-CODE-12345', $order['Order']['Domain']['AuthInfo']);
 
         $result = $this->callApiMethod('ValidateOrder', $order);
@@ -153,7 +154,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
         $params = $this->getTransferParams($domainName, 'EPP-CODE-NET', ['idprotection' => true]);
 
         $request = new Request($params);
-        $order = $request->mapToOrder($params, 'Transfer_Domain');
+        $order = $request->mapToOrder($params, 'Transfer');
 
         // Transfer should include privacy proxy option
         $this->assertArrayHasKey('PrivacyProxy', $order['Order']['Domain']);
@@ -175,10 +176,10 @@ class DomainOrderValidationTest extends IntegrationTestBase
         ]);
 
         $request = new Request($params);
-        $order = $request->mapToOrder($params, 'Renew_Domain');
+        $order = $request->mapToOrder($params, 'Renew');
 
-        $this->assertOrderStructure($order, 'Renew_Domain');
-        $this->assertEquals(1, $order['Order']['Domain']['RegPeriod']);
+        $this->assertOrderStructure($order, 'Renew');
+        $this->assertEquals(1, $order['Order']['Domain']['RenewPeriod']);
 
         $result = $this->callApiMethod('ValidateOrder', $order);
         $this->assertValidationSuccess($result);
@@ -193,9 +194,9 @@ class DomainOrderValidationTest extends IntegrationTestBase
         ]);
 
         $request = new Request($params);
-        $order = $request->mapToOrder($params, 'Renew_Domain');
+        $order = $request->mapToOrder($params, 'Renew');
 
-        $this->assertEquals(2, $order['Order']['Domain']['RegPeriod']);
+        $this->assertEquals(2, $order['Order']['Domain']['RenewPeriod']);
 
         $result = $this->callApiMethod('ValidateOrder', $order);
         $this->assertValidationSuccess($result);
@@ -212,9 +213,9 @@ class DomainOrderValidationTest extends IntegrationTestBase
         $params = $this->getRegistrationParams($domainName);
 
         $request = new Request($params);
-        $order = $request->mapToOrder($params, 'Expire_Domain');
+        $order = $request->mapToOrder($params, 'Expire');
 
-        $this->assertOrderStructure($order, 'Expire_Domain');
+        $this->assertOrderStructure($order, 'Expire');
 
         $result = $this->callApiMethod('ValidateOrder', $order);
         $this->assertValidationSuccess($result);
@@ -227,9 +228,9 @@ class DomainOrderValidationTest extends IntegrationTestBase
         $params = $this->getRegistrationParams($domainName);
 
         $request = new Request($params);
-        $order = $request->mapToOrder($params, 'Unexpire_Domain');
+        $order = $request->mapToOrder($params, 'Unexpire');
 
-        $this->assertOrderStructure($order, 'Unexpire_Domain');
+        $this->assertOrderStructure($order, 'Unexpire');
 
         $result = $this->callApiMethod('ValidateOrder', $order);
         $this->assertValidationSuccess($result);
@@ -252,9 +253,9 @@ class DomainOrderValidationTest extends IntegrationTestBase
         ]);
 
         $request = new Request($params);
-        $order = $request->mapToOrder($params, 'Nameserver_Update');
+        $order = $request->mapToOrder($params, 'NameserverUpdate');
 
-        $this->assertOrderStructure($order, 'Nameserver_Update');
+        $this->assertOrderStructure($order, 'NameserverUpdate');
 
         // Verify nameservers are updated
         $this->assertEquals('ns1.newprovider.com', $order['Order']['Domain']['NameServers']['NameServer1']['HostName']);
@@ -278,7 +279,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
         ]);
 
         $request = new Request($params);
-        $order = $request->mapToOrder($params, 'Nameserver_Update');
+        $order = $request->mapToOrder($params, 'NameserverUpdate');
 
         // Two nameservers should be sufficient
         $result = $this->callApiMethod('ValidateOrder', $order);
@@ -302,13 +303,13 @@ class DomainOrderValidationTest extends IntegrationTestBase
         ]));
 
         $request = new Request($params);
-        $order = $request->mapToOrder($params, 'Contact_Update');
+        $order = $request->mapToOrder($params, 'ContactUpdate');
 
-        $this->assertOrderStructure($order, 'Contact_Update');
+        $this->assertOrderStructure($order, 'ContactUpdate');
 
         // Verify admin contact is updated
-        $this->assertEquals('Updated', $order['Order']['Domain']['AdminContact']['FirstName']);
-        $this->assertEquals('Admin', $order['Order']['Domain']['AdminContact']['LastName']);
+        $this->assertEquals('Updated', $order['Order']['Domain']['Admin']['FirstName']);
+        $this->assertEquals('Admin', $order['Order']['Domain']['Admin']['LastName']);
 
         $result = $this->callApiMethod('ValidateOrder', $order);
         $this->assertValidationSuccess($result);
@@ -330,13 +331,14 @@ class DomainOrderValidationTest extends IntegrationTestBase
         ]);
 
         $request = new Request($params);
-        $order = $request->mapToOrder($params, 'Owner_Change');
+        $order = $request->mapToOrder($params, 'OwnerChange');
 
-        $this->assertOrderStructure($order, 'Owner_Change');
+        $this->assertOrderStructure($order, 'OwnerChange');
 
-        // Verify registrant name is updated (v3 uses combined Name field)
-        $this->assertEquals('New Owner', $order['Order']['Domain']['Registrant']['Name']);
-        $this->assertEquals('New Company LLC', $order['Order']['Domain']['Registrant']['OrgName']);
+        // Verify registrant name is updated (v3 uses FirstName/LastName)
+        $this->assertEquals('New', $order['Order']['Domain']['Owner']['FirstName']);
+        $this->assertEquals('Owner', $order['Order']['Domain']['Owner']['LastName']);
+        $this->assertEquals('New Company LLC', $order['Order']['Domain']['Owner']['OrgName']);
 
         $result = $this->callApiMethod('ValidateOrder', $order);
         $this->assertValidationSuccess($result);
@@ -355,9 +357,9 @@ class DomainOrderValidationTest extends IntegrationTestBase
         ]);
 
         $request = new Request($params);
-        $order = $request->mapToOrder($params, 'Change_Locks');
+        $order = $request->mapToOrder($params, 'ChangeLocks');
 
-        $this->assertOrderStructure($order, 'Change_Locks');
+        $this->assertOrderStructure($order, 'ChangeLocks');
 
         $result = $this->callApiMethod('ValidateOrder', $order);
         $this->assertValidationSuccess($result);
@@ -373,10 +375,10 @@ class DomainOrderValidationTest extends IntegrationTestBase
 
         $request = new Request($params);
         $params['lockenabled'] = 'unlocked';
-        $order = $request->mapToOrder($params, 'Change_Locks');
+        $order = $request->mapToOrder($params, 'ChangeLocks');
         $order['Order']['Domain']['TransferLock'] = 'UnLock';
 
-        $this->assertOrderStructure($order, 'Change_Locks');
+        $this->assertOrderStructure($order, 'ChangeLocks');
 
         $result = $this->callApiMethod('ValidateOrder', $order);
         $this->assertValidationSuccess($result);
@@ -396,7 +398,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
         ]);
 
         $request = new Request($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
         // Verify transaction comment contains WHMCS identifiers
         $this->assertArrayHasKey('TransactionComment', $order['Order']);
@@ -419,7 +421,7 @@ class DomainOrderValidationTest extends IntegrationTestBase
         $params = $this->getRegistrationParams('invalid_domain_with_underscore.com');
 
         $request = new Request($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
         $result = $this->callApiMethod('ValidateOrder', $order);
 
@@ -439,10 +441,10 @@ class DomainOrderValidationTest extends IntegrationTestBase
         $params = $this->getRegistrationParams($domainName);
 
         $request = new Request($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
         // Remove required contact
-        unset($order['Order']['Domain']['Registrant']);
+        unset($order['Order']['Domain']['Owner']);
 
         $result = $this->callApiMethod('ValidateOrder', $order);
 

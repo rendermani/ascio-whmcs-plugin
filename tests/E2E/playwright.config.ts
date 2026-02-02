@@ -8,6 +8,7 @@ import { defineConfig, devices } from '@playwright/test';
  * Debug: npm run test:debug
  */
 export default defineConfig({
+  globalSetup: require.resolve('./global-setup'),
   testDir: './specs',
   /* Run tests in files in parallel */
   fullyParallel: true,

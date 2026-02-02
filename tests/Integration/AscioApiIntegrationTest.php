@@ -210,14 +210,14 @@ class AscioApiIntegrationTest extends TestCase
         $request = new Request($this->params);
 
         // Create order params but don't submit - just validate structure
-        $orderParams = $request->mapToOrder($this->params, 'Register_Domain');
+        $orderParams = $request->mapToOrder($this->params, 'Register');
 
         // mapToOrder returns array('Order' => ...) with uppercase key
         $this->assertArrayHasKey('Order', $orderParams);
-        $this->assertEquals('Register_Domain', $orderParams['Order']['Type']);
+        $this->assertEquals('Register', $orderParams['Order']['Type']);
         $this->assertArrayHasKey('Domain', $orderParams['Order']);
-        $this->assertArrayHasKey('Registrant', $orderParams['Order']['Domain']);
-        $this->assertArrayHasKey('AdminContact', $orderParams['Order']['Domain']);
+        $this->assertArrayHasKey('Owner', $orderParams['Order']['Domain']);
+        $this->assertArrayHasKey('Admin', $orderParams['Order']['Domain']);
         $this->assertArrayHasKey('NameServers', $orderParams['Order']['Domain']);
     }
 

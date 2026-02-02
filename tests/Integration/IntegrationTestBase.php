@@ -149,7 +149,7 @@ abstract class IntegrationTestBase extends TestCase
         $request = $this->getRequest($orderData);
 
         // Build the order using mapToOrder
-        $orderType = $orderData['orderType'] ?? 'Register_Domain';
+        $orderType = $orderData['orderType'] ?? 'Register';
         $ascioParams = $request->mapToOrder($orderData, $orderType);
 
         // Call ValidateOrder API
@@ -255,7 +255,7 @@ abstract class IntegrationTestBase extends TestCase
             'WithoutStates' => ['deleted'],
             'Clauses' => [
                 [
-                    'Attribute' => 'DomainName',
+                    'Attribute' => 'Name',
                     'Value' => '*.' . $tld,
                     'Operator' => 'Like',
                 ],
@@ -317,8 +317,8 @@ abstract class IntegrationTestBase extends TestCase
             'MessageId' => 'MSG-' . uniqid(),
             'OrderId' => $orderId,
             'OrderStatus' => $status,
-            'OrderType' => 'Register_Domain',
-            'DomainName' => 'test-callback.com',
+            'OrderType' => 'Register',
+            'Name' => 'test-callback.com',
             'Message' => $message,
             'StatusList' => [
                 'CallbackStatus' => $status === 'Failed' ? [
@@ -421,7 +421,7 @@ abstract class IntegrationTestBase extends TestCase
         $this->assertArrayHasKey('Type', $order['Order'], 'Order should have Type');
         $this->assertEquals($expectedType, $order['Order']['Type'], 'Order type should match');
         $this->assertArrayHasKey('Domain', $order['Order'], 'Order should have Domain');
-        $this->assertArrayHasKey('DomainName', $order['Order']['Domain'], 'Domain should have DomainName');
+        $this->assertArrayHasKey('Name', $order['Order']['Domain'], 'Domain should have Name');
     }
 
     /**

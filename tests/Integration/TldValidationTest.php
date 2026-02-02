@@ -160,16 +160,16 @@ class TldValidationTest extends TestCase
         ]);
 
         $request = Request::create($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
         // Verify order structure
         $this->assertArrayHasKey('Order', $order, "TLD .$tld: Missing Order key");
-        $this->assertEquals('Register_Domain', $order['Order']['Type']);
-        $this->assertEquals($domainName, $order['Order']['Domain']['DomainName']);
+        $this->assertEquals('Register', $order['Order']['Type']);
+        $this->assertEquals($domainName, $order['Order']['Domain']['Name']);
 
         // Verify RegistrantNumber is set
-        if (isset($order['Order']['Domain']['Registrant']['RegistrantNumber'])) {
-            $this->assertEquals('REG123456', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
+        if (isset($order['Order']['Domain']['Owner']['RegistrantNumber'])) {
+            $this->assertEquals('REG123456', $order['Order']['Domain']['Owner']['RegistrantNumber']);
         }
     }
 
@@ -220,9 +220,9 @@ class TldValidationTest extends TestCase
         ]);
 
         $request = Request::create($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
-        $registrant = $order['Order']['Domain']['Registrant'];
+        $registrant = $order['Order']['Domain']['Owner'];
         $this->assertEquals($expectedCode, $registrant['RegistrantType'],
             "TLD .it with '$legalType': Expected RegistrantType '$expectedCode', got '{$registrant['RegistrantType']}'");
     }
@@ -262,9 +262,9 @@ class TldValidationTest extends TestCase
         ]);
 
         $request = Request::create($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
-        $registrant = $order['Order']['Domain']['Registrant'];
+        $registrant = $order['Order']['Domain']['Owner'];
         $this->assertEquals($expectedCode, $registrant['RegistrantType'],
             "TLD .ca with '$legalType': Expected '$expectedCode', got '{$registrant['RegistrantType']}'");
     }
@@ -313,9 +313,9 @@ class TldValidationTest extends TestCase
         ]);
 
         $request = Request::create($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
-        $registrant = $order['Order']['Domain']['Registrant'];
+        $registrant = $order['Order']['Domain']['Owner'];
         $this->assertEquals($expectedType, $registrant['RegistrantType'],
             "TLD .nl: Expected type '$expectedType', got '{$registrant['RegistrantType']}'");
     }
@@ -348,7 +348,7 @@ class TldValidationTest extends TestCase
         ]);
 
         $request = Request::create($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
         $this->assertEquals($purpose, $order['Order']['Domain']['DomainPurpose'],
             "TLD .us: Expected purpose '$purpose', got '{$order['Order']['Domain']['DomainPurpose']}'");
@@ -391,9 +391,9 @@ class TldValidationTest extends TestCase
         ]);
 
         $request = Request::create($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
-        $registrant = $order['Order']['Domain']['Registrant'];
+        $registrant = $order['Order']['Domain']['Owner'];
         $this->assertEquals($regType, $registrant['RegistrantType'] ?? null,
             "TLD .ee: Expected type '$regType'");
     }
@@ -426,7 +426,7 @@ class TldValidationTest extends TestCase
         ]);
 
         $request = Request::create($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
         $this->assertEquals($purpose, $order['Order']['Domain']['DomainPurpose'] ?? null,
             "TLD .nyc: Expected purpose '$purpose'");
@@ -457,9 +457,9 @@ class TldValidationTest extends TestCase
         ]);
 
         $request = Request::create($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
-        $registrant = $order['Order']['Domain']['Registrant'];
+        $registrant = $order['Order']['Domain']['Owner'];
 
         foreach ($expectedFields as $field => $value) {
             $actual = $registrant[$field] ?? null;
@@ -504,11 +504,11 @@ class TldValidationTest extends TestCase
         ]);
 
         $request = Request::create($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
-        $registrant = $order['Order']['Domain']['Registrant'];
-        $admin = $order['Order']['Domain']['AdminContact'];
-        $tech = $order['Order']['Domain']['TechContact'];
+        $registrant = $order['Order']['Domain']['Owner'];
+        $admin = $order['Order']['Domain']['Admin'];
+        $tech = $order['Order']['Domain']['Tech'];
 
         $this->assertEquals('company', $registrant['RegistrantType']);
         $this->assertEquals('NL123456', $registrant['RegistrantNumber']);
@@ -533,7 +533,7 @@ class TldValidationTest extends TestCase
         ]);
 
         $request = Request::create($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
         $this->assertEquals('P1', $order['Order']['Domain']['DomainPurpose']);
         $this->assertEquals('AUTH123', $order['Order']['Domain']['AuthInfo']);
@@ -563,9 +563,9 @@ class TldValidationTest extends TestCase
         ]);
 
         $request = Request::create($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
-        $registrant = $order['Order']['Domain']['Registrant'];
+        $registrant = $order['Order']['Domain']['Owner'];
         $this->assertEquals('1234567890', $registrant['VatNumber']);
         $this->assertEquals('123456789', $registrant['RegistrantNumber']);
     }
@@ -589,11 +589,11 @@ class TldValidationTest extends TestCase
         ]);
 
         $request = Request::create($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
-        $registrant = $order['Order']['Domain']['Registrant'];
-        $admin = $order['Order']['Domain']['AdminContact'];
-        $tech = $order['Order']['Domain']['TechContact'];
+        $registrant = $order['Order']['Domain']['Owner'];
+        $admin = $order['Order']['Domain']['Admin'];
+        $tech = $order['Order']['Domain']['Tech'];
 
         $this->assertEquals('PT123456789', $registrant['VatNumber']);
         $this->assertEquals('REG123', $registrant['RegistrantNumber']);
@@ -629,8 +629,8 @@ class TldValidationTest extends TestCase
         $this->assertStringContainsString('fr', $className,
             "TLD .$tld should use fr class, got $className");
 
-        $order = $request->mapToOrder($params, 'Register_Domain');
-        $registrant = $order['Order']['Domain']['Registrant'];
+        $order = $request->mapToOrder($params, 'Register');
+        $registrant = $order['Order']['Domain']['Owner'];
 
         $this->assertEquals('company', $registrant['RegistrantType']);
     }

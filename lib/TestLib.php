@@ -57,7 +57,7 @@ class TestLib {
 		$premiumDomainsCost = $orderData['premiumCost'];		
 		$orderData = $request->setParams($orderData);
 		try {	
-            $ascioParams = $request->mapToOrder($orderData,"Register_Domain");
+            $ascioParams = $request->mapToOrder($orderData,"Register");
 			if ($premiumDomainsEnabled && $premiumDomainsCost) {
 				$ascioParams['order']['AgreedPrice'] = $premiumDomainsCost;
 			}
@@ -97,7 +97,7 @@ class TestLib {
 		$premiumDomainsCost = $orderData['premiumCost'];		
 		$orderData = $request->setParams($orderData);
 		try {	
-            $ascioParams = $request->mapToOrder($orderData,"Transfer_Domain");
+            $ascioParams = $request->mapToOrder($orderData,"Transfer");
 			if ($premiumDomainsEnabled && $premiumDomainsCost) {
 				$ascioParams['order']['AgreedPrice'] = $premiumDomainsCost;
 			}

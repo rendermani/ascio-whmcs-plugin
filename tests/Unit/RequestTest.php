@@ -96,15 +96,15 @@ class RequestTest extends TestCase
         $request = new Request($params);
 
         // Access mapToOrder to verify the order structure
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
-        $this->assertEquals('Register_Domain', $order['Order']['Type']);
-        $this->assertEquals('newdomain.com', $order['Order']['Domain']['DomainName']);
-        $this->assertEquals(1, $order['Order']['Domain']['RegPeriod']);
-        $this->assertArrayHasKey('Registrant', $order['Order']['Domain']);
-        $this->assertArrayHasKey('AdminContact', $order['Order']['Domain']);
-        $this->assertArrayHasKey('TechContact', $order['Order']['Domain']);
-        $this->assertArrayHasKey('BillingContact', $order['Order']['Domain']);
+        $this->assertEquals('Register', $order['Order']['Type']);
+        $this->assertEquals('newdomain.com', $order['Order']['Domain']['Name']);
+        $this->assertEquals(1, $order['Order']['Domain']['RenewPeriod']);
+        $this->assertArrayHasKey('Owner', $order['Order']['Domain']);
+        $this->assertArrayHasKey('Admin', $order['Order']['Domain']);
+        $this->assertArrayHasKey('Tech', $order['Order']['Domain']);
+        $this->assertArrayHasKey('Billing', $order['Order']['Domain']);
         $this->assertArrayHasKey('NameServers', $order['Order']['Domain']);
     }
 
@@ -114,7 +114,7 @@ class RequestTest extends TestCase
         $params = MockParamsV3::withIdProtection('newdomain.com');
         $request = new Request($params);
 
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
         $this->assertArrayHasKey('PrivacyProxy', $order['Order']['Domain']);
         $this->assertEquals('Proxy', $order['Order']['Domain']['PrivacyProxy']['Type']);
@@ -126,7 +126,7 @@ class RequestTest extends TestCase
         $params = MockParamsV3::withIdProtection('newdomain.com', ['Proxy_Lite' => 'on']);
         $request = new Request($params);
 
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
         $this->assertEquals('Privacy', $order['Order']['Domain']['PrivacyProxy']['Type']);
     }
@@ -137,7 +137,7 @@ class RequestTest extends TestCase
         $params = MockParamsV3::forRegistration('newdomain.com', ['idprotection' => false]);
         $request = new Request($params);
 
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
         $this->assertEquals('None', $order['Order']['Domain']['PrivacyProxy']['Type']);
     }
@@ -151,7 +151,7 @@ class RequestTest extends TestCase
         ]);
         $request = new Request($params);
 
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
         $comment = json_decode($order['Order']['TransactionComment'], true);
         $this->assertEquals('WHMCS', $comment['application']);
@@ -170,10 +170,10 @@ class RequestTest extends TestCase
         $params = MockParamsV3::forTransfer('transfer.com', 'TRANSFER-EPP-CODE');
         $request = new Request($params);
 
-        $order = $request->mapToOrder($params, 'Transfer_Domain');
+        $order = $request->mapToOrder($params, 'Transfer');
 
-        $this->assertEquals('Transfer_Domain', $order['Order']['Type']);
-        $this->assertEquals('transfer.com', $order['Order']['Domain']['DomainName']);
+        $this->assertEquals('Transfer', $order['Order']['Type']);
+        $this->assertEquals('transfer.com', $order['Order']['Domain']['Name']);
         $this->assertEquals('TRANSFER-EPP-CODE', $order['Order']['Domain']['AuthInfo']);
     }
 
@@ -183,7 +183,7 @@ class RequestTest extends TestCase
         $params = MockParamsV3::forTransfer('transfer.com', 'EPP-CODE', ['idprotection' => true]);
         $request = new Request($params);
 
-        $order = $request->mapToOrder($params, 'Transfer_Domain');
+        $order = $request->mapToOrder($params, 'Transfer');
 
         $this->assertArrayHasKey('PrivacyProxy', $order['Order']['Domain']);
     }
@@ -198,11 +198,11 @@ class RequestTest extends TestCase
         $params = MockParamsV3::forRenewal('renew.com', 2);
         $request = new Request($params);
 
-        $order = $request->mapToOrder($params, 'Renew_Domain');
+        $order = $request->mapToOrder($params, 'Renew');
 
-        $this->assertEquals('Renew_Domain', $order['Order']['Type']);
-        $this->assertEquals('renew.com', $order['Order']['Domain']['DomainName']);
-        $this->assertEquals(2, $order['Order']['Domain']['RegPeriod']);
+        $this->assertEquals('Renew', $order['Order']['Type']);
+        $this->assertEquals('renew.com', $order['Order']['Domain']['Name']);
+        $this->assertEquals(2, $order['Order']['Domain']['RenewPeriod']);
     }
 
     // =========================================================================
@@ -282,9 +282,11 @@ class RequestTest extends TestCase
 
         $result = $reflection->invoke($request, $this->defaultParams);
 
-        // Registrant should have Name field (combined first+last)
-        $this->assertArrayHasKey('Name', $result);
-        $this->assertEquals('John Doe', $result['Name']);
+        // Registrant should have FirstName/LastName fields (v3 API)
+        $this->assertArrayHasKey('FirstName', $result);
+        $this->assertArrayHasKey('LastName', $result);
+        $this->assertEquals('John', $result['FirstName']);
+        $this->assertEquals('Doe', $result['LastName']);
         $this->assertEquals('Test Company', $result['OrgName']);
         $this->assertEquals('123 Test Street', $result['Address1']);
         $this->assertEquals('Suite 100', $result['Address2']);
@@ -438,17 +440,17 @@ class RequestTest extends TestCase
     public static function orderTypeProvider(): array
     {
         return [
-            'Register Domain' => ['Register_Domain'],
-            'Transfer Domain' => ['Transfer_Domain'],
-            'Renew Domain' => ['Renew_Domain'],
-            'Expire Domain' => ['Expire_Domain'],
-            'Unexpire Domain' => ['Unexpire_Domain'],
-            'Nameserver Update' => ['Nameserver_Update'],
-            'Contact Update' => ['Contact_Update'],
-            'Owner Change' => ['Owner_Change'],
-            'Update AuthInfo' => ['Update_AuthInfo'],
-            'Change Locks' => ['Change_Locks'],
-            'Domain Details Update' => ['Domain_Details_Update'],
+            'Register Domain' => ['Register'],
+            'Transfer Domain' => ['Transfer'],
+            'Renew Domain' => ['Renew'],
+            'Expire Domain' => ['Expire'],
+            'Unexpire Domain' => ['Unexpire'],
+            'Nameserver Update' => ['NameserverUpdate'],
+            'Contact Update' => ['ContactUpdate'],
+            'Owner Change' => ['OwnerChange'],
+            'Update AuthInfo' => ['UpdateAuthInfo'],
+            'Change Locks' => ['ChangeLocks'],
+            'Domain Details Update' => ['DetailsUpdate'],
         ];
     }
 
@@ -468,7 +470,7 @@ class RequestTest extends TestCase
         ]);
 
         $request = new Request($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
         // Should still have NameServers array, even if empty
         $this->assertArrayHasKey('NameServers', $order['Order']['Domain']);

@@ -199,9 +199,9 @@ class CaTldTest extends TestCase
         ]);
 
         $request = Request::create($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
-        $this->assertEquals('CCO', $order['Order']['Domain']['Registrant']['RegistrantType']);
+        $this->assertEquals('CCO', $order['Order']['Domain']['Owner']['RegistrantType']);
     }
 
     #[Test]
@@ -217,7 +217,7 @@ class CaTldTest extends TestCase
         ]);
 
         $request = Request::create($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
         $this->assertArrayHasKey('Trademark', $order['Order']['Domain']);
         $this->assertEquals('TM789', $order['Order']['Domain']['Trademark']['Number']);

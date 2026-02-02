@@ -17,7 +17,7 @@ class at extends Request {
 	 */
 	public function mapToOrder($params, $orderType) {
 		// AT transfers with 1 year period should use 0
-		if($orderType == "Transfer_Domain" && ($params["regperiod"] ?? null) == 1) {
+		if($orderType == "Transfer" && ($params["regperiod"] ?? null) == 1) {
 			$params["regperiod"] = 0;
 		}
 		return parent::mapToOrder($params, $orderType);

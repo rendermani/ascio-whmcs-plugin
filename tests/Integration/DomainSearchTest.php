@@ -52,7 +52,7 @@ class DomainSearchTest extends IntegrationTestBase
 
         if (!is_array($result)) {
             $this->assertIsObject($result, 'GetDomain should return a domain object');
-            $this->assertObjectHasProperty('DomainName', $result, 'Domain should have DomainName');
+            $this->assertObjectHasProperty('Name', $result, 'Domain should have Name');
             $this->assertObjectHasProperty('DomainHandle', $result, 'Domain should have DomainHandle');
             $this->assertEquals($handle, $result->DomainHandle, 'Handle should match');
         }
@@ -72,13 +72,13 @@ class DomainSearchTest extends IntegrationTestBase
 
         if ($result && !is_array($result)) {
             // Verify contact objects are present
-            $this->assertObjectHasProperty('Registrant', $result, 'Domain should have Registrant');
-            $this->assertObjectHasProperty('AdminContact', $result, 'Domain should have AdminContact');
-            $this->assertObjectHasProperty('TechContact', $result, 'Domain should have TechContact');
+            $this->assertObjectHasProperty('Owner', $result, 'Domain should have Owner');
+            $this->assertObjectHasProperty('Admin', $result, 'Domain should have Admin');
+            $this->assertObjectHasProperty('Tech', $result, 'Domain should have Tech');
 
             // Verify registrant has expected fields
-            if (isset($result->Registrant)) {
-                $this->assertObjectHasProperty('Email', $result->Registrant);
+            if (isset($result->Owner)) {
+                $this->assertObjectHasProperty('Email', $result->Owner);
             }
         }
     }
@@ -167,7 +167,7 @@ class DomainSearchTest extends IntegrationTestBase
             $this->markTestSkipped('No existing .com domain found on test account');
         }
 
-        $domainName = $existingDomain->DomainName ?? null;
+        $domainName = $existingDomain->Name ?? null;
         $this->assertNotNull($domainName, 'Existing domain should have a name');
 
         // Test SearchDomain API
@@ -176,7 +176,7 @@ class DomainSearchTest extends IntegrationTestBase
             'WithoutStates' => ['deleted'],
             'Clauses' => [
                 [
-                    'Attribute' => 'DomainName',
+                    'Attribute' => 'Name',
                     'Value' => $domainName,
                     'Operator' => 'Is',
                 ],
@@ -193,7 +193,7 @@ class DomainSearchTest extends IntegrationTestBase
             $this->assertNotEmpty($domains, 'Should find at least one domain');
 
             $foundDomain = $domains[0];
-            $this->assertEquals($domainName, $foundDomain->DomainName, 'Found domain should match search');
+            $this->assertEquals($domainName, $foundDomain->Name, 'Found domain should match search');
         }
     }
 
@@ -206,7 +206,7 @@ class DomainSearchTest extends IntegrationTestBase
             'WithoutStates' => ['deleted'],
             'Clauses' => [
                 [
-                    'Attribute' => 'DomainName',
+                    'Attribute' => 'Name',
                     'Value' => '*.com',
                     'Operator' => 'Like',
                 ],
@@ -234,7 +234,7 @@ class DomainSearchTest extends IntegrationTestBase
             'WithoutStates' => ['deleted'],
             'Clauses' => [
                 [
-                    'Attribute' => 'DomainName',
+                    'Attribute' => 'Name',
                     'Value' => $nonExistentDomain,
                     'Operator' => 'Is',
                 ],
@@ -270,7 +270,7 @@ class DomainSearchTest extends IntegrationTestBase
             'WithoutStates' => ['deleted'],
             'Clauses' => [
                 [
-                    'Attribute' => 'DomainName',
+                    'Attribute' => 'Name',
                     'Value' => '*.com',
                     'Operator' => 'Like',
                 ],
@@ -335,7 +335,7 @@ class DomainSearchTest extends IntegrationTestBase
         // First, we need to have an existing order ID
         // Try to get recent orders using GetOrders
         $criteria = [
-            'OrderType' => 'Register_Domain',
+            'OrderType' => 'Register',
             'PageInfo' => [
                 'PageIndex' => 0,
                 'PageSize' => 1,
@@ -432,7 +432,7 @@ class DomainSearchTest extends IntegrationTestBase
             $this->markTestSkipped('No existing .com domain found on test account');
         }
 
-        $domainName = $existingDomain->DomainName;
+        $domainName = $existingDomain->Name;
         $handle = $existingDomain->DomainHandle ?? $existingDomain->Handle ?? null;
 
         if (!$handle) {

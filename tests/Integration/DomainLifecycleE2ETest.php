@@ -213,7 +213,7 @@ class DomainLifecycleE2ETest extends TestCase
             $this->markTestSkipped('No existing .com domain found on test account');
         }
 
-        $domainName = $existingDomain->DomainName ?? null;
+        $domainName = $existingDomain->Name ?? null;
         $domainHandle = $existingDomain->DomainHandle ?? $existingDomain->Handle ?? null;
 
         echo "Found domain: {$domainName}\n";
@@ -231,7 +231,7 @@ class DomainLifecycleE2ETest extends TestCase
         echo "\nVerifying domain fields:\n";
 
         // Core fields
-        $this->assertDomainField($domain, 'DomainName', $domainName);
+        $this->assertDomainField($domain, 'Name', $domainName);
         $this->assertDomainField($domain, 'DomainHandle');
         $this->assertDomainField($domain, 'Status');
 
@@ -242,10 +242,10 @@ class DomainLifecycleE2ETest extends TestCase
 
         // Contact fields
         echo "\n  Contact Fields:\n";
-        $this->assertContactField($domain, 'Registrant');
-        $this->assertContactField($domain, 'AdminContact');
-        $this->assertContactField($domain, 'TechContact');
-        $this->assertContactField($domain, 'BillingContact');
+        $this->assertContactField($domain, 'Owner');
+        $this->assertContactField($domain, 'Admin');
+        $this->assertContactField($domain, 'Tech');
+        $this->assertContactField($domain, 'Billing');
 
         // Nameserver fields
         echo "\n  Nameserver Fields:\n";
@@ -283,8 +283,8 @@ class DomainLifecycleE2ETest extends TestCase
         $testDomain = $this->generateUniqueDomain('com');
         echo "Test Domain: {$testDomain}\n\n";
 
-        // Build Expire_Domain order
-        echo "Validating Expire_Domain order structure...\n";
+        // Build Expire order
+        echo "Validating Expire order structure...\n";
         $expireParams = $this->buildExpireOrder($testDomain);
         $expireResult = $this->validateOrder($expireParams);
 
@@ -299,8 +299,8 @@ class DomainLifecycleE2ETest extends TestCase
             echo "  Expected validation error (no real domain): " . implode(', ', $errors) . "\n";
         }
 
-        // Build Unexpire_Domain order
-        echo "\nValidating Unexpire_Domain order structure...\n";
+        // Build Unexpire order
+        echo "\nValidating Unexpire order structure...\n";
         $unexpireParams = $this->buildUnexpireOrder($testDomain);
         $unexpireResult = $this->validateOrder($unexpireParams);
 
@@ -365,7 +365,7 @@ class DomainLifecycleE2ETest extends TestCase
         }
 
         // Assert structure
-        $this->assertEquals('Transfer_Domain', $transferParams['Order']['Type']);
+        $this->assertEquals('Transfer', $transferParams['Order']['Type']);
         $this->assertEquals($eppCode, $transferParams['Order']['Domain']['AuthInfo']);
 
         echo "\n=== Transfer order structure validated ===\n";
@@ -413,8 +413,8 @@ class DomainLifecycleE2ETest extends TestCase
         }
 
         // Assert structure
-        $this->assertEquals('Renew_Domain', $renewParams['Order']['Type']);
-        $this->assertEquals(1, $renewParams['Order']['Domain']['RegPeriod']);
+        $this->assertEquals('Renew', $renewParams['Order']['Type']);
+        $this->assertEquals(1, $renewParams['Order']['Domain']['RenewPeriod']);
 
         echo "\n=== Renewal order structure validated ===\n";
     }
@@ -442,18 +442,18 @@ class DomainLifecycleE2ETest extends TestCase
 
         return [
             'Order' => [
-                'Type' => 'Register_Domain',
+                'Type' => 'Register',
                 'TransactionComment' => json_encode([
                     'application' => 'E2E_TEST',
                     'testId' => uniqid(),
                 ]),
                 'Domain' => [
-                    'DomainName' => $domainName,
-                    'RegPeriod' => 1,
-                    'Registrant' => $this->buildRegistrant(),
-                    'AdminContact' => $this->buildContact('Admin'),
-                    'TechContact' => $this->buildContact('Tech'),
-                    'BillingContact' => $this->buildContact('Billing'),
+                    'Name' => $domainName,
+                    'RenewPeriod' => 1,
+                    'Owner' => $this->buildRegistrant(),
+                    'Admin' => $this->buildContact('Admin'),
+                    'Tech' => $this->buildContact('Tech'),
+                    'Billing' => $this->buildContact('Billing'),
                     'NameServers' => [
                         'NameServer1' => ['HostName' => 'ns1.ascio.net'],
                         'NameServer2' => ['HostName' => 'ns2.ascio.net'],
@@ -469,7 +469,7 @@ class DomainLifecycleE2ETest extends TestCase
     protected function buildTransferOrder(string $domainName, string $eppCode): array
     {
         $order = $this->buildRegisterOrder($domainName);
-        $order['Order']['Type'] = 'Transfer_Domain';
+        $order['Order']['Type'] = 'Transfer';
         $order['Order']['Domain']['AuthInfo'] = $eppCode;
 
         return $order;
@@ -482,14 +482,14 @@ class DomainLifecycleE2ETest extends TestCase
     {
         return [
             'Order' => [
-                'Type' => 'Renew_Domain',
+                'Type' => 'Renew',
                 'TransactionComment' => json_encode([
                     'application' => 'E2E_TEST',
                     'testId' => uniqid(),
                 ]),
                 'Domain' => [
-                    'DomainName' => $domainName,
-                    'RegPeriod' => $period,
+                    'Name' => $domainName,
+                    'RenewPeriod' => $period,
                 ],
             ],
         ];
@@ -502,13 +502,13 @@ class DomainLifecycleE2ETest extends TestCase
     {
         return [
             'Order' => [
-                'Type' => 'Expire_Domain',
+                'Type' => 'Expire',
                 'TransactionComment' => json_encode([
                     'application' => 'E2E_TEST',
                     'testId' => uniqid(),
                 ]),
                 'Domain' => [
-                    'DomainName' => $domainName,
+                    'Name' => $domainName,
                 ],
             ],
         ];
@@ -521,14 +521,14 @@ class DomainLifecycleE2ETest extends TestCase
     {
         return [
             'Order' => [
-                'Type' => 'Unexpire_Domain',
+                'Type' => 'Unexpire',
                 'TransactionComment' => json_encode([
                     'application' => 'E2E_TEST',
                     'testId' => uniqid(),
                 ]),
                 'Domain' => [
-                    'DomainName' => $domainName,
-                    'RegPeriod' => 1,
+                    'Name' => $domainName,
+                    'RenewPeriod' => 1,
                 ],
             ],
         ];
@@ -681,7 +681,7 @@ class DomainLifecycleE2ETest extends TestCase
 
             if ($domain) {
                 echo "    Domain verified:\n";
-                echo "      Name: " . ($domain->DomainName ?? 'N/A') . "\n";
+                echo "      Name: " . ($domain->Name ?? 'N/A') . "\n";
                 echo "      Status: " . ($domain->Status ?? 'N/A') . "\n";
                 echo "      ExpDate: " . ($domain->ExpDate ?? 'N/A') . "\n";
             }
@@ -704,7 +704,7 @@ class DomainLifecycleE2ETest extends TestCase
                                 'WithoutStates' => ['deleted'],
                                 'Clauses' => [
                                     [
-                                        'Attribute' => 'DomainName',
+                                        'Attribute' => 'Name',
                                         'Value' => '*.' . $tld,
                                         'Operator' => 'Like',
                                     ],

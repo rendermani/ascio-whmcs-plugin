@@ -291,9 +291,9 @@ class DeTldTest extends TestCase
         ]);
 
         $request = Request::create($params);
-        $order = $request->mapToOrder($params, 'Register_Domain');
+        $order = $request->mapToOrder($params, 'Register');
 
-        $this->assertEquals('beispiel.de', $order['Order']['Domain']['DomainName']);
-        $this->assertEquals('DE123456789', $order['Order']['Domain']['Registrant']['RegistrantNumber']);
+        $this->assertEquals('beispiel.de', $order['Order']['Domain']['Name']);
+        $this->assertEquals('DE123456789', $order['Order']['Domain']['Owner']['RegistrantNumber']);
     }
 }

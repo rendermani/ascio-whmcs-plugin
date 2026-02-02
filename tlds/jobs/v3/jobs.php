@@ -29,7 +29,7 @@ class jobs extends Request {
 	 */
 	public function registerDomain($params = false) {
 		$params = $this->setParams($params);
-		$ascioParams = $this->mapToOrder($params, "Register_Domain");
+		$ascioParams = $this->mapToOrder($params, "Register");
 		$ascioParams["Order"]["Domain"]["DomainPurpose"] = $params["additionalfields"]["Website"] ?? null;
 
 		$result = $this->sendRequest("CreateOrder", $ascioParams);

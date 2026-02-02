@@ -198,7 +198,7 @@ class DomainPollingTest extends IntegrationTestBase
         // These fields may vary depending on message type
         $hasOrderInfo = isset($message->OrderId)
             || isset($message->ObjectId)
-            || isset($message->DomainName);
+            || isset($message->Name);
 
         $this->assertTrue($hasOrderInfo, 'Queue message should contain order/object information');
     }

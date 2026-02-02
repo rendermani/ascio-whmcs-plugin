@@ -299,7 +299,7 @@ class DueDateCalculationTest extends IntegrationTestBase
 
         // Invalid/null expiry date
         $domain = (object) [
-            'DomainName' => 'test.com',
+            'Name' => 'test.com',
             'DomainHandle' => 'DOM-12345',
             'Status' => 'ACTIVE',
             'ExpDate' => '0001-01-01T00:00:00', // Invalid date
@@ -399,7 +399,7 @@ class DueDateCalculationTest extends IntegrationTestBase
     private function createDomainWithExpDate(string $domainName, string $expDate): object
     {
         return (object) [
-            'DomainName' => $domainName,
+            'Name' => $domainName,
             'DomainHandle' => 'DOM-' . uniqid(),
             'Status' => 'ACTIVE',
             'ExpDate' => $expDate,

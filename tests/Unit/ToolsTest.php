@@ -271,14 +271,16 @@ class ToolsTest extends TestCase
     public function compareRegistrantReturnsOwnerChangeForNameChange(): void
     {
         $oldContact = (object) [
-            'Name' => 'John Doe',
+            'FirstName' => 'John',
+            'LastName' => 'Doe',
             'OrgName' => 'Test Company',
             'RegistrantNumber' => '12345',
             'City' => 'Test City'
         ];
 
         $newContact = (object) [
-            'Name' => 'Jane Doe',
+            'FirstName' => 'Jane',
+            'LastName' => 'Doe',
             'OrgName' => 'Test Company',
             'RegistrantNumber' => '12345',
             'City' => 'Test City'
@@ -286,21 +288,23 @@ class ToolsTest extends TestCase
 
         $result = Tools::compareRegistrant($newContact, $oldContact);
 
-        $this->assertEquals('Owner_Change', $result);
+        $this->assertEquals('OwnerChange', $result);
     }
 
     #[Test]
     public function compareRegistrantReturnsOwnerChangeForOrgNameChange(): void
     {
         $oldContact = (object) [
-            'Name' => 'John Doe',
+            'FirstName' => 'John',
+            'LastName' => 'Doe',
             'OrgName' => 'Old Company',
             'RegistrantNumber' => '12345',
             'City' => 'Test City'
         ];
 
         $newContact = (object) [
-            'Name' => 'John Doe',
+            'FirstName' => 'John',
+            'LastName' => 'Doe',
             'OrgName' => 'New Company',
             'RegistrantNumber' => '12345',
             'City' => 'Test City'
@@ -308,21 +312,23 @@ class ToolsTest extends TestCase
 
         $result = Tools::compareRegistrant($newContact, $oldContact);
 
-        $this->assertEquals('Owner_Change', $result);
+        $this->assertEquals('OwnerChange', $result);
     }
 
     #[Test]
     public function compareRegistrantReturnsDetailsUpdateForAddressChange(): void
     {
         $oldContact = (object) [
-            'Name' => 'John Doe',
+            'FirstName' => 'John',
+            'LastName' => 'Doe',
             'OrgName' => 'Test Company',
             'RegistrantNumber' => '12345',
             'City' => 'Old City'
         ];
 
         $newContact = (object) [
-            'Name' => 'John Doe',
+            'FirstName' => 'John',
+            'LastName' => 'Doe',
             'OrgName' => 'Test Company',
             'RegistrantNumber' => '12345',
             'City' => 'New City'
@@ -330,21 +336,23 @@ class ToolsTest extends TestCase
 
         $result = Tools::compareRegistrant($newContact, $oldContact);
 
-        $this->assertEquals('Registrant_Details_Update', $result);
+        $this->assertEquals('RegistrantDetailsUpdate', $result);
     }
 
     #[Test]
     public function compareRegistrantReturnsFalseForNoChanges(): void
     {
         $oldContact = (object) [
-            'Name' => 'John Doe',
+            'FirstName' => 'John',
+            'LastName' => 'Doe',
             'OrgName' => 'Test Company',
             'RegistrantNumber' => '12345',
             'City' => 'Test City'
         ];
 
         $newContact = (object) [
-            'Name' => 'John Doe',
+            'FirstName' => 'John',
+            'LastName' => 'Doe',
             'OrgName' => 'Test Company',
             'RegistrantNumber' => '12345',
             'City' => 'Test City'
@@ -359,14 +367,16 @@ class ToolsTest extends TestCase
     public function compareRegistrantHandlesUmlautReplacement(): void
     {
         $oldContact = (object) [
-            'Name' => 'Müller',
+            'FirstName' => 'Müller',
+            'LastName' => 'Test',
             'OrgName' => 'Test Company',
             'RegistrantNumber' => '12345',
             'City' => 'Test City'
         ];
 
         $newContact = (object) [
-            'Name' => 'Muller',
+            'FirstName' => 'Muller',
+            'LastName' => 'Test',
             'OrgName' => 'Test Company',
             'RegistrantNumber' => '12345',
             'City' => 'Test City'
@@ -401,7 +411,7 @@ class ToolsTest extends TestCase
 
         $result = Tools::compareContact($newContact, $oldContact);
 
-        $this->assertEquals('Contact_Update', $result);
+        $this->assertEquals('ContactUpdate', $result);
     }
 
     #[Test]
@@ -579,10 +589,10 @@ class ToolsTest extends TestCase
                 'Currency' => 'USD',
                 'Prices' => (object) [
                     'Price' => [
-                        (object) ['OrderType' => 'Register_Domain', 'Period' => 1, 'Price' => 10.99],
-                        (object) ['OrderType' => 'Register_Domain', 'Period' => 2, 'Price' => 20.99],
-                        (object) ['OrderType' => 'Renew_Domain', 'Period' => 1, 'Price' => 12.99],
-                        (object) ['OrderType' => 'Renew_Domain', 'Period' => 2, 'Price' => 24.99],
+                        (object) ['OrderType' => 'Register', 'Period' => 1, 'Price' => 10.99],
+                        (object) ['OrderType' => 'Register', 'Period' => 2, 'Price' => 20.99],
+                        (object) ['OrderType' => 'Renew', 'Period' => 1, 'Price' => 12.99],
+                        (object) ['OrderType' => 'Renew', 'Period' => 2, 'Price' => 24.99],
                     ]
                 ]
             ]

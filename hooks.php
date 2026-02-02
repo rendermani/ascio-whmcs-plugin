@@ -26,9 +26,8 @@ function hook_ascio_set_domain_status($vars) {
     $domain = $vars["params"]["sld"] . "." . $vars["params"]["tld"];
     logActivity("Ascio: Calling hook for domain " . $domain);
 
-    $type = $vars["params"]["regtype"] == "Transfer" ? "Transfer_Domain" : false;
     $domainObj = (object) array("DomainName" => $domain);
-    $request->setStatus($domainObj, "Pending", $type);
+    $request->setStatus($domainObj, "Pending");
 }
 
 add_hook("AfterRegistrarRegistration", 1, "hook_ascio_set_domain_status");

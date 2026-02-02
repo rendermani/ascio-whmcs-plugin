@@ -18,7 +18,7 @@ class xxx extends Request {
 	 */
 	public function registerDomain($params = false) {
 		$params = $this->setParams($params);
-		$ascioParams = $this->mapToOrder($params, "Register_Domain");
+		$ascioParams = $this->mapToOrder($params, "Register");
 
 		// Set member/non-member option based on sponsored community membership
 		if(($params["additionalfields"]["Member of sponsored community"] ?? null) == "on") {

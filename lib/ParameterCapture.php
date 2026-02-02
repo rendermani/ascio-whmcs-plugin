@@ -44,7 +44,7 @@ class ParameterCapture {
     } 
     public function testRequest() {      
         $this->setActive(false);  
-        if($this->orderType == "Register_Domain") {
+        if($this->orderType == "Register") {
             $this->domainName  = "T".time()."-".$this->domainName;
         }
         

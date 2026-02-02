@@ -103,13 +103,13 @@ class Tools {
 	}
 	public static function compareRegistrant($newContact,$oldContact) {
 		$diffs =  Tools::diffContact($newContact,$oldContact);
-		if($diffs["Name"] || $diffs["OrgName"] || $diffs["RegistrantNumber"]) return "Owner_Change";
-		elseif (count($diffs) > 0) return "Registrant_Details_Update";
+		if(($diffs["FirstName"] ?? false) || ($diffs["LastName"] ?? false) || ($diffs["OrgName"] ?? false) || ($diffs["RegistrantNumber"] ?? false)) return "OwnerChange";
+		elseif (count($diffs) > 0) return "RegistrantDetailsUpdate";
 		else return false; 
 	}
 	public static function compareContact($newContact,$oldContact) {
 		$diffs =  Tools::diffContact($newContact,$oldContact);
-		if (count($diffs) > 0) return "Contact_Update";
+		if (count($diffs) > 0) return "ContactUpdate";
 		else return false;
 	}
 	public static function isIcannTld($domainName) {
@@ -309,8 +309,8 @@ class Tools {
 			}
 		}
 		return array(
-			'register' => $pricesTmp['Register_Domain']->Price,
-			'renew' => $pricesTmp['Renew_Domain']->Price,
+			'register' => $pricesTmp['Register']->Price,
+			'renew' => $pricesTmp['Renew']->Price,
 			'CurrencyCode' => $result->PriceInfo->Currency,
 		);
 	}

@@ -31,10 +31,10 @@ class asia extends Request {
 	 */
 	public function registerDomain($params = false) {
 		$params = $this->setParams($params);
-		$ascioParams = $this->mapToOrder($params, "Register_Domain");
+		$ascioParams = $this->mapToOrder($params, "Register");
 
 		// Check if registrant is in Asia-Pacific region
-		$registrantCountry = $ascioParams["Order"]["Domain"]["Registrant"]["CountryCode"] ?? null;
+		$registrantCountry = $ascioParams["Order"]["Domain"]["Owner"]["CountryCode"] ?? null;
 		if(!in_array($registrantCountry, $this->asianCountries)) {
 			// Non-Asian registrant requires local presence service
 			$ascioParams["Order"]["LocalPresence"] = "LocalPresenceAdmin";

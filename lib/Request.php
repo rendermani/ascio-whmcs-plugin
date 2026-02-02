@@ -344,7 +344,19 @@ Class Request {
 			logActivity("Ascio v3: Simulation mode - using ValidateOrder instead of CreateOrder");
 		}
 
-		$response = $client->__soapCall($functionName, array('parameters' => ["request" => $ascioParams]));
+		// For CreateOrder/ValidateOrder, wrap the request as DomainOrderRequest via SoapVar
+		// so PHP SoapClient serializes the polymorphic type correctly (xsi:type="DomainOrderRequest")
+		if (in_array($functionName, ['CreateOrder', 'ValidateOrder'])) {
+			// mapToOrder returns ['Order' => $order] - unwrap and convert to objects for SoapVar
+			$orderData = $ascioParams['Order'] ?? $ascioParams;
+			$requestObj = $this->arrayToObject($orderData);
+			$soapRequest = new \SoapVar($requestObj, SOAP_ENC_OBJECT, "DomainOrderRequest", "http://www.ascio.com/2013/02");
+			$callParams = array('parameters' => ["request" => $soapRequest]);
+		} else {
+			$callParams = array('parameters' => ["request" => $ascioParams]);
+		}
+
+		$response = $client->__soapCall($functionName, $callParams);
 		$resultName = $functionName . "Result";
 		$result = $response->$resultName;
 
@@ -367,6 +379,20 @@ Class Request {
 
 		$message = Tools::cleanString($messages);
 		return array('error' => $message);
+	}
+
+	/**
+	 * Recursively convert nested arrays to stdClass objects for SoapVar serialization
+	 */
+	private function arrayToObject($data) {
+		if (is_array($data)) {
+			$obj = new \stdClass();
+			foreach ($data as $key => $value) {
+				$obj->$key = $this->arrayToObject($value);
+			}
+			return $obj;
+		}
+		return $data;
 	}
 
 	/**
@@ -482,7 +508,7 @@ Class Request {
 			$orderType = $order->order->Type ?? $order->Order->Type ?? '';
 			$orderStatus = $order->order->Status ?? $order->Order->Status ?? '';
 
-			if (($orderType === "Register_Domain" || $orderType === "Transfer_Domain")
+			if (($orderType === "Register" || $orderType === "Transfer")
 				&& $orderStatus === "Completed") {
 				$nsRegex = $this->params["NameserverRegex"] ?? "/.*/";
 				$ns1 = $domain->NameServers->NameServer1->HostName ?? '';
@@ -588,7 +614,7 @@ Class Request {
 		$params = $this->setParams($params);
 
 		try {
-			$ascioParams = $this->mapToOrder($params, "Register_Domain");
+			$ascioParams = $this->mapToOrder($params, "Register");
 			if ($premiumDomainsEnabled && $premiumDomainsCost) {
 				$ascioParams['Order']['AgreedPrice'] = $premiumDomainsCost;
 			}
@@ -606,7 +632,7 @@ Class Request {
 	public function transferDomain($params = false) {
 		$params = $this->setParams($params);
 		try {
-			$ascioParams = $this->mapToOrder($params, "Transfer_Domain");
+			$ascioParams = $this->mapToOrder($params, "Transfer");
 			$datalessTlds = array("com","net","org","biz","info","us","cc","cn","com.cn","net.cn","org.cn","tv","it");
 			if(in_array($params["tld"], $datalessTlds) && $this->params["DatalessTransfer"]=="on") {
 				logActivity("WHMCS v3: Do dataless transfer");
@@ -636,7 +662,7 @@ Class Request {
 
 		if($result && $result->Renew == 1) {
 			try {
-				$ascioParams = $this->mapToOrder($params, "Renew_Domain");
+				$ascioParams = $this->mapToOrder($params, "Renew");
 			} catch (AscioException $e) {
 				return array("error" => $e->getMessage());
 			}
@@ -659,7 +685,7 @@ Class Request {
 	public function unexpireDomain($params) {
 		$params = $this->setParams($params);
 		try {
-			$ascioParams = $this->mapToOrder($params, "Unexpire_Domain");
+			$ascioParams = $this->mapToOrder($params, "Unexpire");
 		} catch (AscioException $e) {
 			return array("error" => $e->getMessage());
 		}
@@ -672,7 +698,7 @@ Class Request {
 	public function expireDomain($params) {
 		$params = $this->setParams($params);
 		try {
-			$ascioParams = $this->mapToOrder($params, "Expire_Domain");
+			$ascioParams = $this->mapToOrder($params, "Expire");
 		} catch (AscioException $e) {
 			return array("error" => $e->getMessage());
 		}
@@ -686,7 +712,7 @@ Class Request {
 	public function deleteDomain($params) {
 		$params = $this->setParams($params);
 		try {
-			$ascioParams = $this->mapToOrder($params, "Delete_Domain");
+			$ascioParams = $this->mapToOrder($params, "Delete");
 		} catch (AscioException $e) {
 			return array("error" => $e->getMessage());
 		}
@@ -700,7 +726,7 @@ Class Request {
 	public function restoreDomain($params) {
 		$params = $this->setParams($params);
 		try {
-			$ascioParams = $this->mapToOrder($params, "Restore_Domain");
+			$ascioParams = $this->mapToOrder($params, "Restore");
 		} catch (AscioException $e) {
 			return array("error" => $e->getMessage());
 		}
@@ -803,7 +829,7 @@ Class Request {
 	public function changeOwner($params) {
 		$params = $this->setParams($params);
 		try {
-			$ascioParams = $this->mapToOrder($params, "Owner_Change");
+			$ascioParams = $this->mapToOrder($params, "OwnerChange");
 		} catch (AscioException $e) {
 			return array("error" => $e->getMessage());
 		}
@@ -817,7 +843,7 @@ Class Request {
 	public function updateDomainDetails($params) {
 		$params = $this->setParams($params);
 		try {
-			$ascioParams = $this->mapToOrder($params, "Domain_Details_Update");
+			$ascioParams = $this->mapToOrder($params, "DetailsUpdate");
 		} catch (AscioException $e) {
 			return array("error" => $e->getMessage());
 		}
@@ -830,7 +856,7 @@ Class Request {
 	public function saveNameservers($params) {
 		$params = $this->setParams($params);
 		try {
-			$ascioParams = $this->mapToOrder($params, "Nameserver_Update");
+			$ascioParams = $this->mapToOrder($params, "NameserverUpdate");
 		} catch (AscioException $e) {
 			return array("error" => $e->getMessage());
 		}
@@ -842,7 +868,7 @@ Class Request {
 	 */
 	public function saveRegistrarLock() {
 		$lockstatus = $this->params["lockenabled"]=="unlocked" ? "UnLock" : "Lock";
-		$lockParams = $this->mapToOrder($this->params, "Change_Locks");
+		$lockParams = $this->mapToOrder($this->params, "ChangeLocks");
 		$lockParams["Order"]["Domain"]["TransferLock"] = $lockstatus;
 		return $this->sendRequest("CreateOrder", $lockParams);
 	}
@@ -861,7 +887,7 @@ Class Request {
 	public function updateEPPCode($params) {
 		$params = $this->setParams($params);
 		try {
-			$ascioParams = $this->mapToOrder($params, "Update_AuthInfo");
+			$ascioParams = $this->mapToOrder($params, "UpdateAuthInfo");
 		} catch (AscioException $e) {
 			return array("error" => $e->getMessage());
 		}
@@ -957,7 +983,7 @@ Class Request {
 			// Auto-expire if configured
 			$orderType = $order->Order->Type ?? '';
 			if (($this->params["AutoExpire"] ?? "") === "on" &&
-				($orderType === "Register_Domain" || $orderType === "Transfer_Domain")) {
+				($orderType === "Register" || $orderType === "Transfer")) {
 				sleep(5);
 				$this->expireDomain($this->params);
 			}
@@ -1007,9 +1033,9 @@ Class Request {
 	public function sendStatus($order, $domainId, $orderStatus, $errors) {
 		if (($this->params["DetailedOrderStatus"] ?? "") !== "on") return null;
 		$orderType = $order->Order->Type ?? '';
-		$allowedTypes = ["Register_Domain", "Transfer_Domain", "Nameserver_Update", "Delete_Domain",
-			"Restore_Domain", "Queue_Domain", "Renew_Domain", "Unexpire_Domain", "Contact_Update",
-			"Domain_Details_Update", "Update_AuthInfo", "Registrant_Details_Update", "Change_Locks", "Owner_Change"];
+		$allowedTypes = ["Register", "Transfer", "NameserverUpdate", "Delete",
+			"Restore", "Queue", "Renew", "Unexpire", "ContactUpdate",
+			"DetailsUpdate", "UpdateAuthInfo", "RegistrantDetailsUpdate", "ChangeLocks", "OwnerChange"];
 		if (!in_array($orderType, $allowedTypes)) return null;
 		$notifyStatuses = ['Completed', 'Failed', 'Invalid', 'Pending_End_User_Action', 'Pending_Documentation'];
 		if (!in_array($orderStatus, $notifyStatuses)) return null;
@@ -1085,32 +1111,32 @@ Class Request {
 			} catch (AscioException $e) {
 				return array("error" => $e->getMessage());
 			}
-			$ascioParams["Order"]["Domain"]["Registrant"] = $newRegistrant;
-			if($updateAdmin && $updateRegistrant == "Owner_Change") {
+			$ascioParams["Order"]["Domain"]["Owner"] = $newRegistrant;
+			if($updateAdmin && $updateRegistrant == "OwnerChange") {
 				logActivity("WHMCS v3 Owner_Change + Admin_Change");
-				$ascioParams["Order"]["Domain"]["AdminContact"] = $newAdmin;
+				$ascioParams["Order"]["Domain"]["Admin"] = $newAdmin;
 			}
 			$registrantResult = $this->sendRequest("CreateOrder", $ascioParams);
 		}
 
-		if($updateTech || ($updateAdmin && $updateRegistrant != "Owner_Change")) {
+		if($updateTech || ($updateAdmin && $updateRegistrant != "OwnerChange")) {
 			logActivity("WHMCS v3 Contact_Update");
 			try {
-				$ascioParams = $this->mapToOrder($params, "Contact_Update");
+				$ascioParams = $this->mapToOrder($params, "ContactUpdate");
 			} catch (AscioException $e) {
 				return array("error" => $e->getMessage());
 			}
 			if($updateAdmin) {
-				$ascioParams["Order"]["Domain"]["AdminContact"] = $newAdmin;
+				$ascioParams["Order"]["Domain"]["Admin"] = $newAdmin;
 			} else {
-				$ascioParams["Order"]["Domain"]["AdminContact"] = $old->AdminContact;
+				$ascioParams["Order"]["Domain"]["Admin"] = $old->AdminContact;
 			}
 			if($updateTech) {
-				$ascioParams["Order"]["Domain"]["TechContact"] = $newTech;
+				$ascioParams["Order"]["Domain"]["Tech"] = $newTech;
 			} else {
-				$ascioParams["Order"]["Domain"]["TechContact"] = $old->TechContact;
+				$ascioParams["Order"]["Domain"]["Tech"] = $old->TechContact;
 			}
-			$ascioParams["Order"]["Domain"]["BillingContact"] = $old->BillingContact;
+			$ascioParams["Order"]["Domain"]["Billing"] = $old->BillingContact;
 			$contactResult = $this->sendRequest("CreateOrder", $ascioParams);
 		}
 
@@ -1132,6 +1158,7 @@ Class Request {
 	 * TLD plugins can override this to customize order structure
 	 */
 	public function mapToOrder($params, $orderType) {
+
 		// Get custom field names
 		if (!empty($params["customfields"])) {
 			$result = mysql_query("select id,fieldname from tblcustomfields");
@@ -1148,22 +1175,22 @@ Class Request {
 		$domainName = $this->domainName;
 		$proxy = ($params["Proxy_Lite"] ?? '') == "on" ? "Privacy" : "Proxy";
 
-		// v3 uses PascalCase property names
+		// v3 WSDL property names: Name (not DomainName), RenewPeriod (not RegPeriod), Owner (not Registrant)
 		$domain = array(
-			'DomainName' => $domainName,
-			'RegPeriod' => $params["regperiod"] ?? null,
+			'Name' => $domainName,
+			'RenewPeriod' => $params["regperiod"] ?? null,
 			'AuthInfo' => $params["eppcode"] ?? null,
 			'DomainPurpose' => $params["Application Purpose"] ?? null,
 			'Comment' => $params["Comment"] ?? null,
-			'Registrant' => $this->mapToRegistrant($params),
-			'AdminContact' => $this->mapToAdmin($params),
-			'TechContact' => $this->mapToTech($params),
-			'BillingContact' => $this->mapToBilling($params),
+			'Owner' => $this->mapToRegistrant($params),
+			'Admin' => $this->mapToAdmin($params),
+			'Tech' => $this->mapToTech($params),
+			'Billing' => $this->mapToBilling($params),
 			'NameServers' => $this->mapToNameservers($params),
 			'Trademark' => $this->mapToTrademark($params)
 		);
 
-		if(in_array($orderType, ["Transfer_Domain", "Register_Domain", "Domain_Details_Update"])) {
+		if(in_array($orderType, ["Transfer", "Register", "DetailsUpdate"])) {
 			$domain["PrivacyProxy"] = array("Type" => ($params["idprotection"] ?? false) ? $proxy : "None");
 		}
 
@@ -1189,8 +1216,6 @@ Class Request {
 	 */
 	protected function mapToRegistrant($params) {
 		$result = $this->mapToContact($params, "Registrant");
-		$result["Name"] = trim(($params["firstname"] ?? '') . " " . ($params["lastname"] ?? ''));
-		$result["Name"] = $result["Name"] == " " || $result["Name"] == "" ? null : $result["Name"];
 		$result["RegistrantType"] = $params["custom"]["RegistrantType"] ?? null;
 		$result["VatNumber"] = $params["custom"]["VatNumber"] ?? null;
 		$result["NexusCategory"] = $params["custom"]["NexusCategory"] ?? null;
@@ -1251,7 +1276,8 @@ Class Request {
 		$prefix = "";
 
 		if($type == "Registrant") {
-			$contactName["Name"] = trim(($params["firstname"] ?? '') . " " . ($params["lastname"] ?? ''));
+			$contactName["FirstName"] = $params["firstname"] ?? null;
+			$contactName["LastName"] = $params["lastname"] ?? null;
 		} else {
 			$prefix = strtolower($type);
 			$contactName["FirstName"] = $params[$prefix . "firstname"] ?? null;
@@ -1296,7 +1322,8 @@ Class Request {
 		);
 
 		if($type == "Registrant") {
-			$ascio['Name'] = Tools::safeTrim(($params["First Name"] ?? '') . " " . ($params["Last Name"] ?? ''));
+			$ascio['FirstName'] = Tools::safeTrim($params["First Name"] ?? null);
+			$ascio['LastName'] = Tools::safeTrim($params["Last Name"] ?? null);
 		} else {
 			$ascio['FirstName'] = Tools::safeTrim($params["First Name"] ?? null);
 			$ascio['LastName'] = Tools::safeTrim($params["Last Name"] ?? null);
@@ -1460,10 +1487,10 @@ Class Request {
 		$order = $result->Order;
 		$pending = strpos($order->Status ?? '', "Pending") !== false || strpos($order->Status ?? '', "NotSet") !== false;
 
-		if($type == "Transfer_Domain" && $pending) {
+		if($type == "Transfer" && $pending) {
 			return $this->setStatus($order->Domain ?? null, "Pending Transfer");
 		}
-		if($type == "Register_Domain" || $type == "Transfer_Domain") {
+		if($type == "Register" || $type == "Transfer") {
 			if($pending) {
 				$this->setStatus($order->Domain ?? null, "Pending");
 			} else {

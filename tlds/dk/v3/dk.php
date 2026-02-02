@@ -66,7 +66,7 @@ class dk extends Request {
 	public function expireDomain($params) {
 		$params = $this->setParams($params);
 		try {
-			$ascioParams = parent::mapToOrder($params, "Expire_Domain");
+			$ascioParams = parent::mapToOrder($params, "Expire");
 			$ascioParams["Order"]["Comments"] = "Unconfirmed";
 		} catch (AscioException $e) {
 			return array("error" => $e->getMessage());

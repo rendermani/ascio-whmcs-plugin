@@ -166,7 +166,7 @@ class DomainCallbackTest extends IntegrationTestBase
 
         // Create a mock domain with handle
         $domain = (object) [
-            'DomainName' => 'test-callback.com',
+            'Name' => 'test-callback.com',
             'DomainHandle' => 'DOM-V3-12345',
             'Status' => 'ACTIVE',
         ];
@@ -245,7 +245,7 @@ class DomainCallbackTest extends IntegrationTestBase
         // Create domain with expiry date
         $expDate = (new \DateTime('+1 year'))->format('Y-m-d\TH:i:s');
         $domain = (object) [
-            'DomainName' => 'test.com',
+            'Name' => 'test.com',
             'DomainHandle' => 'DOM-12345',
             'Status' => 'ACTIVE',
             'ExpDate' => $expDate,
@@ -273,7 +273,7 @@ class DomainCallbackTest extends IntegrationTestBase
             'OrderId' => 'ORD-12345',
             'OrderStatus' => 'Completed',
             'OrderType' => $orderType,
-            'DomainName' => 'test-callback.com',
+            'Name' => 'test-callback.com',
             'Message' => '',
             'StatusList' => ['CallbackStatus' => []],
         ];
@@ -285,15 +285,15 @@ class DomainCallbackTest extends IntegrationTestBase
     public static function orderTypeProvider(): array
     {
         return [
-            'Register Domain' => ['Register_Domain'],
-            'Transfer Domain' => ['Transfer_Domain'],
-            'Renew Domain' => ['Renew_Domain'],
-            'Expire Domain' => ['Expire_Domain'],
-            'Unexpire Domain' => ['Unexpire_Domain'],
-            'Nameserver Update' => ['Nameserver_Update'],
-            'Contact Update' => ['Contact_Update'],
-            'Owner Change' => ['Owner_Change'],
-            'Change Locks' => ['Change_Locks'],
+            'Register Domain' => ['Register'],
+            'Transfer Domain' => ['Transfer'],
+            'Renew Domain' => ['Renew'],
+            'Expire Domain' => ['Expire'],
+            'Unexpire Domain' => ['Unexpire'],
+            'Nameserver Update' => ['NameserverUpdate'],
+            'Contact Update' => ['ContactUpdate'],
+            'Owner Change' => ['OwnerChange'],
+            'Change Locks' => ['ChangeLocks'],
         ];
     }
 
@@ -318,8 +318,8 @@ class DomainCallbackTest extends IntegrationTestBase
             'MessageId' => 'MSG-' . uniqid(),
             'OrderId' => 'ORD-12345',
             'OrderStatus' => 'Failed',
-            'OrderType' => 'Register_Domain',
-            'DomainName' => 'test-callback.com',
+            'OrderType' => 'Register',
+            'Name' => 'test-callback.com',
             'Message' => 'Multiple validation errors',
             'StatusList' => [
                 'CallbackStatus' => [
