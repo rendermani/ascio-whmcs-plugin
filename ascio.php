@@ -79,6 +79,197 @@ function ascio_getConfigArray() {
 	);
 	return $configarray;
 }
+
+/**
+ * Validate configuration settings when admin saves registrar settings.
+ * Also triggers initial TLD sync and field generation with authenticated API.
+ *
+ * @param array $params Module parameters including credentials
+ * @throws \WHMCS\Exception\Module\InvalidConfiguration If credentials are invalid
+ */
+function ascio_config_validate($params) {
+    $username = $params['Username'] ?? '';
+    $password = $params['Password'] ?? '';
+    $testMode = ($params['TestMode'] ?? '') === 'on';
+
+    // Skip validation if credentials are empty (initial setup may have blank fields)
+    if (empty($username) || empty($password)) {
+        return;
+    }
+
+    // Validate credentials against Ascio API
+    try {
+        $wsdlPrefix = $testMode ? 'https://demo' : 'https://aws';
+        $wsdlUrl = $wsdlPrefix . '.ascio.info/2012/01/01/AscioService.wsdl';
+
+        $client = new \SoapClient($wsdlUrl, [
+            'trace' => true,
+            'exceptions' => true,
+            'connection_timeout' => 10,
+        ]);
+
+        $response = $client->LogIn([
+            'credentials' => [
+                'Account' => $username,
+                'Password' => $password
+            ]
+        ]);
+
+        $resultCode = $response->LogInResult->ResultCode ?? 0;
+        if ($resultCode !== 200) {
+            $message = $response->LogInResult->Message ?? 'Unknown error';
+            throw new \WHMCS\Exception\Module\InvalidConfiguration(
+                "Ascio authentication failed: {$message} (Code: {$resultCode})"
+            );
+        }
+
+        // Credentials valid - trigger TLD sync and field generation
+        ascio_syncOnConfigSave($username, $password, $testMode);
+
+    } catch (\SoapFault $e) {
+        throw new \WHMCS\Exception\Module\InvalidConfiguration(
+            "Could not connect to Ascio API: " . $e->getMessage()
+        );
+    } catch (\WHMCS\Exception\Module\InvalidConfiguration $e) {
+        throw $e; // Re-throw validation exceptions
+    } catch (\Exception $e) {
+        // Log but don't fail for non-critical errors (sync failures shouldn't block config save)
+        logActivity("Ascio: Config validation warning: " . $e->getMessage());
+    }
+}
+
+/**
+ * Sync TLD data and generate fields after successful credential validation.
+ * Runs in background-safe manner with timeouts.
+ *
+ * @param string $username Ascio username
+ * @param string $password Ascio password
+ * @param bool $testMode Whether test mode is enabled
+ */
+function ascio_syncOnConfigSave($username, $password, $testMode) {
+    try {
+        // Ensure tables exist first
+        ascio_ensureTables();
+
+        // Sync TLD data from TLDKit API with authentication
+        $tldKitUrl = 'https://aws.ascio.info/tldkit.xq';
+
+        require_once(__DIR__ . '/lib/TldKitFieldsClient.php');
+        $client = new \ascio\TldKitFieldsClient($tldKitUrl, $username, $password, $testMode);
+        $apiData = $client->fetchAll();
+
+        if (empty($apiData) || empty($apiData['tld'])) {
+            logActivity("Ascio: TLDKit API returned no TLD data");
+            return;
+        }
+
+        $tlds = $apiData['tld'];
+        logActivity("Ascio: Syncing " . count($tlds) . " TLDs from TLDKit API");
+
+        // Batch insert/update TLD data
+        $now = date('Y-m-d H:i:s');
+        foreach ($tlds as $tld) {
+            try {
+                Capsule::table('tblasciotlds')->updateOrInsert(
+                    ['Tld' => $tld['tld']],
+                    [
+                        'Threshold' => $tld['Threshold'] ?? 0,
+                        'Renew' => ($tld['Renew'] ?? '') === 'true' ? 1 : 0,
+                        'LocalPresenceRequired' => ($tld['LocalPresenceRequired'] ?? '') === 'true' ? 1 : 0,
+                        'LocalPresenceOffered' => ($tld['LocalPresenceOffered'] ?? '') === 'true' ? 1 : 0,
+                        'AuthCodeRequired' => ($tld['AuthCodeRequired'] ?? '') === 'true' ? 1 : 0,
+                        'Country' => $tld['Country'] ?? null,
+                        'LastUpdated' => $now,
+                    ]
+                );
+            } catch (\Exception $e) {
+                // Continue with other TLDs if one fails
+            }
+        }
+
+        // Generate additional fields from API data
+        ascio_generateFields($apiData);
+
+        logActivity("Ascio: TLD sync completed - " . count($tlds) . " TLDs processed");
+
+    } catch (\Exception $e) {
+        logActivity("Ascio: TLD sync failed: " . $e->getMessage());
+        // Don't throw - sync failure shouldn't block config save
+    }
+}
+
+/**
+ * Ensure required database tables exist.
+ */
+function ascio_ensureTables() {
+    // Create tblasciotlds if not exists
+    if (!Capsule::schema()->hasTable('tblasciotlds')) {
+        Capsule::schema()->create('tblasciotlds', function($table) {
+            $table->string('Tld', 255)->unique();
+            $table->integer('Threshold')->default(0);
+            $table->boolean('Renew')->default(false);
+            $table->boolean('LocalPresenceRequired')->default(false);
+            $table->boolean('LocalPresenceOffered')->default(false);
+            $table->boolean('AuthCodeRequired')->default(false);
+            $table->string('Country', 255)->nullable();
+            $table->timestamp('LastUpdated')->nullable();
+        });
+    }
+
+    // Create tblasciojobs if not exists
+    if (!Capsule::schema()->hasTable('tblasciojobs')) {
+        Capsule::schema()->create('tblasciojobs', function($table) {
+            $table->increments('id');
+            $table->integer('last_id')->index();
+            $table->string('order_id', 255)->index();
+            $table->string('method', 255);
+            $table->text('request');
+            $table->text('response');
+            $table->timestamp('date')->useCurrent();
+        });
+    }
+
+    // Create tblasciohandles if not exists
+    if (!Capsule::schema()->hasTable('tblasciohandles')) {
+        Capsule::schema()->create('tblasciohandles', function($table) {
+            $table->string('type', 256);
+            $table->integer('whmcs_id')->index();
+            $table->string('ascio_id', 256)->index();
+            $table->string('domain', 255)->index();
+        });
+    }
+}
+
+/**
+ * Generate additional domain fields from TLDKit API data.
+ *
+ * @param array $apiData TLDKit API response data
+ */
+function ascio_generateFields($apiData) {
+    try {
+        require_once(__DIR__ . '/lib/FieldRegistry.php');
+        require_once(__DIR__ . '/lib/ConditionalFieldMapper.php');
+        require_once(__DIR__ . '/lib/FieldGenerator.php');
+
+        $registry = new \ascio\FieldRegistry();
+        $mapper = new \ascio\ConditionalFieldMapper($registry);
+        $generator = new \ascio\FieldGenerator($registry, $mapper);
+
+        // Check if data has changed using hash
+        $newHash = md5(json_encode($apiData));
+        $hashFile = __DIR__ . '/resources/domains/.fields-hash';
+        $oldHash = file_exists($hashFile) ? trim(file_get_contents($hashFile)) : '';
+
+        if ($newHash !== $oldHash) {
+            $files = $generator->writeAll($apiData, __DIR__);
+            file_put_contents($hashFile, $newHash);
+            logActivity("Ascio: Regenerated additional domain fields (" . count($files) . " files)");
+        }
+    } catch (\Exception $e) {
+        logActivity("Ascio: Field generation warning: " . $e->getMessage());
+    }
+}
+
 function ascio_AdminCustomButtonArray() {
     $buttonarray = array(
 	 "Update EPP Code" => "UpdateEPPCode",

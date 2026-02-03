@@ -158,84 +158,17 @@ executeSchema("Creating tblascio_import_log table", function() {
     }
 });
 
-echo $lineBreak . "* Syncing TLD data from Ascio TLDKit API *" . $lineBreak;
+// NOTE: TLD sync and field generation now happen automatically when
+// registrar credentials are saved in WHMCS Admin (via ascio_config_validate).
+// This ensures the API calls use proper authentication.
+//
+// If you need to manually sync TLDs, configure the registrar credentials first,
+// then save the settings - the sync will trigger automatically.
 
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, "https://aws.ascio.info/tldkit.xq");
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-$tldsString = curl_exec($ch);
-$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$curlError = curl_error($ch);
-curl_close($ch);
-
-if ($curlError) {
-    echo "Error fetching TLD data: " . $curlError . $lineBreak;
-} elseif ($httpCode !== 200) {
-    echo "Error fetching TLD data: HTTP " . $httpCode . $lineBreak;
-} else {
-    $tlds = json_decode($tldsString);
-
-    if (!$tlds || !isset($tlds->tld)) {
-        echo "Error: Invalid TLD data received" . $lineBreak;
-    } else {
-        $count = 0;
-        foreach ($tlds->tld as $tld) {
-            echo "+ " . $tld->tld;
-            flush();
-
-            try {
-                // Use upsert pattern: delete then insert
-                Capsule::table('tblasciotlds')
-                    ->where('Tld', $tld->tld)
-                    ->delete();
-
-                Capsule::table('tblasciotlds')->insert([
-                    'Tld' => $tld->tld,
-                    'Threshold' => $tld->Threshold ?? 0,
-                    'Renew' => ($tld->Renew ?? '') === 'true' ? 1 : 0,
-                    'LocalPresenceRequired' => ($tld->LocalPresenceRequired ?? '') === 'true' ? 1 : 0,
-                    'LocalPresenceOffered' => ($tld->LocalPresenceOffered ?? '') === 'true' ? 1 : 0,
-                    'AuthCodeRequired' => ($tld->AuthCodeRequired ?? '') === 'true' ? 1 : 0,
-                    'Country' => $tld->Country ?? null,
-                    'LastUpdated' => date('Y-m-d H:i:s')
-                ]);
-
-                echo " [OK]" . $lineBreak;
-                $count++;
-            } catch (\Exception $e) {
-                echo " [Error: " . $e->getMessage() . "]" . $lineBreak;
-            }
-        }
-
-        echo $lineBreak . "* Synced " . $count . " TLDs *" . $lineBreak;
-    }
-}
-
-echo $lineBreak . "* Generating additional domain fields from API *" . $lineBreak;
-
-try {
-    require_once(__DIR__ . "/lib/FieldRegistry.php");
-    require_once(__DIR__ . "/lib/ConditionalFieldMapper.php");
-    require_once(__DIR__ . "/lib/FieldGenerator.php");
-    require_once(__DIR__ . "/lib/TldKitFieldsClient.php");
-
-    $fieldsApiUrl = "https://aws.ascio.info";
-    $client = new \ascio\TldKitFieldsClient($fieldsApiUrl);
-    $apiData = $client->fetchAll();
-
-    $registry = new \ascio\FieldRegistry();
-    $mapper = new \ascio\ConditionalFieldMapper($registry);
-    $generator = new \ascio\FieldGenerator($registry, $mapper);
-
-    $files = $generator->writeAll($apiData, __DIR__);
-    foreach ($files as $name => $path) {
-        echo "  Generated: {$name}" . $lineBreak;
-    }
-    echo "  [OK]" . $lineBreak;
-} catch (\Exception $e) {
-    echo "  [Warning: Could not generate fields: " . $e->getMessage() . "]" . $lineBreak;
-    echo "  Keeping existing generated files as fallback." . $lineBreak;
-}
+echo $lineBreak . "* TLD sync and field generation *" . $lineBreak;
+echo "  TLD data and additional fields will be synced automatically" . $lineBreak;
+echo "  when you save your Ascio registrar credentials in WHMCS Admin:" . $lineBreak;
+echo "  Setup -> Products/Services -> Domain Registrars -> Ascio" . $lineBreak;
+echo "  [Deferred to config save]" . $lineBreak;
 
 echo $lineBreak . "* Installation complete *" . $lineBreak;

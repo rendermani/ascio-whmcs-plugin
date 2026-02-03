@@ -6,25 +6,42 @@ namespace ascio;
  * TLDKit Fields API Client
  *
  * Fetches required_fields and conditional_fields data from the TLDKit API.
- * Handles pagination automatically.
+ * Handles pagination automatically. Supports authentication via query parameters.
  *
  * Local:      http://localhost:8021/exist/apps/aws/tldkit.xq (full path, no proxy)
  * Production: https://aws.ascio.info (proxied, no path needed)
+ *
+ * Authentication: Pass username, password, and env (testing/production) as query params.
  */
 class TldKitFieldsClient
 {
     private $baseUrl;
     private $perPage;
     private $timeout;
+    private $username;
+    private $password;
+    private $env;
 
     /**
      * @param string $baseUrl Full base URL to the TLDKit endpoint
+     * @param string|null $username Optional username for authentication
+     * @param string|null $password Optional password for authentication
+     * @param bool $testMode Whether to use testing environment (default: false = production)
      * @param int $perPage Number of results per page
      * @param int $timeout HTTP request timeout in seconds
      */
-    public function __construct(string $baseUrl, int $perPage = 500, int $timeout = 30)
-    {
+    public function __construct(
+        string $baseUrl,
+        ?string $username = null,
+        ?string $password = null,
+        bool $testMode = false,
+        int $perPage = 500,
+        int $timeout = 30
+    ) {
         $this->baseUrl = rtrim($baseUrl, '/');
+        $this->username = $username;
+        $this->password = $password;
+        $this->env = $testMode ? 'testing' : 'production';
         $this->perPage = $perPage;
         $this->timeout = $timeout;
     }
@@ -70,12 +87,19 @@ class TldKitFieldsClient
     }
 
     /**
-     * Build the request URL with query parameters.
+     * Build the request URL with query parameters including authentication.
      */
     private function buildUrl(int $page): string
     {
         $separator = (strpos($this->baseUrl, '?') !== false) ? '&' : '?';
         $url = $this->baseUrl . $separator . 'export=all&per_page=' . $this->perPage;
+
+        // Add authentication parameters if provided
+        if (!empty($this->username) && !empty($this->password)) {
+            $url .= '&username=' . urlencode($this->username);
+            $url .= '&password=' . urlencode($this->password);
+            $url .= '&env=' . urlencode($this->env);
+        }
 
         if ($page > 1) {
             $url .= '&page=' . $page;
@@ -94,16 +118,20 @@ class TldKitFieldsClient
     private function makeRequest(string $url): string
     {
         $ch = curl_init();
+
+        $headers = [
+            'Accept: application/json',
+            'User-Agent: WHMCS-FieldGenerator/1.0',
+        ];
+
         curl_setopt_array($ch, [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => $this->timeout,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_MAXREDIRS => 3,
-            CURLOPT_HTTPHEADER => [
-                'Accept: application/json',
-                'User-Agent: WHMCS-FieldGenerator/1.0',
-            ],
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_SSL_VERIFYPEER => true,
         ]);
 
         $response = curl_exec($ch);
@@ -113,6 +141,14 @@ class TldKitFieldsClient
 
         if ($curlError) {
             throw new \RuntimeException("TLDKit API request failed: " . $curlError);
+        }
+
+        if ($httpCode === 401) {
+            throw new \RuntimeException("TLDKit API authentication failed (HTTP 401). Check credentials.");
+        }
+
+        if ($httpCode === 403) {
+            throw new \RuntimeException("TLDKit API access forbidden (HTTP 403). Check credentials and permissions.");
         }
 
         if ($httpCode !== 200) {

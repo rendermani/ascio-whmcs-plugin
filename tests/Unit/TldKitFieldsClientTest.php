@@ -32,6 +32,30 @@ class TldKitFieldsClientTest extends TestCase
         $this->assertInstanceOf(TldKitFieldsClient::class, $client);
     }
 
+    #[Test]
+    public function constructorAcceptsCredentials(): void
+    {
+        $client = new TldKitFieldsClient(
+            'https://aws.ascio.info/tldkit.xq',
+            'testuser',
+            'testpass',
+            false // production
+        );
+        $this->assertInstanceOf(TldKitFieldsClient::class, $client);
+    }
+
+    #[Test]
+    public function constructorAcceptsTestMode(): void
+    {
+        $client = new TldKitFieldsClient(
+            'https://aws.ascio.info/tldkit.xq',
+            'testuser',
+            'testpass',
+            true // test mode
+        );
+        $this->assertInstanceOf(TldKitFieldsClient::class, $client);
+    }
+
     // ========================================================================
     // Hash Computation Tests
     // ========================================================================
@@ -76,7 +100,7 @@ class TldKitFieldsClientTest extends TestCase
     #[Test]
     public function fetchAllThrowsOnUnreachableUrl(): void
     {
-        $client = new TldKitFieldsClient('http://127.0.0.1:99999/nonexistent', 500, 2);
+        $client = new TldKitFieldsClient('http://127.0.0.1:99999/nonexistent', null, null, false, 500, 2);
 
         $this->expectException(\RuntimeException::class);
         $client->fetchAll();
@@ -85,9 +109,93 @@ class TldKitFieldsClientTest extends TestCase
     #[Test]
     public function fetchAllThrowsOnInvalidUrl(): void
     {
-        $client = new TldKitFieldsClient('not-a-valid-url', 500, 2);
+        $client = new TldKitFieldsClient('not-a-valid-url', null, null, false, 500, 2);
 
         $this->expectException(\RuntimeException::class);
         $client->fetchAll();
+    }
+
+    // ========================================================================
+    // URL Building Tests (via reflection to test private method)
+    // ========================================================================
+
+    #[Test]
+    public function urlContainsAuthParamsWhenCredentialsProvided(): void
+    {
+        $client = new TldKitFieldsClient(
+            'https://aws.ascio.info/tldkit.xq',
+            'myuser',
+            'mypass',
+            false // production
+        );
+
+        // Use reflection to access private buildUrl method
+        $reflection = new \ReflectionClass($client);
+        $method = $reflection->getMethod('buildUrl');
+        $method->setAccessible(true);
+
+        $url = $method->invoke($client, 1);
+
+        $this->assertStringContainsString('username=myuser', $url);
+        $this->assertStringContainsString('password=mypass', $url);
+        $this->assertStringContainsString('env=production', $url);
+        $this->assertStringContainsString('export=all', $url);
+    }
+
+    #[Test]
+    public function urlContainsTestingEnvWhenTestModeEnabled(): void
+    {
+        $client = new TldKitFieldsClient(
+            'https://aws.ascio.info/tldkit.xq',
+            'myuser',
+            'mypass',
+            true // test mode
+        );
+
+        $reflection = new \ReflectionClass($client);
+        $method = $reflection->getMethod('buildUrl');
+        $method->setAccessible(true);
+
+        $url = $method->invoke($client, 1);
+
+        $this->assertStringContainsString('env=testing', $url);
+    }
+
+    #[Test]
+    public function urlOmitsAuthParamsWhenNoCredentials(): void
+    {
+        $client = new TldKitFieldsClient('https://aws.ascio.info/tldkit.xq');
+
+        $reflection = new \ReflectionClass($client);
+        $method = $reflection->getMethod('buildUrl');
+        $method->setAccessible(true);
+
+        $url = $method->invoke($client, 1);
+
+        $this->assertStringNotContainsString('username=', $url);
+        $this->assertStringNotContainsString('password=', $url);
+        $this->assertStringNotContainsString('env=', $url);
+        $this->assertStringContainsString('export=all', $url);
+    }
+
+    #[Test]
+    public function urlEncodesSpecialCharactersInCredentials(): void
+    {
+        $client = new TldKitFieldsClient(
+            'https://aws.ascio.info/tldkit.xq',
+            'user@domain.com',
+            'pass&word=123',
+            false
+        );
+
+        $reflection = new \ReflectionClass($client);
+        $method = $reflection->getMethod('buildUrl');
+        $method->setAccessible(true);
+
+        $url = $method->invoke($client, 1);
+
+        // @ should be encoded as %40, & as %26, = as %3D
+        $this->assertStringContainsString('username=user%40domain.com', $url);
+        $this->assertStringContainsString('password=pass%26word%3D123', $url);
     }
 }
