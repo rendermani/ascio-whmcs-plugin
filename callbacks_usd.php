@@ -1,6 +1,6 @@
 <?php
 
-use ascio\v2\domains\Request as Request;
+use ascio\Request as Request;
 
 try {
 	require_once("../../../init.php");

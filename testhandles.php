@@ -1,6 +1,6 @@
 <?php 
 
-use ascio\v2\domains\Request as Request;
+use ascio\Request as Request;
 
 error_reporting(E_ALL);
 ini_set('error_reporting', E_ERROR);

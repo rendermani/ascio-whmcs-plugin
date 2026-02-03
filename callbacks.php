@@ -119,7 +119,7 @@ function routeToDomainCallback($orderId, $messageId, $orderStatus, $object, $typ
     require_once __DIR__ . '/../includes/registrarfunctions.php';
     require_once __DIR__ . '/domains/lib/Request.php';
 
-    use ascio\v2\domains\Request;
+    use ascio\Request;
 
     // Determine account based on request path
     $pathArr = explode('/', $_SERVER['PHP_SELF']);

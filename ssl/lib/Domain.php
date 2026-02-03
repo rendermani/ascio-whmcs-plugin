@@ -10,10 +10,17 @@ class Domain {
     public function __construct($name) {
         $this->name = $name; 
     }
+    /**
+     * Login to Ascio API and obtain a session.
+     *
+     * Note: This uses the v2 LogIn API with sessionId-based auth.
+     * v3 API uses SOAP header authentication instead. This method is
+     * still called by Ssl::checkDomain() for domain search operations.
+     */
     public function login(Params $params) {
         $this->testmode = $params->testmode;
         $this->client = new \SoapClient($params->getWsdlV2(),array( "trace" => 1 ));
-        try{	
+        try{
             $result = $this->client->logIn($params->getCredentials());
             if($result->LogInResult->Values) {
                 echo "Login ResultCode : ".$result->LogInResult->ResultCode."\r\n";

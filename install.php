@@ -109,14 +109,51 @@ executeSchema("Adding domain column to tblasciohandles (if missing)", function()
     }
 });
 
-// Create mod_asciosession table
-executeSchema("Creating mod_asciosession table", function() {
-    if (!Capsule::schema()->hasTable('mod_asciosession')) {
-        Capsule::schema()->create('mod_asciosession', function($table) {
-            $table->string('account', 255)->unique();
-            $table->string('sessionId', 255);
-            $table->timestamp('timestamp')->useCurrent();
-            $table->index('timestamp', 'date');
+// Create tblascio_domain_history table for PS-148
+executeSchema("Creating tblascio_domain_history table", function() {
+    if (!Capsule::schema()->hasTable('tblascio_domain_history')) {
+        Capsule::schema()->create('tblascio_domain_history', function($table) {
+            $table->increments('id');
+            $table->integer('domain_id')->index();
+            $table->string('domain_name', 255)->index();
+            $table->string('ascio_status', 100);
+            $table->string('whmcs_status', 50);
+            $table->string('order_id', 100)->nullable()->index();
+            $table->string('order_type', 100)->nullable();
+            $table->text('message')->nullable();
+            $table->timestamp('created_at')->useCurrent();
+        });
+    }
+});
+
+// Create tblascio_transfer_status table for PS-145 Transfer Tracking
+executeSchema("Creating tblascio_transfer_status table", function() {
+    if (!Capsule::schema()->hasTable('tblascio_transfer_status')) {
+        Capsule::schema()->create('tblascio_transfer_status', function($table) {
+            $table->increments('id');
+            $table->integer('domain_id')->unsigned();
+            $table->string('domain_name', 255);
+            $table->string('current_stage', 50);
+            $table->string('order_id', 255)->nullable();
+            $table->timestamp('started_at')->nullable();
+            $table->timestamp('updated_at')->nullable();
+            $table->text('message')->nullable();
+            $table->unique('domain_id');
+            $table->index('current_stage');
+        });
+    }
+});
+
+// Create tblascio_import_log table for PS-147 Bulk Domain Import
+executeSchema("Creating tblascio_import_log table", function() {
+    if (!Capsule::schema()->hasTable('tblascio_import_log')) {
+        Capsule::schema()->create('tblascio_import_log', function($table) {
+            $table->increments('id');
+            $table->string('domain_name', 255)->index();
+            $table->string('action', 50)->index(); // imported, skipped, conflict, unmatched, error
+            $table->integer('client_id')->nullable()->index();
+            $table->text('message')->nullable();
+            $table->timestamp('created_at')->useCurrent();
         });
     }
 });
@@ -173,6 +210,32 @@ if ($curlError) {
 
         echo $lineBreak . "* Synced " . $count . " TLDs *" . $lineBreak;
     }
+}
+
+echo $lineBreak . "* Generating additional domain fields from API *" . $lineBreak;
+
+try {
+    require_once(__DIR__ . "/lib/FieldRegistry.php");
+    require_once(__DIR__ . "/lib/ConditionalFieldMapper.php");
+    require_once(__DIR__ . "/lib/FieldGenerator.php");
+    require_once(__DIR__ . "/lib/TldKitFieldsClient.php");
+
+    $fieldsApiUrl = "https://aws.ascio.info";
+    $client = new \ascio\TldKitFieldsClient($fieldsApiUrl);
+    $apiData = $client->fetchAll();
+
+    $registry = new \ascio\FieldRegistry();
+    $mapper = new \ascio\ConditionalFieldMapper($registry);
+    $generator = new \ascio\FieldGenerator($registry, $mapper);
+
+    $files = $generator->writeAll($apiData, __DIR__);
+    foreach ($files as $name => $path) {
+        echo "  Generated: {$name}" . $lineBreak;
+    }
+    echo "  [OK]" . $lineBreak;
+} catch (\Exception $e) {
+    echo "  [Warning: Could not generate fields: " . $e->getMessage() . "]" . $lineBreak;
+    echo "  Keeping existing generated files as fallback." . $lineBreak;
 }
 
 echo $lineBreak . "* Installation complete *" . $lineBreak;

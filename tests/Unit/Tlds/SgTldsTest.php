@@ -194,7 +194,8 @@ class SgTldsTest extends TestCase
             'domainname' => 'example.com.sg',
             'additionalfields' => [
                 'Registrant ID' => '200012345K',
-                'Admin ID' => 'S7654321B'
+                'Admin ID' => 'S7654321B',
+                'Local Presence' => ''
             ]
         ]);
 
@@ -238,7 +239,8 @@ class SgTldsTest extends TestCase
             'domainname' => 'school.edu.sg',
             'additionalfields' => [
                 'Registrant ID' => 'T08GB0001G',  // Educational institution
-                'Admin ID' => 'S7654321B'
+                'Admin ID' => 'S7654321B',
+                'Local Presence' => ''
             ]
         ]);
 
@@ -260,7 +262,8 @@ class SgTldsTest extends TestCase
             'domainname' => 'charity.org.sg',
             'additionalfields' => [
                 'Registrant ID' => 'S99SS0001G',  // Society/Association
-                'Admin ID' => 'S7654321B'
+                'Admin ID' => 'S7654321B',
+                'Local Presence' => ''
             ]
         ]);
 
@@ -304,7 +307,8 @@ class SgTldsTest extends TestCase
             'domainname' => $domainName,
             'additionalfields' => [
                 'Registrant ID' => 'S1234567A',
-                'Admin ID' => 'S7654321B'
+                'Admin ID' => 'S7654321B',
+                'Local Presence' => ''
             ]
         ]);
 

@@ -24,9 +24,4 @@ echo "- Creating tblasciotlds table".$lineBreak;
 $q = 'CREATE TABLE IF NOT EXISTS `mod_asciossl` (`id` int(8) NOT NULL, `user_id` int(8) NOT NULL, `order_id` char(10) NOT NULL, `certificate_id` char(20) NOT NULL, `type` char(255) NOT NULL, `period` int(2) NOT NULL, `status` char(100) NOT NULL, `token` char(100) NOT NULL, PRIMARY KEY (`id`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1;';
 mysql_query($q);
 if(mysql_error()) echo mysql_error().$lineBreak;
-echo "- Creating mod_asciosession table".$lineBreak;
-$q = 'CREATE TABLE IF NOT EXISTS `mod_asciosession` (`account` varchar(255) NOT NULL, `sessionId` varchar(255) NOT NULL, `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, UNIQUE KEY `account` (`account`), KEY `date` (`timestamp`) )';
-mysql_query($q);
-if(mysql_error()) echo mysql_error()."\n<br>";
-
 ?>

@@ -802,18 +802,59 @@ try {
     $startTime = time();
     echo "=== TLD Synchronization Started ===\n";
     echo "Timestamp: " . date('Y-m-d H:i:s') . "\n";
-    
+
     $syncService = new TldSyncService();
     $syncService->runSync(); // Will automatically choose full or incremental sync
-    
+
     $endTime = time();
     $duration = $endTime - $startTime;
     $durationFormatted = gmdate("H:i:s", $duration);
-    
+
     echo "\n=== TLD Synchronization Completed ===\n";
     echo "End time: " . date('Y-m-d H:i:s') . "\n";
     echo "Total duration: {$durationFormatted}\n";
     echo "✓ Sync completed successfully!\n";
+
+    // Regenerate additional domain fields from TLDKit API
+    echo "\n=== Generating Additional Domain Fields ===\n";
+    try {
+        require_once(realpath(dirname(__FILE__)) . "/FieldRegistry.php");
+        require_once(realpath(dirname(__FILE__)) . "/ConditionalFieldMapper.php");
+        require_once(realpath(dirname(__FILE__)) . "/FieldGenerator.php");
+        require_once(realpath(dirname(__FILE__)) . "/TldKitFieldsClient.php");
+
+        $fieldsApiUrl = "https://aws.ascio.info";
+        $ascioBasePath = realpath(dirname(__FILE__) . "/..");
+
+        $client = new \ascio\TldKitFieldsClient($fieldsApiUrl);
+        $apiData = $client->fetchAll();
+        $newHash = $client->computeHash($apiData);
+
+        // Only regenerate if data changed
+        $hashFile = $ascioBasePath . '/resources/domains/.fields-hash';
+        $oldHash = file_exists($hashFile) ? trim(file_get_contents($hashFile)) : '';
+
+        if ($newHash !== $oldHash) {
+            $registry = new \ascio\FieldRegistry();
+            $mapper = new \ascio\ConditionalFieldMapper($registry);
+            $generator = new \ascio\FieldGenerator($registry, $mapper);
+
+            $files = $generator->writeAll($apiData, $ascioBasePath);
+            file_put_contents($hashFile, $newHash);
+
+            foreach ($files as $name => $path) {
+                echo "  Generated: {$name}\n";
+            }
+            echo "✓ Field definitions updated.\n";
+        } else {
+            echo "✓ Field definitions unchanged (hash match).\n";
+        }
+    } catch (Exception $e) {
+        $warnMsg = "Warning: Could not regenerate field definitions: " . $e->getMessage();
+        echo "{$warnMsg}\n";
+        echo "Keeping existing generated files as fallback.\n";
+        Tools::log($warnMsg);
+    }
 
 } catch (Exception $e) {
     $errorMsg = "FATAL ERROR: " . $e->getMessage();
@@ -821,7 +862,7 @@ try {
     echo "{$errorMsg}\n";
     echo "Stack trace:\n" . $e->getTraceAsString() . "\n";
     echo "❌ Sync failed!\n";
-    
+
     // Log the fatal error
     Tools::log($errorMsg . " Stack: " . $e->getTraceAsString());
 }

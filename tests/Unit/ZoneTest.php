@@ -26,6 +26,7 @@ class ZoneTest extends TestCase
 
         $this->defaultParams = [
             'Username' => 'testuser',
+            'UserName' => 'testuser',
             'Password' => 'testpass',
             'TestMode' => 'on',
             'sld' => 'example',

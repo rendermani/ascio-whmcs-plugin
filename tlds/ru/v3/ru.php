@@ -40,7 +40,7 @@ class ru extends Request {
 			$contact["RegistrantType"] = "PRS";
 
 			// For individuals, OrgName should be the person's name
-			$contact["OrgName"] = $contact["Name"];
+			$contact["OrgName"] = trim(($contact["FirstName"] ?? '') . ' ' . ($contact["LastName"] ?? ''));
 		}
 
 		$contact["Options"] = $params["additionalfields"]["NIC/D handle"] ?? null;

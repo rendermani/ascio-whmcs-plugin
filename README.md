@@ -4,14 +4,14 @@ WHMCS modules for Ascio domain registration, SSL certificates, and related servi
 
 ## Modules Included
 
-| Module | Type | Directory | WHMCS Location |
-|--------|------|-----------|----------------|
-| **Ascio Domains** | Registrar | `./` (root) | `/modules/registrars/ascio/` |
-| **Ascio SSL** | Server | `ssl/` | `/modules/servers/asciossl/` |
-| **Ascio Monitoring** | Server | `monitoring/` | `/modules/servers/asciomonitoring/` |
-| **Ascio Defensive** | Server | `defensive/` | `/modules/servers/asciodefensive/` |
-| **Ascio TMCH** | Server | `tmch/` | `/modules/servers/asciotmch/` |
-| **Ascio Tools** | Addon | `tools/` | `/modules/addons/asciotools/` |
+| Module | Type | Directory | WHMCS Location | Documentation |
+|--------|------|-----------|----------------|---------------|
+| **Ascio Domains** | Registrar | `./` (root) | `/modules/registrars/ascio/` | [docs/domains.md](docs/domains.md) |
+| **Ascio SSL** | Server | `ssl/` | `/modules/servers/asciossl/` | [docs/ssl.md](docs/ssl.md) |
+| **Ascio Monitoring** | Server | `monitoring/` | `/modules/servers/asciomonitoring/` | [docs/monitoring.md](docs/monitoring.md) |
+| **Ascio Defensive** | Server | `defensive/` | `/modules/servers/asciodefensive/` | [docs/defensive.md](docs/defensive.md) |
+| **Ascio TMCH** | Server | `tmch/` | `/modules/servers/asciotmch/` | [docs/tmch.md](docs/tmch.md) |
+| **Ascio Tools** | Addon | `tools/` | `/modules/addons/asciotools/` | - |
 
 ## Requirements
 
@@ -80,7 +80,7 @@ Configure in WHMCS Admin → Setup → Domain Registrars → Ascio:
 - **Username**: Your Ascio account username
 - **Password**: Your Ascio account password
 - **Test Mode**: Enable for demo/testing environment
-- **API Version**: v2 (default) or v3
+- **API Version**: v3
 
 ### Shared Settings (via Tools Addon)
 
@@ -134,6 +134,22 @@ export ASCIO_TEST_ACCOUNT="your_demo_account"
 export ASCIO_TEST_PASSWORD="your_demo_password"
 export ASCIO_TEST_MODE="true"
 ```
+
+## Documentation
+
+Detailed documentation for each module:
+
+- **[Domain Registrar Module](docs/domains.md)** - Domain registration, transfer, DNS management
+- **[SSL Certificate Module](docs/ssl.md)** - SSL certificate provisioning and management
+- **[Monitoring Module](docs/monitoring.md)** - Domain monitoring/NameWatch
+- **[Defensive Module](docs/defensive.md)** - Defensive/DPML registrations
+- **[TMCH Module](docs/tmch.md)** - Trademark Clearinghouse
+
+### Additional Resources
+
+- [API Gap Analysis](docs/GAP_ANALYSIS.md) - V3 API coverage and implementation status
+- [Additional Fields Report](docs/ADDITIONAL_FIELDS_REPORT.md) - TLD-specific field analysis
+- [Consolidation Plan](docs/ASCIO_WHMCS_CONSOLIDATION_PLAN.md) - Monorepo architecture
 
 ## Changelog
 

@@ -5,7 +5,7 @@ require_once realpath(dirname(__FILE__))."/../../../../includes/registrarfunctio
 require_once("vendor/autoload.php");
 require_once("Request.php");
 
-use ascio\v2\domains\Request;
+use ascio\Request;
 class DomainObject {
     private $idnSecondLevel;
     private $topLevel;

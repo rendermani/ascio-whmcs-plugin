@@ -182,7 +182,7 @@ class ItTldTest extends TestCase
 
         $result = $reflection->invoke($request, $params);
 
-        $this->assertNull($result['OrgName']);
+        $this->assertArrayNotHasKey('OrgName', $result);
     }
 
     // =========================================================================

@@ -13,6 +13,7 @@ use WHMCS\Domains\DomainLookup\ResultsList;
 use WHMCS\Domains\DomainLookup\SearchResult;
 use WHMCS\Domain\TopLevel\ImportItem;
 use WHMCS\Results\ResultsList as PriceResultList;
+use Illuminate\Database\Capsule\Manager as Capsule;
 use ascio\Request;
 use ascio\dns\DnsZone as DnsZone;
 use ascio\Tools as Tools;
@@ -292,7 +293,7 @@ function ascio_GetDomainInformation($params) {
  */
 function ascio_AdminDomainsTabFields($params){
 	$status = Tools::getVerificationStatus($params["domainid"]);
-	$outRows = ""; 
+	$outRows = "";
 	$translation = [
 		"last_from_address" => "Last mail sent from",
 		"last_to_address" =>  "Verification Email",
@@ -307,10 +308,33 @@ function ascio_AdminDomainsTabFields($params){
 			</tr>';
 		}
 	}
+
+	// Get Ascio order status from tbldomains_extra
+	$ascioData = Capsule::table('tbldomains_extra')
+		->where('domain_id', $params["domainid"])
+		->whereIn('name', ['ascio_order_status', 'ascio_order_type', 'ascio_order_id', 'ascio_status', 'ascio_status_updated'])
+		->pluck('value', 'name');
+
+	$orderStatusRows = "";
+	$statusLabels = [
+		'ascio_order_status' => 'Order Status',
+		'ascio_order_type' => 'Order Type',
+		'ascio_order_id' => 'Order ID',
+		'ascio_status' => 'Domain Status (Ascio)',
+		'ascio_status_updated' => 'Last Updated',
+	];
+	foreach ($statusLabels as $key => $label) {
+		if (isset($ascioData[$key]) && $ascioData[$key]) {
+			$value = htmlspecialchars($ascioData[$key]);
+			$orderStatusRows .= "<tr><td>{$label}</td><td>{$value}</td></tr>";
+		}
+	}
+
     # Return output
     return [
-		"Registrant Verification" => '<table><tbody>' . $outRows. '</tbody></table>'
-	]; 
+		"Registrant Verification" => '<table><tbody>' . $outRows. '</tbody></table>',
+		"Ascio Order Status" => '<table><tbody>' . $orderStatusRows . '</tbody></table>',
+	];
 }
 function ascio_ResendIRTPVerificationEmail(array $params) {
 	// Perform API call to initiate resending of the IRTP Verification Email

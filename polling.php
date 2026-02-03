@@ -84,7 +84,7 @@ function pollDomains(callable $logger): void
     require_once realpath(dirname(__FILE__)) . '/../includes/registrarfunctions.php';
     require_once realpath(dirname(__FILE__)) . '/domains/lib/Request.php';
 
-    use ascio\v2\domains\Request;
+    use ascio\Request;
 
     try {
         $cfg = getRegistrarConfigOptions('ascio');

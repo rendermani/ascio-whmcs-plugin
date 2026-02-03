@@ -20,20 +20,6 @@ require_once __DIR__ . '/MockDatabase.php';
 require_once __DIR__ . '/MockAscioClient.php';
 require_once __DIR__ . '/MockParams.php';
 
-// Try to load v2 Request class for compatibility tests
-$v2RequestPath = dirname(__DIR__, 2) . '/domains/lib/Request.php';
-if (file_exists($v2RequestPath)) {
-    require_once dirname(__DIR__, 2) . '/domains/lib/Tools.php';
-    require_once dirname(__DIR__, 2) . '/domains/lib/ParameterCapture.php';
-    // Note: Request.php has its own require_once statements
-}
-
-// Try to load v3 RequestV3 class for compatibility tests
-$v3RequestPath = dirname(__DIR__, 2) . '/domains/lib/RequestV3.php';
-if (file_exists($v3RequestPath)) {
-    // RequestV3.php loads its own dependencies
-}
-
 // Mock WHMCS functions that may be called
 if (!function_exists('logModuleCall')) {
     function logModuleCall($module, $action, $request, $response, $errors = null) {

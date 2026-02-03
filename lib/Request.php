@@ -18,6 +18,7 @@ use ascio\AscioException as AscioException;
 // Load required dependencies
 require_once(__DIR__ . "/Tools.php");
 require_once(__DIR__ . "/ParameterCapture.php");
+require_once(__DIR__ . "/DomainHistory.php");
 
 // Load v3 service classes autoloader
 // Try multiple paths to support both local dev and Docker environments
@@ -650,6 +651,15 @@ Class Request {
 
 		$result = $this->sendRequest("CreateOrder", $ascioParams);
 		$this->setOrderStatus($result, "Pending");
+
+		// Initialize transfer tracking (PS-145)
+		$domainId = $params["domainid"] ?? null;
+		if ($domainId && !isset($result['error'])) {
+			require_once(__DIR__ . "/TransferTracker.php");
+			$orderId = $result->OrderId ?? $result->Order->OrderId ?? null;
+			TransferTracker::updateStatus($domainId, 'pending', $orderId, 'Transfer initiated');
+		}
+
 		return $result;
 	}
 
@@ -997,6 +1007,56 @@ Class Request {
 
 		Tools::log($type . " received from Ascio v3. Order: " . ($order->Order->Type ?? '') . ", Domain: " . $domainName . ", Status: " . $orderStatus . "\n" . $errors);
 		Tools::addNote($domainName, ($order->Order->Type ?? '') . ": " . $orderStatus . $errors);
+
+		// Store detailed Ascio order status for visibility
+		$orderType = $order->Order->Type ?? '';
+		if ($domainId) {
+			// Log to domain history table (PS-148)
+			$whmcsStatus = Capsule::table('tbldomains')
+				->where('id', $domainId)
+				->value('status') ?? 'Unknown';
+			$historyMessage = ($order->Order->Type ?? '') . ": " . $orderStatus;
+			if ($errors) {
+				$historyMessage .= "\n" . $errors;
+			}
+			DomainHistory::log(
+				$domainId,
+				$domainName,
+				$orderStatus,
+				$whmcsStatus,
+				$orderId,
+				$orderType,
+				$historyMessage
+			);
+			Capsule::table('tbldomains_extra')
+				->updateOrInsert(
+					['domain_id' => $domainId, 'name' => 'ascio_order_status'],
+					['value' => $orderStatus]
+				);
+			Capsule::table('tbldomains_extra')
+				->updateOrInsert(
+					['domain_id' => $domainId, 'name' => 'ascio_order_type'],
+					['value' => $orderType]
+				);
+			Capsule::table('tbldomains_extra')
+				->updateOrInsert(
+					['domain_id' => $domainId, 'name' => 'ascio_order_id'],
+					['value' => $orderId]
+				);
+			Capsule::table('tbldomains_extra')
+				->updateOrInsert(
+					['domain_id' => $domainId, 'name' => 'ascio_status_updated'],
+					['value' => date('Y-m-d H:i:s')]
+				);
+
+			// Update transfer tracking status (PS-145)
+			if ($orderType === 'Transfer') {
+				require_once(__DIR__ . "/TransferTracker.php");
+				$stage = TransferTracker::mapOrderStatusToStage($orderStatus);
+				$message = $errors ?: null;
+				TransferTracker::updateStatus($domainId, $stage, $orderId, $message);
+			}
+		}
 
 		$this->ackMessage($messageId, $order, $domain);
 		$this->sendStatus($order, $domainId, $orderStatus, $errors);
@@ -1449,7 +1509,8 @@ Class Request {
 		if(isset($domain->ExpDate) && $domain->ExpDate != "0001-01-01T00:00:00") {
 			$expDate = $this->formatDate($domain->ExpDate);
 			$creDate = $this->formatDate($domain->CreDate ?? null);
-			$result = Capsule::select("select Threshold, Renew from tblasciotlds where Tld = '".$this->getTld($domain->DomainName)."'")[0] ?? null;
+			$domainName = $domain->DomainName ?? $domain->Name ?? $this->domainName ?? null;
+			$result = Capsule::select("select Threshold, Renew from tblasciotlds where Tld = '".$this->getTld($domainName)."'")[0] ?? null;
 
 			$hasRenew = $result && $result->Renew == 1;
 			$threshold = $result->Threshold ?? 0;
@@ -1474,6 +1535,15 @@ Class Request {
 		$values["status"] = $status;
 		logActivity("WHMCS v3 setStatus: ".json_encode($values));
 		$results = localAPI("updateclientdomain", $values, Tools::getApiUser());
+
+		// Store detailed Ascio status for visibility
+		if (isset($this->params["domainid"])) {
+			Capsule::table('tbldomains_extra')
+				->updateOrInsert(
+					['domain_id' => $this->params["domainid"], 'name' => 'ascio_status'],
+					['value' => $status]
+				);
+		}
 	}
 
 	/**
@@ -1503,6 +1573,7 @@ Class Request {
 	 * Get TLD from domain name
 	 */
 	private function getTld($domainName) {
+		if (!$domainName) return '';
 		$tokens = explode(".", $domainName);
 		array_shift($tokens);
 		return join(".", $tokens);

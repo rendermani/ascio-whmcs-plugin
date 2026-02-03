@@ -1,6 +1,6 @@
 <?php
 
-use ascio\v2\domains\Request as Request;
+use ascio\Request as Request;
 
 set_time_limit ( 6000 );
 require_once("../../../init.php");

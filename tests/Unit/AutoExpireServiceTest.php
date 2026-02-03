@@ -11,7 +11,7 @@ use Ascio\Tests\Mocks\CapsuleMock;
 use Ascio\Tests\Mocks\SoapClientMock;
 
 /**
- * Unit tests for ascio\v2\domains\AutoExpireService class
+ * Unit tests for ascio\AutoExpireService class
  *
  * @covers \ascio\AutoExpireService
  */
@@ -31,7 +31,7 @@ class AutoExpireServiceTest extends TestCase
             'Username' => 'testuser',
             'Password' => 'testpass',
             'TestMode' => 'on',
-            'ApiVersion' => 'v2',
+            'ApiVersion' => 'v3',
         ];
 
         $this->service = new AutoExpireService($this->defaultParams);
@@ -396,9 +396,6 @@ class AutoExpireServiceTest extends TestCase
         CapsuleMock::setTableData('tblasciotlds', [
             ['Tld' => 'com', 'Threshold' => -30, 'Renew' => 1],
         ]);
-
-        // Mock session for API authentication
-        CapsuleMock::storeSession('testuser', 'test-session-id');
 
         // Mock API responses
         SoapClientMock::setResponse('LogIn', (object) [

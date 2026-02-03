@@ -1,3 +1,146 @@
+Callback (Ascio\Ssl\Tests\Unit\Callback)
+ [x] Process sets pending status
+ [x] Process sets pending end user action status
+ [x] Process sets completed status
+ [x] Process sets failed status
+ [x] Process sets invalid status
+ [x] Map status to whmcs returns active for completed
+ [x] Map status to whmcs returns pending for pending
+ [x] Map status to whmcs returns pending for failed
+ [x] Map status to whmcs returns pending for invalid
+ [x] Map status to whmcs returns pending for pending end user action
+ [x] Parse dns token extracts auth name and value
+ [x] Parse dns token handles whitespace
+ [x] Parse dns token returns null for invalid message
+ [x] Parse file token extracts file name and content
+ [x] Parse file token returns null for invalid message
+ [x] Process stores message in data
+ [x] Process updates data array
+ [x] All statuses mapped correctly with data set "Pending maps to Pending"
+ [x] All statuses mapped correctly with data set "Pending_End_User_Action maps to Pending"
+ [x] All statuses mapped correctly with data set "Completed maps to Active"
+ [x] All statuses mapped correctly with data set "Failed maps to Pending"
+ [x] All statuses mapped correctly with data set "Invalid maps to Pending"
+ [x] All statuses mapped correctly with data set "Order not validated maps to Pending"
+ [x] Parse dns token handles cname format
+ [x] Parse dns token handles multiline message
+
+Cert Config (Ascio\Ssl\Tests\Unit\CertConfig)
+ [x] Constructor sets properties from params
+ [x] Get description includes type description
+ [x] Get description includes multi domain info
+ [x] Get description includes sans info
+ [x] Get type description returns correct text for d v
+ [x] Get type description returns correct text with data set "DV type"
+ [x] Get type description returns correct text with data set "OV type"
+ [x] Get type description returns correct text with data set "EV type"
+ [x] Get prices returns empty prices object
+ [x] Add price stores price correctly
+ [x] Clone creates new prices object
+
+Certificate Config (Ascio\Ssl\Tests\Unit\CertificateConfig)
+ [x] Constructor loads certificate definitions
+ [x] Get returns valid cert config by id
+ [x] Get returns valid cert config by name
+ [x] Get throws exception for invalid certificate
+ [x] Get certificate returns correct type
+
+Fqdn (Ascio\Ssl\Tests\Unit\Fqdn)
+ [x] Constructor parses simple domain
+ [x] Constructor parses subdomain
+ [x] Constructor parses deep subdomain
+ [x] Constructor handles wildcard domain
+ [x] Constructor handles wildcard subdomain
+ [x] Get fqdn returns full domain name
+ [x] Get fqdn returns simple domain
+ [x] Get domain returns base domain from subdomain
+ [x] Get domain returns simple domain
+ [x] Get common name returns wildcard prefixed name
+ [x] Get common name returns regular name
+ [x] Get ssl auth returns dns auth record name
+ [x] Get ssl auth returns plain name for wildcard
+ [x] Get tld extracts correct tld with data set "com domain"
+ [x] Get tld extracts correct tld with data set "org domain"
+ [x] Get tld extracts correct tld with data set "net domain"
+ [x] Get tld extracts correct tld with data set "io domain"
+ [x] Get tld extracts correct tld with data set "de domain"
+ [x] Parses various subdomain levels with data set "no subdomain"
+ [x] Parses various subdomain levels with data set "one subdomain"
+ [x] Parses various subdomain levels with data set "two subdomains"
+ [x] Parses various subdomain levels with data set "three subdomains"
+ [x] Wildcard strips asterisk from tokens
+ [x] Get domain works for deep subdomains
+ [x] Get common name preserves original format
+ [x] Handles mixed case domains
+ [x] Tokens are correctly indexed
+
+Prices (Ascio\Ssl\Tests\Unit\Prices)
+ [x] Add stores annual price
+ [x] Add stores biennial price
+ [x] Add stores triennial price
+ [x] Get returns minus one for unavailable periods
+ [x] Get converts zero price to minus one
+ [x] Calculate applies margin correctly
+ [x] Calculate applies rounding correctly
+ [x] Calculate preserves minus one for unavailable prices
+ [x] Calculate with zero margin returns original price
+ [x] Calculate with null values uses defaults
+ [x] Add stores old price for recalculation
+
+Sans (Ascio\Ssl\Tests\Unit\Sans)
+ [x] Get array returns empty array when no sans
+ [x] Get array returns san names
+ [x] Get sans included returns free sans count
+ [x] Get total sans returns combined count
+ [x] Get approval addresses returns empty for no sans
+ [x] Get approval addresses returns dns approval emails
+ [x] Get approval addresses returns email verification emails
+ [x] Get approval addresses joins multiple sans
+ [x] Validate san name returns true for valid domain
+ [x] Validate san name returns true for wildcard
+ [x] Validate san name returns false for empty string
+ [x] Validate san name returns false for invalid domain
+ [x] Build san from form creates correct structure
+ [x] Build san from form uses default email when not provided
+ [x] Build san from form uses empty string email when not provided
+ [x] Has db data is false initially
+ [x] Has db data is true after set data
+ [x] Set data stores data correctly
+ [x] Get total sans calculates correctly with data set "no sans"
+ [x] Get total sans calculates correctly with data set "free only"
+ [x] Get total sans calculates correctly with data set "paid only"
+ [x] Get total sans calculates correctly with data set "both"
+ [x] Get total sans calculates correctly with data set "large numbers"
+ [x] Get array preserves order
+ [x] Email verification uses custom email when available
+ [x] Email verification falls back to admin email
+
+Ssl (Ascio\Ssl\Tests\Unit\Ssl)
+ [x] Constructor initializes from params
+ [x] Get fqdn addresses returns standard admin addresses
+ [x] Get fqdn addresses contains five standard addresses
+ [x] Get approval addresses returns html options
+ [x] Get approval addresses combines fqdn and domain addresses
+ [x] Get period from billing cycle returns one for annually
+ [x] Get period from billing cycle returns two for biennial
+ [x] Get period from billing cycle returns three for triennial
+ [x] Get period from billing cycle defaults to one
+ [x] Get period maps all cycles correctly with data set "Annually"
+ [x] Get period maps all cycles correctly with data set "Biennial"
+ [x] Get period maps all cycles correctly with data set "Biennially"
+ [x] Get period maps all cycles correctly with data set "Triennial"
+ [x] Get period maps all cycles correctly with data set "Triennially"
+ [x] Get period maps all cycles correctly with data set "Unknown defaults to 1"
+ [x] Format approval email uses provided email for email verification
+ [x] Format approval email uses admin at domain for dns verification
+ [x] Format approval email uses default for null email in email verification
+ [x] Build order result returns success structure
+ [x] Build order result returns error structure
+ [x] Build order result generates order id when not provided
+ [x] Data array initializes from params
+ [x] Has db data initially false
+ [x] Get approval addresses removes duplicates
+
 Ssl Callback Processing (Ascio\Ssl\Tests\Integration\SslCallbackProcessing)
  [x] Process pending callback
  [x] Process pending end user action
@@ -73,9 +216,16 @@ Ssl Dns Verification (Ascio\Ssl\Tests\Integration\SslDnsVerification)
  [x] Dns token formats with data set "long_subdomain"
  [x] Dns token formats with data set "alphanumeric_token"
 
+Ssl Extended E2E (Ascio\Ssl\Tests\Integration\SslExtendedE2E)
+ [ ] Multi domain certificate
+ [ ] Add san to existing cert validation
+ [x] Code signing certificate validation
+ [x] Wildcard certificate validation
+
 Ssl Lifecycle E2E (Ascio\Ssl\Tests\Integration\SslLifecycleE2E)
- [x] Validate order with real domain
- [x] Poll queue connection
+ [x] Complete registration lifecycle
+ [ ] Validate order with real domain
+ [ ] Poll queue connection
 
 Ssl Order Validation (Ascio\Ssl\Tests\Integration\SslOrderValidation)
  [x] Validate positive ssl
@@ -90,7 +240,7 @@ Ssl Order Validation (Ascio\Ssl\Tests\Integration\SslOrderValidation)
  [x] Validate fails with invalid product code
  [x] Validate with file verification
  [x] Validate with different web server types with data set "ApacheSsl"
- [ ] Validate with different web server types with data set "Apache2"
+ [x] Validate with different web server types with data set "Apache2"
  [x] Validate with different web server types with data set "Iis"
  [x] Validate with different web server types with data set "Tomcat"
  [x] Validate with different web server types with data set "Other"
@@ -110,4 +260,27 @@ Ssl Polling (Ascio\Ssl\Tests\Integration\SslPolling)
  [x] Ack queue message invalid id
  [x] Queue message structure
  [x] Consecutive polls
+
+Status (Ascio\Ssl\Tests\Unit\Status)
+ [x] Set data initializes fqdn
+ [x] Set data determines txt type correctly
+ [x] Set data determines cname type correctly
+ [x] Set data determines email type correctly
+ [x] Is finished returns true for completed
+ [x] Is finished returns true for failed
+ [x] Is finished returns true for invalid
+ [x] Is finished returns false for pending
+ [x] Is finished returns false for pending end user action
+ [x] Get name returns common name
+ [x] Get instructions html returns empty when finished
+ [x] Get instructions html returns empty when not pending end user action
+ [x] Get instructions html returns empty when dns created
+ [x] Get instructions html returns instructions when needed
+ [x] Is finished recognizes all finished statuses with data set "Completed is finished"
+ [x] Is finished recognizes all finished statuses with data set "Failed is finished"
+ [x] Is finished recognizes all finished statuses with data set "Invalid is finished"
+ [x] Is finished recognizes all finished statuses with data set "Order not validated is finished"
+ [x] Is finished recognizes all finished statuses with data set "Pending is not finished"
+ [x] Is finished recognizes all finished statuses with data set "Pending_End_User_Action is not finished"
+ [x] Is finished recognizes all finished statuses with data set "Unknown status is not finished"
 

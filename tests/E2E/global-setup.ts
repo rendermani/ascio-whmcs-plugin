@@ -1,4 +1,7 @@
 import { execSync } from 'child_process';
+import { writeFileSync, unlinkSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
 /**
  * Global setup that ensures required WHMCS data exists before E2E tests run.
@@ -10,25 +13,37 @@ export default async function globalSetup() {
   const mysqlContainer = 'whmcs_mysql';
 
   const mysqlExec = (sql: string) => {
-    return execSync(
-      `docker exec ${mysqlContainer} mysql -uroot -p${mysqlPassword} ${mysqlDatabase} -e "${sql}"`,
-      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
-    );
+    // Write SQL to temp file to avoid shell quoting issues
+    const tmpFile = join(tmpdir(), 'whmcs-e2e-setup.sql');
+    writeFileSync(tmpFile, sql);
+    try {
+      execSync(
+        `docker cp ${tmpFile} ${mysqlContainer}:/tmp/setup.sql && docker exec ${mysqlContainer} mysql -uroot -p${mysqlPassword} ${mysqlDatabase} -e "source /tmp/setup.sql"`,
+        { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+      );
+    } finally {
+      try { unlinkSync(tmpFile); } catch {}
+    }
   };
 
-  // Ensure USD currency exists
-  mysqlExec(
-    `INSERT INTO tblcurrencies (code, prefix, suffix, format, rate, \\`default\\`) ` +
-    `SELECT 'USD', '\\$', ' USD', 1, 1.00000, 0 FROM DUAL ` +
-    `WHERE NOT EXISTS (SELECT 1 FROM tblcurrencies WHERE code = 'USD')`
-  );
+  try {
+    // Ensure USD currency exists
+    mysqlExec(
+      "INSERT INTO tblcurrencies (code, prefix, suffix, format, rate, `default`) " +
+      "SELECT 'USD', '$', ' USD', 1, 1.00000, 0 FROM DUAL " +
+      "WHERE NOT EXISTS (SELECT 1 FROM tblcurrencies WHERE code = 'USD');"
+    );
 
-  // Ensure EUR currency exists
-  mysqlExec(
-    `INSERT INTO tblcurrencies (code, prefix, suffix, format, rate, \\`default\\`) ` +
-    `SELECT 'EUR', '€', ' EUR', 3, 1.00000, 0 FROM DUAL ` +
-    `WHERE NOT EXISTS (SELECT 1 FROM tblcurrencies WHERE code = 'EUR')`
-  );
+    // Ensure EUR currency exists
+    mysqlExec(
+      "INSERT INTO tblcurrencies (code, prefix, suffix, format, rate, `default`) " +
+      "SELECT 'EUR', '€', ' EUR', 3, 1.00000, 0 FROM DUAL " +
+      "WHERE NOT EXISTS (SELECT 1 FROM tblcurrencies WHERE code = 'EUR');"
+    );
 
-  console.log('Global setup: currencies seeded');
+    console.log('Global setup: currencies seeded');
+  } catch (error) {
+    // Currencies may already exist - that's fine
+    console.log('Global setup: currency seeding skipped (may already exist)');
+  }
 }

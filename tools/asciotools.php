@@ -170,6 +170,8 @@ function asciotools_sidebar($vars)
     $sidebar .= '<ul class="menu">';
     $sidebar .= '<li><a href="' . $modulelink . '">Dashboard</a></li>';
     $sidebar .= '<li><a href="' . $modulelink . '&action=settings">Settings</a></li>';
+    $sidebar .= '<li><a href="' . $modulelink . '&action=expiryReport">Domain Expiry Report</a></li>';
+    $sidebar .= '<li><a href="' . $modulelink . '&action=showDomainImport">Import Domains from Ascio</a></li>';
     $sidebar .= '<li><a href="' . $modulelink . '&action=showUpload">Import SSL Products</a></li>';
     $sidebar .= '<li><a href="' . $modulelink . '&action=displayFailedSslOrders">Failed SSL Orders</a></li>';
     $sidebar .= '<li><a href="' . $modulelink . '&action=install">Module Status</a></li>';

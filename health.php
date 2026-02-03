@@ -6,7 +6,7 @@
  * Also a threshold can be used in the monitoring tool, like Alert when 5 attempts. 
  */
 use ascio\Tools as Tools; 
-use ascio\v2\domains\Request as Request;
+use ascio\Request as Request;
 
 require_once(realpath(dirname(__FILE__))."/../../../init.php");
 require_once realpath(dirname(__FILE__))."/../../../includes/registrarfunctions.php";

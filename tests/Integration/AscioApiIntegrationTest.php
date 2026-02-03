@@ -36,8 +36,8 @@ class AscioApiIntegrationTest extends TestCase
         // 2. WHMCS getRegistrarConfigOptions (when running in WHMCS context)
         // 3. .env file in project root
 
-        $this->username = getenv('ASCIO_TEST_USERNAME') ?: null;
-        $this->password = getenv('ASCIO_TEST_PASSWORD') ?: null;
+        $this->username = getenv('ASCIO_TEST_ACCOUNT') ?: getenv('ASCIO_TEST_USERNAME') ?: getenv('ASCIO_ACCOUNT') ?: null;
+        $this->password = getenv('ASCIO_TEST_PASSWORD') ?: getenv('ASCIO_PASSWORD') ?: null;
 
         // Try WHMCS config if available
         if ((!$this->username || !$this->password) && function_exists('getRegistrarConfigOptions')) {
@@ -80,7 +80,7 @@ class AscioApiIntegrationTest extends TestCase
         }
 
         if (!$this->username || !$this->password) {
-            $this->markTestSkipped('Ascio credentials not found. Set ASCIO_TEST_USERNAME/ASCIO_TEST_PASSWORD env vars or configure in .env file');
+            $this->fail('Ascio credentials not found. Set ASCIO_TEST_ACCOUNT/ASCIO_TEST_PASSWORD env vars or configure in .env file');
         }
 
         $this->params = [

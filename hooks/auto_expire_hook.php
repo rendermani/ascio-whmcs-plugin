@@ -14,7 +14,7 @@
  * To use: Include this file from the main hooks.php or place in WHMCS includes/hooks/
  */
 
-use ascio\v2\domains\AutoExpireService;
+use ascio\AutoExpireService;
 
 // Require the AutoExpireService class
 require_once(__DIR__ . '/../lib/AutoExpireService.php');
@@ -46,7 +46,6 @@ add_hook('DailyCronJob', 1, function ($vars) {
             'Username' => $registrarConfig['Username'] ?? '',
             'Password' => $registrarConfig['Password'] ?? '',
             'TestMode' => $registrarConfig['TestMode'] ?? '',
-            'ApiVersion' => $registrarConfig['ApiVersion'] ?? 'v2',
         ];
 
         $autoExpireService = new AutoExpireService($params);
@@ -125,7 +124,6 @@ add_hook('InvoicePaid', 1, function ($vars) {
             'Username' => $registrarConfig['Username'] ?? '',
             'Password' => $registrarConfig['Password'] ?? '',
             'TestMode' => $registrarConfig['TestMode'] ?? '',
-            'ApiVersion' => $registrarConfig['ApiVersion'] ?? 'v2',
         ];
 
         $autoExpireService = new AutoExpireService($params);

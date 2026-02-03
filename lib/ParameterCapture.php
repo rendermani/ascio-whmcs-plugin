@@ -1,6 +1,6 @@
 <?php
 namespace ascio; 
-use ascio\v2\domains\Request as Request;
+use ascio\Request as Request;
 
 class ParameterCapture {
     public $params;

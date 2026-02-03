@@ -15,7 +15,12 @@ class Registrant extends Contact
      */
     protected $NexusCategory = null;
 
-    
+    /**
+     * @var string $RegistrantDate
+     */
+    protected $RegistrantDate = null;
+
+
     public function __construct()
     {
       parent::__construct();
@@ -54,6 +59,24 @@ class Registrant extends Contact
     public function setNexusCategory($NexusCategory)
     {
       $this->NexusCategory = $NexusCategory;
+      return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getRegistrantDate()
+    {
+      return $this->RegistrantDate;
+    }
+
+    /**
+     * @param string $RegistrantDate
+     * @return \ascio\v3\Registrant
+     */
+    public function setRegistrantDate($RegistrantDate)
+    {
+      $this->RegistrantDate = $RegistrantDate;
       return $this;
     }
 

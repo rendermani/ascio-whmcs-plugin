@@ -44,7 +44,7 @@ try {
 // Load AutoExpireService
 require_once __DIR__ . '/../lib/AutoExpireService.php';
 
-use ascio\v2\domains\AutoExpireService;
+use ascio\AutoExpireService;
 
 try {
     // Get registrar configuration
@@ -70,7 +70,6 @@ try {
         'Username' => $registrarConfig['Username'],
         'Password' => $registrarConfig['Password'],
         'TestMode' => $registrarConfig['TestMode'] ?? '',
-        'ApiVersion' => $registrarConfig['ApiVersion'] ?? 'v2',
     ];
 
     $autoExpireService = new AutoExpireService($params);

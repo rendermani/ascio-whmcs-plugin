@@ -95,7 +95,7 @@ class AscioClient implements AscioClientInterface
     {
         $request = new v3\PollQueueRequest();
         $request->setObjectType($objectType);
-        $request->setMsgType($messageType);
+        $request->setMessageType($messageType);
         return $this->client->PollQueue(new v3\PollQueue($request));
     }
 

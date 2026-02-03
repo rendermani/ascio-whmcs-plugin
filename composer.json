@@ -15,7 +15,8 @@
             "lib/Request.php",
             "lib/DnsService.php",
             "lib/Zone.php",
-            "lib/TldSync.php"
+            "lib/TldSync.php",
+            "lib/Queue.php"
         ]
     },
     "autoload-dev": {

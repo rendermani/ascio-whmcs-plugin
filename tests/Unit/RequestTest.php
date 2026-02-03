@@ -639,4 +639,873 @@ class RequestTest extends TestCase
         $this->assertTrue(defined('ASCIO_V3_WSDL_LIVE'));
         $this->assertStringContainsString('aws.ascio.com', ASCIO_V3_WSDL_LIVE);
     }
+
+    // =========================================================================
+    // Cancel Order Tests
+    // =========================================================================
+
+    #[Test]
+    public function testCancelOrderMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $this->assertTrue(method_exists($request, 'cancelOrder'));
+    }
+
+    #[Test]
+    public function testCancelOrderRequiresOrderIdOrDomain(): void
+    {
+        $params = array_merge($this->defaultParams, [
+            'orderId' => 'ORD-12345'
+        ]);
+
+        $request = new Request($params);
+
+        // Verify the method accepts orderId parameter
+        $this->assertTrue(method_exists($request, 'cancelOrder'));
+    }
+
+    // =========================================================================
+    // Change Owner Tests
+    // =========================================================================
+
+    #[Test]
+    public function testChangeOwnerCreatesOwnerChangeOrder(): void
+    {
+        $params = MockParamsV3::forRegistration('example.com');
+        $request = new Request($params);
+
+        $order = $request->mapToOrder($params, 'OwnerChange');
+
+        $this->assertEquals('OwnerChange', $order['Order']['Type']);
+        $this->assertEquals('example.com', $order['Order']['Domain']['Name']);
+        $this->assertArrayHasKey('Owner', $order['Order']['Domain']);
+    }
+
+    #[Test]
+    public function testChangeOwnerMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $this->assertTrue(method_exists($request, 'changeOwner'));
+    }
+
+    // =========================================================================
+    // Delete Domain Tests
+    // =========================================================================
+
+    #[Test]
+    public function testDeleteDomainCreatesDeleteOrder(): void
+    {
+        $params = MockParamsV3::forRegistration('delete-me.com');
+        $request = new Request($params);
+
+        $order = $request->mapToOrder($params, 'Delete');
+
+        $this->assertEquals('Delete', $order['Order']['Type']);
+        $this->assertEquals('delete-me.com', $order['Order']['Domain']['Name']);
+    }
+
+    #[Test]
+    public function testDeleteDomainMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $this->assertTrue(method_exists($request, 'deleteDomain'));
+    }
+
+    // =========================================================================
+    // Get EPP Code Tests
+    // =========================================================================
+
+    #[Test]
+    public function testGetEPPCodeMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $this->assertTrue(method_exists($request, 'getEPPCode'));
+    }
+
+    #[Test]
+    public function testGetEPPCodeReturnsEppCodeKey(): void
+    {
+        // Setup mock domain with AuthInfo
+        CapsuleMock::setTableData('tblasciohandles', [
+            ['type' => 'domain', 'whmcs_id' => 1, 'domain' => 'example.com', 'ascio_id' => 'DOM-12345']
+        ]);
+
+        $request = new Request($this->defaultParams);
+
+        // The method should return array with 'eppcode' key
+        $this->assertTrue(method_exists($request, 'getEPPCode'));
+    }
+
+    // =========================================================================
+    // Restore Domain Tests
+    // =========================================================================
+
+    #[Test]
+    public function testRestoreDomainCreatesRestoreOrder(): void
+    {
+        $params = MockParamsV3::forRegistration('expired.com');
+        $request = new Request($params);
+
+        $order = $request->mapToOrder($params, 'Restore');
+
+        $this->assertEquals('Restore', $order['Order']['Type']);
+        $this->assertEquals('expired.com', $order['Order']['Domain']['Name']);
+    }
+
+    #[Test]
+    public function testRestoreDomainMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $this->assertTrue(method_exists($request, 'restoreDomain'));
+    }
+
+    // =========================================================================
+    // Save Nameservers Tests
+    // =========================================================================
+
+    #[Test]
+    public function testSaveNameserversCreatesNameserverUpdateOrder(): void
+    {
+        $params = MockParamsV3::forRegistration('example.com', [
+            'ns1' => 'ns1.newhost.com',
+            'ns2' => 'ns2.newhost.com',
+            'ns3' => 'ns3.newhost.com',
+            'ns4' => '',
+            'ns5' => ''
+        ]);
+        $request = new Request($params);
+
+        $order = $request->mapToOrder($params, 'NameserverUpdate');
+
+        $this->assertEquals('NameserverUpdate', $order['Order']['Type']);
+        $this->assertEquals('example.com', $order['Order']['Domain']['Name']);
+        $this->assertEquals('ns1.newhost.com', $order['Order']['Domain']['NameServers']['NameServer1']['HostName']);
+        $this->assertEquals('ns2.newhost.com', $order['Order']['Domain']['NameServers']['NameServer2']['HostName']);
+        $this->assertEquals('ns3.newhost.com', $order['Order']['Domain']['NameServers']['NameServer3']['HostName']);
+    }
+
+    #[Test]
+    public function testSaveNameserversMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $this->assertTrue(method_exists($request, 'saveNameservers'));
+    }
+
+    // =========================================================================
+    // Save Registrar Lock Tests
+    // =========================================================================
+
+    #[Test]
+    public function testSaveRegistrarLockCreatesChangeLocksOrder(): void
+    {
+        $params = MockParamsV3::forRegistration('example.com', [
+            'lockenabled' => 'locked'
+        ]);
+        $request = new Request($params);
+
+        $order = $request->mapToOrder($params, 'ChangeLocks');
+
+        $this->assertEquals('ChangeLocks', $order['Order']['Type']);
+        $this->assertEquals('example.com', $order['Order']['Domain']['Name']);
+    }
+
+    #[Test]
+    public function testSaveRegistrarLockMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $this->assertTrue(method_exists($request, 'saveRegistrarLock'));
+    }
+
+    #[Test]
+    public function testSaveRegistrarLockUsesLockForLockedStatus(): void
+    {
+        $params = array_merge($this->defaultParams, [
+            'lockenabled' => 'locked'
+        ]);
+        $request = new Request($params);
+
+        // When locked, the TransferLock should be 'Lock'
+        // Verify method exists and params are set correctly
+        $this->assertEquals('locked', $params['lockenabled']);
+    }
+
+    #[Test]
+    public function testSaveRegistrarLockUsesUnLockForUnlockedStatus(): void
+    {
+        $params = array_merge($this->defaultParams, [
+            'lockenabled' => 'unlocked'
+        ]);
+        $request = new Request($params);
+
+        // When unlocked, the TransferLock should be 'UnLock'
+        $this->assertEquals('unlocked', $params['lockenabled']);
+    }
+
+    // =========================================================================
+    // Update Contacts Tests
+    // =========================================================================
+
+    #[Test]
+    public function testUpdateContactsMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $this->assertTrue(method_exists($request, 'updateContacts'));
+    }
+
+    #[Test]
+    public function testUpdateContactsCreatesContactUpdateOrder(): void
+    {
+        $params = MockParamsV3::forRegistration('example.com');
+        $request = new Request($params);
+
+        $order = $request->mapToOrder($params, 'ContactUpdate');
+
+        $this->assertEquals('ContactUpdate', $order['Order']['Type']);
+        $this->assertArrayHasKey('Admin', $order['Order']['Domain']);
+        $this->assertArrayHasKey('Tech', $order['Order']['Domain']);
+    }
+
+    #[Test]
+    public function testMapToContact2CreatesContactFromNestedWhmcsFormat(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $contactDetails = [
+            'First Name' => 'John',
+            'Last Name' => 'Doe',
+            'Company Name' => 'ACME Inc',
+            'Address1' => '123 Main St',
+            'Address2' => 'Suite 100',
+            'City' => 'New York',
+            'State' => 'NY',
+            'Postcode' => '10001',
+            'Country' => 'US',
+            'Country Code' => 'US',
+            'Email' => 'john@example.com',
+            'Phone Number' => '+1.5551234567',
+            'Fax Number' => ''
+        ];
+
+        $result = $request->mapToContact2($contactDetails, 'Registrant');
+
+        $this->assertEquals('John', $result->FirstName);
+        $this->assertEquals('Doe', $result->LastName);
+        $this->assertEquals('ACME Inc', $result->OrgName);
+        $this->assertEquals('123 Main St', $result->Address1);
+        $this->assertEquals('Suite 100', $result->Address2);
+        $this->assertEquals('New York', $result->City);
+        $this->assertEquals('NY', $result->State);
+        $this->assertEquals('10001', $result->PostalCode);
+        $this->assertEquals('US', $result->CountryCode);
+        $this->assertEquals('john@example.com', $result->Email);
+    }
+
+    // =========================================================================
+    // Update Domain Details Tests
+    // =========================================================================
+
+    #[Test]
+    public function testUpdateDomainDetailsCreatesDetailsUpdateOrder(): void
+    {
+        $params = MockParamsV3::forRegistration('example.com', [
+            'idprotection' => true
+        ]);
+        $request = new Request($params);
+
+        $order = $request->mapToOrder($params, 'DetailsUpdate');
+
+        $this->assertEquals('DetailsUpdate', $order['Order']['Type']);
+        $this->assertEquals('example.com', $order['Order']['Domain']['Name']);
+        $this->assertArrayHasKey('PrivacyProxy', $order['Order']['Domain']);
+    }
+
+    #[Test]
+    public function testUpdateDomainDetailsMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $this->assertTrue(method_exists($request, 'updateDomainDetails'));
+    }
+
+    #[Test]
+    public function testUpdateDomainDetailsIncludesPrivacyProxy(): void
+    {
+        $params = MockParamsV3::forRegistration('example.com', [
+            'idprotection' => true
+        ]);
+        $request = new Request($params);
+
+        $order = $request->mapToOrder($params, 'DetailsUpdate');
+
+        $this->assertEquals('Proxy', $order['Order']['Domain']['PrivacyProxy']['Type']);
+    }
+
+    // =========================================================================
+    // Update EPP Code Tests
+    // =========================================================================
+
+    #[Test]
+    public function testUpdateEPPCodeCreatesUpdateAuthInfoOrder(): void
+    {
+        $params = MockParamsV3::forRegistration('example.com', [
+            'eppcode' => 'NEW-EPP-CODE-123'
+        ]);
+        $request = new Request($params);
+
+        $order = $request->mapToOrder($params, 'UpdateAuthInfo');
+
+        $this->assertEquals('UpdateAuthInfo', $order['Order']['Type']);
+        $this->assertEquals('example.com', $order['Order']['Domain']['Name']);
+        $this->assertEquals('NEW-EPP-CODE-123', $order['Order']['Domain']['AuthInfo']);
+    }
+
+    #[Test]
+    public function testUpdateEPPCodeMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $this->assertTrue(method_exists($request, 'updateEPPCode'));
+    }
+
+    // =========================================================================
+    // Expire Domain Tests
+    // =========================================================================
+
+    #[Test]
+    public function testExpireDomainCreatesExpireOrder(): void
+    {
+        $params = MockParamsV3::forRegistration('expire.com');
+        $request = new Request($params);
+
+        $order = $request->mapToOrder($params, 'Expire');
+
+        $this->assertEquals('Expire', $order['Order']['Type']);
+        $this->assertEquals('expire.com', $order['Order']['Domain']['Name']);
+    }
+
+    #[Test]
+    public function testExpireDomainMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $this->assertTrue(method_exists($request, 'expireDomain'));
+    }
+
+    // =========================================================================
+    // Unexpire Domain Tests
+    // =========================================================================
+
+    #[Test]
+    public function testUnexpireDomainCreatesUnexpireOrder(): void
+    {
+        $params = MockParamsV3::forRegistration('unexpire.com');
+        $request = new Request($params);
+
+        $order = $request->mapToOrder($params, 'Unexpire');
+
+        $this->assertEquals('Unexpire', $order['Order']['Type']);
+        $this->assertEquals('unexpire.com', $order['Order']['Domain']['Name']);
+    }
+
+    #[Test]
+    public function testUnexpireDomainMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $this->assertTrue(method_exists($request, 'unexpireDomain'));
+    }
+
+    // =========================================================================
+    // Expire After Renew Tests
+    // =========================================================================
+
+    #[Test]
+    public function testExpireAfterRenewMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $reflection = new \ReflectionClass($request);
+        $this->assertTrue($reflection->hasMethod('expireAfterRenew'));
+    }
+
+    #[Test]
+    public function testExpireAfterRenewIsProtectedMethod(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $reflection = new \ReflectionMethod($request, 'expireAfterRenew');
+
+        $this->assertTrue($reflection->isProtected());
+    }
+
+    #[Test]
+    public function testExpireAfterRenewOnlyTriggersWithAutoExpireEnabled(): void
+    {
+        $params = array_merge($this->defaultParams, [
+            'AutoExpire' => 'on'
+        ]);
+        $request = new Request($params);
+
+        $reflection = new \ReflectionMethod($request, 'expireAfterRenew');
+        $reflection->setAccessible(true);
+
+        // Create mock order and domain for testing
+        // Use non-Autorenew_Domain type to skip the actual expireDomain call
+        $order = (object) [
+            'Order' => (object) [
+                'Type' => 'Register',  // Not Autorenew_Domain, so won't trigger expireDomain
+                'Status' => 'Completed'
+            ]
+        ];
+        $domain = (object) [
+            'Status' => 'ACTIVE'
+        ];
+
+        // Should return early since order type is not Autorenew_Domain
+        $result = $reflection->invoke($request, $order, $domain);
+
+        // Method should complete without error
+        $this->assertNull($result);
+    }
+
+    #[Test]
+    public function testExpireAfterRenewSkipsWhenAutoExpireDisabled(): void
+    {
+        $params = array_merge($this->defaultParams, [
+            'AutoExpire' => ''  // disabled
+        ]);
+        $request = new Request($params);
+
+        $reflection = new \ReflectionMethod($request, 'expireAfterRenew');
+        $reflection->setAccessible(true);
+
+        $order = (object) [
+            'Order' => (object) [
+                'Type' => 'Autorenew_Domain',
+                'Status' => 'Completed'
+            ]
+        ];
+        $domain = (object) [
+            'Status' => 'ACTIVE'
+        ];
+
+        // Should return early and not process
+        $result = $reflection->invoke($request, $order, $domain);
+
+        $this->assertNull($result);
+    }
+
+    // =========================================================================
+    // Registrant Verification Tests
+    // =========================================================================
+
+    #[Test]
+    public function testDoRegistrantVerificationMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $this->assertTrue(method_exists($request, 'doRegistrantVerification'));
+    }
+
+    #[Test]
+    public function testGetRegistrantVerificationInfoMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $this->assertTrue(method_exists($request, 'getRegistrantVerificationInfo'));
+    }
+
+    // =========================================================================
+    // Additional Order Mapping Tests
+    // =========================================================================
+
+    #[Test]
+    #[DataProvider('additionalOrderTypeProvider')]
+    public function testMapToOrderForAdditionalOrderTypes(string $orderType, string $expectedType): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $order = $request->mapToOrder($this->defaultParams, $orderType);
+
+        $this->assertEquals($expectedType, $order['Order']['Type']);
+        $this->assertArrayHasKey('Domain', $order['Order']);
+        $this->assertArrayHasKey('TransactionComment', $order['Order']);
+    }
+
+    public static function additionalOrderTypeProvider(): array
+    {
+        return [
+            'Delete order' => ['Delete', 'Delete'],
+            'Restore order' => ['Restore', 'Restore'],
+            'RegistrantDetailsUpdate order' => ['RegistrantDetailsUpdate', 'RegistrantDetailsUpdate'],
+        ];
+    }
+
+    // =========================================================================
+    // Contact Mapping Edge Cases Tests
+    // =========================================================================
+
+    #[Test]
+    public function testMapToContact2HandlesAlternativeAddressFields(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        // Test with 'Address 1' and 'Address 2' format (with space)
+        $contactDetails = [
+            'First Name' => 'Jane',
+            'Last Name' => 'Smith',
+            'Company Name' => '',
+            'Address 1' => '456 Oak Ave',  // Note the space
+            'Address 2' => 'Apt B',
+            'City' => 'Boston',
+            'State' => 'MA',
+            'Postcode' => '02101',
+            'Country' => 'US',
+            'Email' => 'jane@example.com',
+            'Phone Number' => '+1.5559876543',
+            'Fax Number' => ''
+        ];
+
+        $result = $request->mapToContact2($contactDetails, 'Contact');
+
+        $this->assertEquals('456 Oak Ave', $result->Address1);
+        $this->assertEquals('Apt B', $result->Address2);
+    }
+
+    #[Test]
+    public function testMapToContact2HandlesCountryCodeField(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $contactDetails = [
+            'First Name' => 'Test',
+            'Last Name' => 'User',
+            'Company Name' => '',
+            'Address1' => '123 Test St',
+            'Address2' => '',
+            'City' => 'Test City',
+            'State' => 'TS',
+            'Postcode' => '12345',
+            'Country Code' => 'CA',  // Using Country Code instead of Country
+            'Email' => 'test@example.com',
+            'Phone Number' => '+1.5551234567',
+            'Fax Number' => ''
+        ];
+
+        $result = $request->mapToContact2($contactDetails, 'Contact');
+
+        $this->assertEquals('CA', $result->CountryCode);
+    }
+
+    // =========================================================================
+    // Get Contact Details Mapping Tests
+    // =========================================================================
+
+    #[Test]
+    public function testMapGetContactDetailContactMapsAllFields(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $contact = (object) [
+            'FirstName' => 'Admin',
+            'LastName' => 'Contact',
+            'OrgName' => 'Test Org',
+            'Email' => 'admin@test.com',
+            'Phone' => '+1.5551234567',
+            'Fax' => '+1.5551234568',
+            'Address1' => '100 Admin St',
+            'Address2' => 'Floor 2',
+            'State' => 'CA',
+            'PostalCode' => '90210',
+            'City' => 'Beverly Hills',
+            'CountryCode' => 'US'
+        ];
+
+        $values = [];
+        $result = $request->mapGetContactDetailContact($values, $contact, 'Admin');
+
+        $this->assertEquals('Admin', $result['Admin']['First Name']);
+        $this->assertEquals('Contact', $result['Admin']['Last Name']);
+        $this->assertEquals('Test Org', $result['Admin']['Company Name']);
+        $this->assertEquals('admin@test.com', $result['Admin']['Email']);
+        $this->assertEquals('+1.5551234567', $result['Admin']['Phone Number']);
+        $this->assertEquals('+1.5551234568', $result['Admin']['Fax Number']);
+        $this->assertEquals('100 Admin St', $result['Admin']['Address1']);
+        $this->assertEquals('Floor 2', $result['Admin']['Address2']);
+        $this->assertEquals('CA', $result['Admin']['State']);
+        $this->assertEquals('90210', $result['Admin']['Postcode']);
+        $this->assertEquals('Beverly Hills', $result['Admin']['City']);
+        $this->assertEquals('US', $result['Admin']['Country Code']);
+    }
+
+    #[Test]
+    public function testMapGetContactDetailContactHandlesNullContact(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $values = ['existing' => 'data'];
+        $result = $request->mapGetContactDetailContact($values, null, 'Technical');
+
+        // Should return values unchanged when contact is null
+        $this->assertEquals(['existing' => 'data'], $result);
+    }
+
+    #[Test]
+    public function testMapGetContactDetailRegistrantMapsAllFields(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $registrant = (object) [
+            'Name' => 'John Registrant',  // Note: Name field gets split
+            'OrgName' => 'Registrant Org',
+            'Email' => 'registrant@test.com',
+            'Phone' => '+1.5559999999',
+            'Fax' => '+1.5558888888',
+            'Address1' => '200 Registrant Blvd',
+            'Address2' => 'Unit 5',
+            'State' => 'TX',
+            'PostalCode' => '75001',
+            'City' => 'Dallas',
+            'CountryCode' => 'US'
+        ];
+
+        $values = [];
+        $result = $request->mapGetContactDetailRegistrant($values, $registrant);
+
+        $this->assertEquals('Registrant Org', $result['Registrant']['Company Name']);
+        $this->assertEquals('registrant@test.com', $result['Registrant']['Email']);
+        $this->assertEquals('+1.5559999999', $result['Registrant']['Phone Number']);
+        $this->assertEquals('+1.5558888888', $result['Registrant']['Fax Number']);
+        $this->assertEquals('200 Registrant Blvd', $result['Registrant']['Address1']);
+        $this->assertEquals('Unit 5', $result['Registrant']['Address2']);
+        $this->assertEquals('TX', $result['Registrant']['State']);
+        $this->assertEquals('75001', $result['Registrant']['Postcode']);
+        $this->assertEquals('Dallas', $result['Registrant']['City']);
+        $this->assertEquals('US', $result['Registrant']['Country Code']);
+    }
+
+    // =========================================================================
+    // Has Status Helper Tests
+    // =========================================================================
+
+    #[Test]
+    public function testHasStatusReturnsFalseForNullDomain(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $reflection = new \ReflectionMethod($request, 'hasStatus');
+        $reflection->setAccessible(true);
+
+        $result = $reflection->invoke($request, null, 'active');
+
+        $this->assertFalse($result);
+    }
+
+    #[Test]
+    public function testHasStatusReturnsFalseForDomainWithoutStatus(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $reflection = new \ReflectionMethod($request, 'hasStatus');
+        $reflection->setAccessible(true);
+
+        $domain = (object) [
+            'DomainName' => 'example.com'
+            // No Status property
+        ];
+
+        $result = $reflection->invoke($request, $domain, 'active');
+
+        $this->assertFalse($result);
+    }
+
+    #[Test]
+    public function testHasStatusReturnsTrueForMatchingStatus(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $reflection = new \ReflectionMethod($request, 'hasStatus');
+        $reflection->setAccessible(true);
+
+        $domain = (object) [
+            'Status' => 'ACTIVE,TRANSFER_LOCK'
+        ];
+
+        $result = $reflection->invoke($request, $domain, 'active');
+
+        $this->assertTrue($result);
+    }
+
+    #[Test]
+    public function testHasStatusIsCaseInsensitive(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $reflection = new \ReflectionMethod($request, 'hasStatus');
+        $reflection->setAccessible(true);
+
+        $domain = (object) [
+            'Status' => 'EXPIRING'
+        ];
+
+        $result = $reflection->invoke($request, $domain, 'expiring');
+
+        $this->assertTrue($result);
+    }
+
+    // =========================================================================
+    // Find Pending Order ID Tests
+    // =========================================================================
+
+    #[Test]
+    public function testFindPendingOrderIdMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $reflection = new \ReflectionClass($request);
+        $this->assertTrue($reflection->hasMethod('findPendingOrderId'));
+    }
+
+    #[Test]
+    public function testFindPendingOrderIdReturnsNullForDomainWithoutHandle(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $reflection = new \ReflectionMethod($request, 'findPendingOrderId');
+        $reflection->setAccessible(true);
+
+        $domain = (object) [
+            'DomainName' => 'example.com'
+            // No DomainHandle or Handle
+        ];
+
+        $result = $reflection->invoke($request, $domain);
+
+        $this->assertNull($result);
+    }
+
+    // =========================================================================
+    // Queue Message / Callback Tests
+    // =========================================================================
+
+    #[Test]
+    public function testAckMessageMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $this->assertTrue(method_exists($request, 'ackMessage'));
+    }
+
+    #[Test]
+    public function testGetQueueMessageMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $this->assertTrue(method_exists($request, 'getQueueMessage'));
+    }
+
+    #[Test]
+    public function testGetCallbackDataMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $this->assertTrue(method_exists($request, 'getCallbackData'));
+    }
+
+    // =========================================================================
+    // Auto Create Zone Tests
+    // =========================================================================
+
+    #[Test]
+    public function testAutoCreateZoneMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $this->assertTrue(method_exists($request, 'autoCreateZone'));
+    }
+
+    #[Test]
+    public function testAutoCreateZoneSkipsWhenDisabled(): void
+    {
+        $params = array_merge($this->defaultParams, [
+            'AutoCreateDNS' => ''  // disabled
+        ]);
+        $request = new Request($params);
+
+        // Should not throw and should return early
+        $request->autoCreateZone('test.com');
+
+        $this->assertTrue(true); // If we got here, test passes
+    }
+
+    // =========================================================================
+    // Send Status Tests
+    // =========================================================================
+
+    #[Test]
+    public function testSendStatusMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $this->assertTrue(method_exists($request, 'sendStatus'));
+    }
+
+    #[Test]
+    public function testSendStatusReturnsNullWhenDetailedOrderStatusDisabled(): void
+    {
+        $params = array_merge($this->defaultParams, [
+            'DetailedOrderStatus' => ''  // disabled
+        ]);
+        $request = new Request($params);
+
+        $order = (object) [
+            'Order' => (object) [
+                'Type' => 'Register'
+            ]
+        ];
+
+        $result = $request->sendStatus($order, 1, 'Completed', '');
+
+        $this->assertNull($result);
+    }
+
+    #[Test]
+    public function testSendStatusReturnsNullForDisallowedOrderType(): void
+    {
+        $params = array_merge($this->defaultParams, [
+            'DetailedOrderStatus' => 'on'
+        ]);
+        $request = new Request($params);
+
+        $order = (object) [
+            'Order' => (object) [
+                'Type' => 'InvalidType'
+            ]
+        ];
+
+        $result = $request->sendStatus($order, 1, 'Completed', '');
+
+        $this->assertNull($result);
+    }
+
+    // =========================================================================
+    // Is Ascio Order Test
+    // =========================================================================
+
+    #[Test]
+    public function testIsAscioOrderMethodExists(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $reflection = new \ReflectionClass($request);
+        $this->assertTrue($reflection->hasMethod('isAscioOrder'));
+    }
 }

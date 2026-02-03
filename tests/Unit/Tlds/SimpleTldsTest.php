@@ -216,7 +216,13 @@ class SimpleTldsTest extends TestCase
     {
         $params = array_merge($this->defaultParams, [
             'tld' => 'ru',
-            'domainname' => 'example.ru'
+            'domainname' => 'example.ru',
+            'additionalfields' => [
+                'Registrant Type' => 'ORG',
+                'Russian Organizations Taxpayer Number 1' => '1234567890',
+                'Russian Organizations Territory-Linked Taxpayer Number 2' => '123456789012',
+                'NIC/D handle' => '',
+            ]
         ]);
 
         $request = Request::create($params);
@@ -382,6 +388,19 @@ class SimpleTldsTest extends TestCase
             'tld' => $tld,
             'domainname' => $domainName
         ]);
+
+        // Provide TLD-specific additionalfields to avoid undefined key warnings
+        $tldAdditionalFields = [
+            'ru' => [
+                'Registrant Type' => 'ORG',
+                'Russian Organizations Taxpayer Number 1' => '1234567890',
+                'Russian Organizations Territory-Linked Taxpayer Number 2' => '123456789012',
+                'NIC/D handle' => '',
+            ],
+        ];
+        if (isset($tldAdditionalFields[$tld])) {
+            $params['additionalfields'] = $tldAdditionalFields[$tld];
+        }
 
         $request = Request::create($params);
         $order = $request->mapToOrder($params, 'Register');
