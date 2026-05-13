@@ -22,14 +22,17 @@ Class SessionCache {
 		}
 		return  $result[0]->sessionId;
 	}
-	public static function put($sessionId,$account) {
-		$query = "	INSERT INTO  mod_asciosession (account, sessionId) 
-					VALUES('$account', '$sessionId') 
-					ON DUPLICATE KEY UPDATE account='$account', sessionId='$sessionId'";
-		mysql_query($query); 		
-		if(mysql_error()) {
-			Tools::log("Error writing session: ".mysql_error());
-		}		
+	public static function put($sessionId, $account) {
+		try {
+			Capsule::statement(
+				"INSERT INTO mod_asciosession (account, sessionId)
+				 VALUES(?, ?)
+				 ON DUPLICATE KEY UPDATE account=VALUES(account), sessionId=VALUES(sessionId)",
+				[$account, $sessionId]
+			);
+		} catch (\Exception $e) {
+			Tools::log("Error writing session: " . $e->getMessage());
+		}
 	}
 	public static function clear($account) {
 		SessionCache::put("false",$account);
@@ -224,8 +227,11 @@ Class Request {
 			};			
 		}
 	}
-	private function isAscioOrder($domainId,$domainName) {
-		$result =  get_query_val("tbldomains","registrar", array("id" => $domainId,"domain" => $domainName));
+	private function isAscioOrder($domainId, $domainName) {
+		$result = Capsule::table('tbldomains')
+			->where('id', $domainId)
+			->where('domain', $domainName)
+			->value('registrar');
 		return $result == "ascio" || $result == "ascio_usd";
 	}
 	public function getCallbackData($orderStatus,$messageId,$orderId,$type=null) {
@@ -380,7 +386,7 @@ Class Request {
 		if($result->error) return;
 		$type = $result->order->Type;
 		$order = $result->order;
-		$pending =  strpos($order->Status, "Pending") > -1 || strpos($order->Status, "NotSet") > -1;
+		$pending = strpos($order->Status, "Pending") !== false || strpos($order->Status, "NotSet") !== false;
 		if($type == "Transfer_Domain" && $pending) {
 			return $this->setStatus($order->Domain,"Pending Transfer");
 		}
@@ -480,8 +486,8 @@ Class Request {
 		logActivity("WHMCS setStatus: ".json_encode($values));
 		$results = localAPI("updateclientdomain",$values,Tools::getApiUser()); 	
 	}	
-	protected function hasStatus($domain,$search) {
-		return strpos($domain->Status, strtoupper($search)) > -1;
+	protected function hasStatus($domain, $search) {
+		return strpos($domain->Status, strtoupper($search)) !== false;
 	}
 	private function getTld($domainName) {
 		$tokens = explode(".", $domainName);	
@@ -757,17 +763,18 @@ Class Request {
 	protected function mapToTrademark($params) {
 		return null; 
 	}
-	public function mapToOrder ($params,$orderType) {
-		//	get custom-field names. Params only has IDs but the names are needed
-		if ($params["customfields"]) {
-			$result = mysql_query("select id,fieldname from tblcustomfields");
+	public function mapToOrder($params, $orderType) {
+		// get custom-field names. Params only has IDs but the names are needed
+		if (!empty($params["customfields"])) {
+			$customFields = array();
 			foreach ($params["customfields"] as $key => $value) {
 				$customFields[$value["id"]] = $value["value"];
 			}
-			while ($row = mysql_fetch_assoc($result)) {
-				$params["custom"][$row['fieldname']]=$customFields[$row['id']] ;
-		   }
-		 }		
+			$rows = Capsule::select("select id, fieldname from tblcustomfields");
+			foreach ($rows as $row) {
+				$params["custom"][$row->fieldname] = $customFields[$row->id] ?? null;
+			}
+		}
 		$params = $this->setParams($params);
 		$domainName = $this->domainName;
 		$proxy = $params["Proxy_Lite"] == "on" ? "Privacy" : "Proxy";
@@ -801,61 +808,58 @@ Class Request {
 	        );
 	}
 	// map contact from Ascio to WHMCS - admincompanyname
-	public function mapToContact($params,$type) {
+	public function mapToContact($params, $type) {
 		$contactName = array();
 		$errors = array();
 		$prefix = "";
-		if($type == "Registrant") {
-			$contactName["Name"] = $params["firstname"] . " " . $params["lastname"];
-			//$contactName["NexusCategory"] = $params["Nexus Category"];
-			//$contactName["RegistrantNumber"] = "55203780600585";
+		if ($type == "Registrant") {
+			$contactName["Name"] = ($params["firstname"] ?? '') . " " . ($params["lastname"] ?? '');
 		} else {
 			$prefix = strtolower($type);
-			$contactName["FirstName"] = $params[$prefix . "firstname"];
-			$contactName["LastName"] = $params[$prefix . "lastname"];
+			$contactName["FirstName"] = $params[$prefix . "firstname"] ?? '';
+			$contactName["LastName"]  = $params[$prefix . "lastname"] ?? '';
 		}
-		$country =  $params[$prefix . "country"];	
+		$country = $params[$prefix . "country"] ?? '';
 		try {
-			$contact = Array(
-				'OrgName' 		=>  trim($params[$prefix . "companyname"]),
-				'Address1' 		=>  trim($params[$prefix . "address1"]),
-				'Address2' 		=>  trim($params[$prefix . "address2"]),
-				'PostalCode' 	=>  trim($params[$prefix . "postcode"]),
-				'City' 			=>  trim($params[$prefix . "city"]),
-				'State' 		=>  trim($params[$prefix . "state"]),
-				'CountryCode' 	=>  $country,
-				'Email' 		=>  trim($params[$prefix . "email"]),
-				'Phone'			=>  Tools::fixPhone($params[$prefix . "fullphonenumber"],$country),
-				'Fax' 			=> 	Tools::fixPhone($params[$prefix . "custom"]["Fax"],$country)
+			$contact = array(
+				'OrgName'    => trim((string)($params[$prefix . "companyname"] ?? '')),
+				'Address1'   => trim((string)($params[$prefix . "address1"] ?? '')),
+				'Address2'   => trim((string)($params[$prefix . "address2"] ?? '')),
+				'PostalCode' => trim((string)($params[$prefix . "postcode"] ?? '')),
+				'City'       => trim((string)($params[$prefix . "city"] ?? '')),
+				'State'      => trim((string)($params[$prefix . "state"] ?? '')),
+				'CountryCode'=> $country,
+				'Email'      => trim((string)($params[$prefix . "email"] ?? '')),
+				'Phone'      => Tools::fixPhone($params[$prefix . "fullphonenumber"] ?? '', $country),
+				'Fax'        => Tools::fixPhone($params[$prefix . "custom"]["Fax"] ?? '', $country)
 			);
 		} catch (AscioException $e) {
-			throw new AscioException($type . ", ". $e->getMessage());			
-		}	
-		return array_merge($contactName,$contact);
+			throw new AscioException($type . ", " . $e->getMessage());
+		}
+		return array_merge($contactName, $contact);
 	}
 	// WHMCS has 2 contact structures. Flat and nested.
 	// This function in converting from adminfirstname to Admin["First Name"]
-	public function mapToContact2($params,$type) {
-
+	public function mapToContact2($params, $type) {
 		$ascio = (object) array(
-			'OrgName'  				=> trim($params["Company Name"]),
-			'Address1'  			=> trim($params["Address1"] ?  $params["Address1"] : $params["Address 1"]),
-			'Address2'  			=> trim($params["Address2"] ?  $params["Address2"] : $params["Address 2"]),
-			'PostalCode'  			=> trim($params["Postcode"]),
-			'City'  				=> trim($params["City"]),
-			'State'	  				=> trim($params["State"]),
-			'CountryCode'  			=> trim($params["Country Code"] ? $params["Country Code"] : $params["Country"] ),
-			'Email'  				=> trim($params["Email"]),
-			'Phone'  				=> Tools::fixPhone($params["Phone Number"],$params["Country"]), 
-			'Fax'  					=> Tools::fixPhone($params["Fax Number"],$params["Country"]),
+			'OrgName'    => trim((string)($params["Company Name"] ?? '')),
+			'Address1'   => trim((string)(($params["Address1"] ?? '') ?: ($params["Address 1"] ?? ''))),
+			'Address2'   => trim((string)(($params["Address2"] ?? '') ?: ($params["Address 2"] ?? ''))),
+			'PostalCode' => trim((string)($params["Postcode"] ?? '')),
+			'City'       => trim((string)($params["City"] ?? '')),
+			'State'      => trim((string)($params["State"] ?? '')),
+			'CountryCode'=> trim((string)(($params["Country Code"] ?? '') ?: ($params["Country"] ?? ''))),
+			'Email'      => trim((string)($params["Email"] ?? '')),
+			'Phone'      => Tools::fixPhone($params["Phone Number"] ?? '', $params["Country"] ?? ''),
+			'Fax'        => Tools::fixPhone($params["Fax Number"] ?? '', $params["Country"] ?? ''),
 		);
-		if($type=="Registrant") {
-			$ascio->Name = trim($params["First Name"]. " ". $params["Last Name"]);		
+		if ($type == "Registrant") {
+			$ascio->Name = trim(($params["First Name"] ?? '') . " " . ($params["Last Name"] ?? ''));
 		} else {
-			$ascio->FirstName 	= trim($params["First Name"]);
-			$ascio->LastName 	= trim($params["Last Name"]);
+			$ascio->FirstName = trim((string)($params["First Name"] ?? ''));
+			$ascio->LastName  = trim((string)($params["Last Name"] ?? ''));
 		}
-		return $ascio; 
+		return $ascio;
 	}
 	public function mapGetContactDetailContact($values, $contact, $type) {
 		if($contact) {

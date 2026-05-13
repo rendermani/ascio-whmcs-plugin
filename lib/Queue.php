@@ -1,36 +1,46 @@
 <?php
-//require_once("../../../../init.php");
+use Illuminate\Database\Capsule\Manager as Capsule;
 
 class AscioQueue {
-	var $jobs;
-	var $lastId;
+	public $jobs;
+	public $lastId;
+
 	public function __construct() {
 	}
-	public function add($method, $request,$result) {
+
+	public function add($method, $request, $result) {
 		$data = array(
 			"order_id" => $result->order->OrderId,
-			"last_id" => $this->lastId,
-			"method" => $method,
-			"request" => serialize($request)
-
+			"last_id"  => $this->lastId,
+			"method"   => $method,
+			"request"  => serialize($request)
 		);
-		$this->lastId = insert_query("tblasciojobs",$data);
+		$this->lastId = Capsule::table('tblasciojobs')->insertGetId($data);
 		return $this->lastId;
 	}
-	public function updateOrderId($lastId,$orderId) {
-		$result = update_query("tblasciojobs",array("order_id"=>$orderId),array("last_id"=>$lastId));
+
+	public function updateOrderId($lastId, $orderId) {
+		Capsule::table('tblasciojobs')
+			->where('last_id', $lastId)
+			->update(array("order_id" => $orderId));
 		return $lastId;
 	}
+
 	public function getNextRequest($lastId) {
-		$result = select_query("tblasciojobs","id,method,request" ,array("last_id" => $lastId));
-		$data = mysql_fetch_assoc($result);
-		if(!$data) return false;
+		$data = Capsule::table('tblasciojobs')
+			->where('last_id', $lastId)
+			->select('id', 'method', 'request')
+			->first();
+		if (!$data) return false;
+		$data = (array) $data;
 		$data["request"] = unserialize($data["request"]);
 		return $data;
 	}
-	public function getLastId($lastOrderId) {
-		return get_query_val("tblasciojobs","id",array("order_id" => $lastOrderId));			
-	}
 
+	public function getLastId($lastOrderId) {
+		return Capsule::table('tblasciojobs')
+			->where('order_id', $lastOrderId)
+			->value('id');
+	}
 }
 ?>

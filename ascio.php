@@ -333,13 +333,9 @@ function ascio_IDProtectToggle($params) {
 }
 
 function ascio_GetEmailForwarding($params) {
-	$request = RequestV2::create($params);
-	# Put your code to get email forwarding here - the result should be an array of prefixes and forward to emails (max 10)
-	foreach ($result as $value) {
-		$values[$counter]["prefix"] = $value["prefix"];
-		$values[$counter]["forwardto"] = $value["forwardto"];
-	}
-	return $values;
+	// Email forwarding is not supported by the Ascio API.
+	// Return an empty array to avoid undefined variable errors.
+	return array();
 }
 
 function ascio_SaveEmailForwarding($params) {
@@ -467,14 +463,8 @@ function ascio_UpdateEPPCode($params) {
 }
 
 function ascio_ModifyNameserver($params) {
-	$request = RequestV2::create($params);
-    $nameserver = $params["nameserver"];
-    $currentipaddress = $params["currentipaddress"];
-    $newipaddress = $params["newipaddress"];
-    # If error, return the error message in the value below
-    $values["error"] = $error;
-    //Nameserver_Update
-    return $values;
+	// Nameserver IP modification is not implemented for Ascio.
+	return array("error" => "ModifyNameserver is not supported by this registrar module.");
 }
 
 function ascio_DeleteNameserver($params) {

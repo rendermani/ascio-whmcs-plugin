@@ -150,22 +150,23 @@ class Tools {
 			"EPP Code" => "INSERT INTO `tblemailtemplates` (`id`, `type`, `name`, `subject`, `message`, `attachments`, `fromname`, `fromemail`, `disabled`, `custom`, `language`, `copyto`, `plaintext`) VALUES (NULL, 'domain', 'EPP Code', 'New EPP Code for \{\$domain_name\}', '<p>Dear {\$client_name},</p> <p>A new EPP Code was generated for the domain {\$domain_name}: {\$code}</p> <p>You may transfer away your domain with the new EPP-Code.</p> <p>{\$signature}</p>', '', '', '', '0', '1', '', '', '0');",
 			"Ascio Status" => "INSERT INTO `tblemailtemplates` (`id`, `type`, `name`, `subject`, `message`, `attachments`, `fromname`, `fromemail`, `disabled`, `custom`, `language`, `copyto`, `plaintext`) VALUES (NULL, 'domain', 'Ascio Status', '{\$orderType} {\$domain_name}: {\$status}', '<p>Dear {\$client_name},</p> <p>we received following status for your domain {\$domain_name} (\{\$orderType}): {\$status}</p> <p>{\$errors}</p> <p> </p> <p>{\$signature}</p>', '', '', '', '0', '1', '', '', '0');"
 		);
-		$found = 0;
 		$command = "getemailtemplates";
- 		$adminuser = Tools::getApiUser();
- 		$values["type"] = "domain"; 
-		$results = localAPI($command,$values,$adminuser);
- 		foreach($results["emailtemplates"]["emailtemplate"] as $key => $value) {
- 			$existingTemplates[$value["name"]] = true;
- 		}
- 		foreach($usedTemplates as $key => $name) {
- 			if(!$existingTemplates[$name]) {
- 				mysql_query($templates[$name]);
- 				if(mysql_error()) {
- 					echo "Error writing email-templates (".$name."): ". mysql_error()."\n";
- 				}				
- 			}
- 		}
+		$adminuser = Tools::getApiUser();
+		$values["type"] = "domain";
+		$results = localAPI($command, $values, $adminuser);
+		$existingTemplates = array();
+		foreach ($results["emailtemplates"]["emailtemplate"] as $key => $value) {
+			$existingTemplates[$value["name"]] = true;
+		}
+		foreach ($usedTemplates as $key => $name) {
+			if (!isset($existingTemplates[$name])) {
+				try {
+					Capsule::statement($templates[$name]);
+				} catch (\Exception $e) {
+					echo "Error writing email-templates (" . $name . "): " . $e->getMessage() . "\n";
+				}
+			}
+		}
 	}
 	public static function addNote($domainName,$message) {
 		$adminuser = Tools::getApiUser();
@@ -182,18 +183,23 @@ class Tools {
 		return  localAPI($command, $values, $adminuser);
 	}
 	public static function getDomainId($domain) {
-		$query = 'SELECT id FROM  `tbldomains` WHERE domain =  "'.$domain.'"  and   status !=  "Cancelled" ORDER BY status ASC, id DESC LIMIT 0 , 1 ';
-		$result = mysql_query($query);
-		$row = mysql_fetch_assoc($result);		
-		$id = $row["id"];
+		$row = Capsule::table('tbldomains')
+			->where('domain', $domain)
+			->where('status', '!=', 'Cancelled')
+			->orderBy('status', 'asc')
+			->orderBy('id', 'desc')
+			->first(['id']);
+		$id = $row ? $row->id : null;
 		// if there are cancelled domains. But Active and pending domains have priority
-		if(!$id) {
-			$query = 'SELECT id FROM  `tbldomains` WHERE domain =  "'.$domain.'"  ORDER BY status ASC, id DESC LIMIT 0 , 1 ';
-			$result = mysql_query($query);
-			$row = mysql_fetch_assoc($result);		
-			$id = $row["id"];
+		if (!$id) {
+			$row = Capsule::table('tbldomains')
+				->where('domain', $domain)
+				->orderBy('status', 'asc')
+				->orderBy('id', 'desc')
+				->first(['id']);
+			$id = $row ? $row->id : null;
 		}
-	    return $id; 
+		return $id;
 	}
 	public static function getDomainIdFromOrder($order) {
 		$comment = json_decode($order->TransactionComment);

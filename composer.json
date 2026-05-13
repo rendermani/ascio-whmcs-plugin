@@ -1,9 +1,9 @@
 {
     "require": {
-        "giggsey/libphonenumber-for-php": "^7.2",
-        "fzaninotto/faker": "^1.5"
+        "giggsey/libphonenumber-for-php": "^8.13"
     },
     "require-dev": {
+        "fakerphp/faker": "^1.23",
         "phpunit/phpunit": "^10.5"
     }
 }
