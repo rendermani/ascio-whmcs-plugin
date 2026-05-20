@@ -5,7 +5,7 @@
 Please visit this link for details: http://aws.ascio.info/whmcs.html
 
 ###Requirements
-- php 5.3+
+- php 8.3+
 - PHP SoapClient module installed
 
 ### Commandline install
@@ -22,12 +22,15 @@ Please visit this link for details: http://aws.ascio.info/whmcs.html
 - cd ascio
 - run install.php
 
-###Configuring the plugin
+### Configuring the plugin
 
 - activate the ascio plugin in the WHMCS settings and configure it
 - If you are in testmode, you need to add the testing-credentials
 
-##Ascio DNS
+## Ascio DNS
 
 - AscioDNS is added. WHMCS has only a minimal DNS-management, but there are plugins. Please contact your account-manager for an AscioDNS account.
 
+## Credits
+
+The update for compatibility with php 8.3 and Whmcs 9.0 has been made by [denali.pro](https://denali.pro) Swiss VPS Hosting Provider
