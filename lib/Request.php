@@ -381,11 +381,15 @@ Class Request {
 		$type = $result->order->Type;
 		$order = $result->order;
 		$pending =  strpos($order->Status, "Pending") > -1 || strpos($order->Status, "NotSet") > -1;
+		if(!isset($order->Domain)) {
+			logActivity("WHMCS setOrderStatus: Order ".$type." has no Domain object, skipping status update");
+			return;
+		}
 		if($type == "Transfer_Domain" && $pending) {
 			return $this->setStatus($order->Domain,"Pending Transfer");
 		}
-		if($type == "Register_Domain" || $type =="Transfer_Domain") {			
-			if($pending) {		
+		if($type == "Register_Domain" || $type =="Transfer_Domain") {
+			if($pending) {
 				$this->setStatus($order->Domain,"Pending");
 			} else $this->setDomainStatus($order->Domain);
 		}
@@ -410,10 +414,10 @@ Class Request {
 		logActivity("WHMCS Invalid Status: ".$domain->Status);		
 		return false;		
 	}
-	public function getDomainStatus($domain) {	
-		if(!$domain) {
-			logActivity("WHMCS Domain not found, setting status to Cancelled (getDomainStatus)");
-			return "Cancelled";
+	public function getDomainStatus($domain) {
+		if(!$domain || !isset($domain->Status)) {
+			logActivity("WHMCS Domain lookup failed or returned no status, skipping status update (getDomainStatus)");
+			return false;
 		}
 		if($this->hasStatus($domain,"deleted")) {
 			logActivity("WHMCS Domain has Status deleted: ".$domain->Status);
@@ -435,15 +439,11 @@ Class Request {
 		return false;		
 	}
 	
-	public function setDomainStatus($domain) {		
-		if($domain) {
-			if($this->getDomainStatus($domain)) {				
-				$this->setStatus($domain,$this->getDomainStatus($domain));				
-			}
-		} else {
-			logActivity("WHMCS Domain not found, setting status to Cancelled (setDomainStatus)");
-			$this->setStatus($domain,"Cancelled");	
-		}		
+	public function setDomainStatus($domain) {
+		$status = $this->getDomainStatus($domain);
+		if($status) {
+			$this->setStatus($domain,$status);
+		}
 	}
 	public function setStatus($domain,$status) {
 		if(!$status) return false; 
