@@ -17,6 +17,7 @@ class TldSyncService
 
     private $apiUsername;
     private $apiPassword;
+    private $testMode;
     private $baseUrl;
     private $tableName = 'tblasciotlds';
     private $maxRetries = 3;
@@ -27,8 +28,9 @@ class TldSyncService
         $config = getRegistrarConfigOptions('ascio');
         $this->apiUsername = $config['Username'];
         $this->apiPassword = $config['Password'];
-        $testPrefix = $config["TestMode"]=="on" ? "demo." : "" ;
-        $this->baseUrl = 'https://tldkit.'.$testPrefix.'ascio.com/api/v1';
+        $this->testMode = ($config["TestMode"] ?? '') === 'on';
+        // Use configurable TLD Rules API URL, default to production
+        $this->baseUrl = $config['TldRulesApiUrl'] ?? 'https://aws.ascio.info';
     }
 
     /**
@@ -815,7 +817,7 @@ try {
     echo "Total duration: {$durationFormatted}\n";
     echo "✓ Sync completed successfully!\n";
 
-    // Regenerate additional domain fields from TLDKit API
+    // Regenerate additional domain fields from TLD Rules API
     echo "\n=== Generating Additional Domain Fields ===\n";
     try {
         require_once(realpath(dirname(__FILE__)) . "/FieldRegistry.php");
@@ -823,10 +825,17 @@ try {
         require_once(realpath(dirname(__FILE__)) . "/FieldGenerator.php");
         require_once(realpath(dirname(__FILE__)) . "/TldKitFieldsClient.php");
 
-        $fieldsApiUrl = "https://aws.ascio.info";
+        // Use configured TLD Rules API URL from registrar config
+        $config = getRegistrarConfigOptions('ascio');
+        $fieldsApiUrl = $config['TldRulesApiUrl'] ?? 'https://aws.ascio.info';
+        $username = $config['Username'] ?? '';
+        $password = $config['Password'] ?? '';
+        $testMode = ($config['TestMode'] ?? '') === 'on';
         $ascioBasePath = realpath(dirname(__FILE__) . "/..");
 
-        $client = new \ascio\TldKitFieldsClient($fieldsApiUrl);
+        echo "  API URL: {$fieldsApiUrl}\n";
+
+        $client = new \ascio\TldKitFieldsClient($fieldsApiUrl, $username, $password, $testMode);
         $apiData = $client->fetchAll();
         $newHash = $client->computeHash($apiData);
 

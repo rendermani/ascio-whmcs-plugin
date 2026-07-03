@@ -76,6 +76,7 @@ function ascio_getConfigArray() {
 	 "DNS_Default_Mailserver_2" => array( "Type" => "text", "Size" => "20", "Description" => "For AutoCreateDNS: Default IP-address for mx2 (backup mail-server)","FriendlyName" =>"Default MX Record 2"),
 	 "Proxy_Lite" => array( "Type" => "yesno",  "Description" => "Privacy. Don't hide the name when using ID-Protection. Only the address-data.","FriendlyName" =>"Use Privacy Proxy"),
 	 "MultiBrand_Mode" => array( "Type" => "yesno",  "Description" => "For multiple brands with one account.","FriendlyName" =>"Multi Brand Mode"),
+	 "TldRulesApiUrl" => array( "Type" => "text", "Size" => "50", "Description" => "TLD Rules API base URL", "Default" => "https://aws.ascio.info", "FriendlyName" => "TLD Rules API URL"),
 	);
 	return $configarray;
 }
@@ -91,6 +92,7 @@ function ascio_config_validate($params) {
     $username = $params['Username'] ?? '';
     $password = $params['Password'] ?? '';
     $testMode = ($params['TestMode'] ?? '') === 'on';
+    $tldRulesApiUrl = $params['TldRulesApiUrl'] ?? 'https://aws.ascio.info';
 
     // Skip validation if credentials are empty (initial setup may have blank fields)
     if (empty($username) || empty($password)) {
@@ -124,7 +126,7 @@ function ascio_config_validate($params) {
         }
 
         // Credentials valid - trigger TLD sync and field generation
-        ascio_syncOnConfigSave($username, $password, $testMode);
+        ascio_syncOnConfigSave($username, $password, $testMode, $tldRulesApiUrl);
 
     } catch (\SoapFault $e) {
         throw new \WHMCS\Exception\Module\InvalidConfiguration(
@@ -145,26 +147,27 @@ function ascio_config_validate($params) {
  * @param string $username Ascio username
  * @param string $password Ascio password
  * @param bool $testMode Whether test mode is enabled
+ * @param string $apiUrl TLD Rules API base URL
  */
-function ascio_syncOnConfigSave($username, $password, $testMode) {
+function ascio_syncOnConfigSave($username, $password, $testMode, $apiUrl = 'https://aws.ascio.info') {
     try {
         // Ensure tables exist first
         ascio_ensureTables();
 
-        // Sync TLD data from TLDKit API with authentication
-        $tldKitUrl = 'https://aws.ascio.info/tldkit.xq';
-
+        // Sync TLD data from TLD Rules API with authentication
         require_once(__DIR__ . '/lib/TldKitFieldsClient.php');
-        $client = new \ascio\TldKitFieldsClient($tldKitUrl, $username, $password, $testMode);
-        $apiData = $client->fetchAll();
+        $client = new \ascio\TldKitFieldsClient($apiUrl, $username, $password, $testMode);
 
-        if (empty($apiData) || empty($apiData['tld'])) {
-            logActivity("Ascio: TLDKit API returned no TLD data");
+        // Fetch TLD data using new API endpoint (returns legacy format)
+        $legacyData = $client->fetchAllLegacy();
+
+        if (empty($legacyData) || empty($legacyData['tld'])) {
+            logActivity("Ascio: TLD Rules API returned no TLD data");
             return;
         }
 
-        $tlds = $apiData['tld'];
-        logActivity("Ascio: Syncing " . count($tlds) . " TLDs from TLDKit API");
+        $tlds = $legacyData['tld'];
+        logActivity("Ascio: Syncing " . count($tlds) . " TLDs from TLD Rules API ({$apiUrl})");
 
         // Batch insert/update TLD data
         $now = date('Y-m-d H:i:s');
@@ -187,8 +190,9 @@ function ascio_syncOnConfigSave($username, $password, $testMode) {
             }
         }
 
-        // Generate additional fields from API data
-        ascio_generateFields($apiData);
+        // Fetch fields and conditions for additional fields generation
+        $fieldsData = $client->fetchAll();
+        ascio_generateFields($fieldsData);
 
         logActivity("Ascio: TLD sync completed - " . count($tlds) . " TLDs processed");
 
