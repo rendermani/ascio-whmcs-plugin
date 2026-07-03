@@ -1463,9 +1463,9 @@ Class Request {
 	 * Get domain status for WHMCS
 	 */
 	public function getDomainStatus($domain) {
-		if(!$domain) {
-			logActivity("WHMCS v3 Domain not found, setting status to Cancelled (getDomainStatus)");
-			return "Cancelled";
+		if(!$domain || !isset($domain->Status)) {
+			logActivity("WHMCS v3 Domain lookup failed or returned no status, skipping status update (getDomainStatus)");
+			return false;
 		}
 		if($this->hasStatus($domain, "deleted")) {
 			logActivity("WHMCS v3 Domain has Status deleted: ".$domain->Status);
@@ -1488,14 +1488,9 @@ Class Request {
 	 * Set domain status in WHMCS
 	 */
 	public function setDomainStatus($domain) {
-		if($domain) {
-			$status = $this->getDomainStatus($domain);
-			if($status) {
-				$this->setStatus($domain, $status);
-			}
-		} else {
-			logActivity("WHMCS v3 Domain not found, setting status to Cancelled (setDomainStatus)");
-			$this->setStatus($domain, "Cancelled");
+		$status = $this->getDomainStatus($domain);
+		if($status) {
+			$this->setStatus($domain, $status);
 		}
 	}
 
@@ -1550,21 +1545,27 @@ Class Request {
 	 * Set order status after operation
 	 */
 	public function setOrderStatus($result, $defaultStatus = null) {
-		if(isset($result['error'])) return;
-		if(!isset($result->Order)) return;
+		if(is_array($result) && isset($result['error'])) return;
+		if(!is_object($result) || !isset($result->Order)) return;
 
 		$type = $result->Order->Type ?? null;
 		$order = $result->Order;
+		$domain = $order->Domain ?? null;
 		$pending = strpos($order->Status ?? '', "Pending") !== false || strpos($order->Status ?? '', "NotSet") !== false;
 
+		if(!$domain) {
+			logActivity("WHMCS v3 setOrderStatus: Order ".$type." has no Domain object, skipping status update");
+			return;
+		}
+
 		if($type == "Transfer" && $pending) {
-			return $this->setStatus($order->Domain ?? null, "Pending Transfer");
+			return $this->setStatus($domain, "Pending Transfer");
 		}
 		if($type == "Register" || $type == "Transfer") {
 			if($pending) {
-				$this->setStatus($order->Domain ?? null, "Pending");
+				$this->setStatus($domain, "Pending");
 			} else {
-				$this->setDomainStatus($order->Domain ?? null);
+				$this->setDomainStatus($domain);
 			}
 		}
 	}

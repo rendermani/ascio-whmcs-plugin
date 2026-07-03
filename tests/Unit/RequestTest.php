@@ -605,13 +605,117 @@ class RequestTest extends TestCase
     }
 
     #[Test]
-    public function testGetDomainStatusReturnsCancelledForNullDomain(): void
+    public function testGetDomainStatusReturnsFalseForNullDomain(): void
     {
         $request = new Request($this->defaultParams);
 
         $result = $request->getDomainStatus(null);
 
-        $this->assertEquals('Cancelled', $result);
+        $this->assertFalse($result);
+    }
+
+    #[Test]
+    public function testGetDomainStatusReturnsFalseForDomainMissingStatus(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $result = $request->getDomainStatus((object) ['DomainName' => 'example.com']);
+
+        $this->assertFalse($result);
+    }
+
+    #[Test]
+    public function testSetDomainStatusDoesNotCancelForNullDomain(): void
+    {
+        $request = new Request($this->defaultParams);
+
+        $request->setDomainStatus(null);
+
+        $calls = WhmcsFunctionsMock::getLocalApiCalls();
+        $this->assertEmpty($calls, 'setDomainStatus must not call updateclientdomain when domain is missing');
+    }
+
+    #[Test]
+    public function testSetOrderStatusDoesNotCancelCompletedRegisterWithMissingDomain(): void
+    {
+        $params = array_merge($this->defaultParams, ['domainid' => '42']);
+        $request = new Request($params);
+
+        $result = (object) [
+            'Order' => (object) [
+                'Type' => 'Register',
+                'Status' => 'Completed',
+                // Domain intentionally absent, simulating a malformed/incomplete v3 response
+            ],
+        ];
+
+        $request->setOrderStatus($result);
+
+        $calls = WhmcsFunctionsMock::getLocalApiCalls();
+        $cancelledCalls = array_filter(
+            $calls,
+            fn($call) => $call['command'] === 'updateclientdomain' && ($call['values']['status'] ?? null) === 'Cancelled'
+        );
+
+        $this->assertEmpty(
+            $cancelledCalls,
+            'A completed Register order with a missing Domain object must not cancel the WHMCS domain'
+        );
+    }
+
+    #[Test]
+    public function testSetOrderStatusDoesNotCancelCompletedTransferWithMissingDomain(): void
+    {
+        $params = array_merge($this->defaultParams, ['domainid' => '42']);
+        $request = new Request($params);
+
+        $result = (object) [
+            'Order' => (object) [
+                'Type' => 'Transfer',
+                'Status' => 'Completed',
+            ],
+        ];
+
+        $request->setOrderStatus($result);
+
+        $calls = WhmcsFunctionsMock::getLocalApiCalls();
+        $cancelledCalls = array_filter(
+            $calls,
+            fn($call) => $call['command'] === 'updateclientdomain' && ($call['values']['status'] ?? null) === 'Cancelled'
+        );
+
+        $this->assertEmpty(
+            $cancelledCalls,
+            'A completed Transfer order with a missing Domain object must not cancel the WHMCS domain'
+        );
+    }
+
+    #[Test]
+    public function testSetOrderStatusStillCancelsWhenDomainExplicitlyDeleted(): void
+    {
+        $params = array_merge($this->defaultParams, ['domainid' => '42']);
+        $request = new Request($params);
+
+        $result = (object) [
+            'Order' => (object) [
+                'Type' => 'Register',
+                'Status' => 'Completed',
+                'Domain' => (object) ['Status' => 'DELETED'],
+            ],
+        ];
+
+        $request->setOrderStatus($result);
+
+        $calls = WhmcsFunctionsMock::getLocalApiCalls();
+        $cancelledCalls = array_filter(
+            $calls,
+            fn($call) => $call['command'] === 'updateclientdomain' && ($call['values']['status'] ?? null) === 'Cancelled'
+        );
+
+        $this->assertNotEmpty(
+            $cancelledCalls,
+            'A genuinely deleted domain must still be cancelled in WHMCS'
+        );
     }
 
     // =========================================================================

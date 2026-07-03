@@ -142,11 +142,11 @@ class DomainCallbackTest extends IntegrationTestBase
     {
         $request = $this->getRequest();
 
-        // Null domain should return Cancelled
+        // Null/missing domain must not be treated as Cancelled - it's a lookup failure, not a deletion
         $result = $request->getDomainStatus(null);
-        $this->assertEquals('Cancelled', $result);
+        $this->assertFalse($result);
 
-        // Deleted domain should return Cancelled
+        // Only an explicit deleted status from Ascio should map to Cancelled
         $domain = (object) ['Status' => 'DELETED'];
         $result = $request->getDomainStatus($domain);
         $this->assertEquals('Cancelled', $result);
