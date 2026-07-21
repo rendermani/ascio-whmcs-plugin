@@ -292,11 +292,12 @@ class Tools {
 		global $cachedAdminUser; 
 		if($cachedAdminUser) return $cachedAdminUser;
 		$result = Capsule::select("select username,notes from tbladmins");
+		$admin = null;
 		foreach ($result as $key => $user) {
 			if($user->notes=="apiuser") return $user->username;
 			$admin = $user->username;
-		}	
-		$cachedAdminUser = $admin; 
+		}
+		$cachedAdminUser = $admin;
 		return $admin;
 	}
 	public static function reformatPrices($result) {
