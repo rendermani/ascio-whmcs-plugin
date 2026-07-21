@@ -323,6 +323,17 @@ Class Request {
 	}
 
 	/**
+	 * Create the SOAP client for a request.
+	 *
+	 * Isolated in its own method so tests can override it (subclass) and inject
+	 * a mock client, exercising the full callback/order lifecycle without a
+	 * network call. Production behaviour is unchanged.
+	 */
+	protected function makeSoapClient($wsdl) {
+		return new \SoapClient($wsdl, array("cache_wsdl" => WSDL_CACHE_MEMORY, "trace" => 1));
+	}
+
+	/**
 	 * Send SOAP request to Ascio v3 API
 	 * v3 uses SOAP headers for authentication instead of session-based auth
 	 */
@@ -334,7 +345,7 @@ Class Request {
 		}
 
 		$wsdl = $this->params["TestMode"]=="on" ? ASCIO_V3_WSDL_TEST : ASCIO_V3_WSDL_LIVE;
-		$client = new \SoapClient($wsdl, array("cache_wsdl" => WSDL_CACHE_MEMORY, "trace" => 1));
+		$client = $this->makeSoapClient($wsdl);
 		$credentials = ["Account" => $this->account, "Password" => $this->password];
 		$header = new \SoapHeader("http://www.ascio.com/2013/02", "SecurityHeaderDetails", $credentials, false);
 		$client->__setSoapHeaders($header);
@@ -980,7 +991,10 @@ Class Request {
 				$this->setDomainStatus($domain);
 				$domain->domainId = $domainId;
 				DomainCache::put($domain);
-				$this->setHandle($domain);
+				// NOTE: the persistent handle is deliberately NOT stored here.
+				// This block runs for every callback, including Failed/Invalid
+				// orders, whose handle must not overwrite the good one. The
+				// handle is persisted only on Completed (see below).
 			}
 		}
 
@@ -1637,12 +1651,19 @@ Class Request {
 					"domain" => $domain
 				]);
 		} else {
+			// Overwrite by (type, whmcs_id, domain) — the same keys getHandle
+			// matched on. Keying the UPDATE on ascio_id would target the NEW
+			// handle, which does not yet exist, silently updating zero rows and
+			// leaving a stale handle behind (e.g. a completed transfer's new
+			// registry handle never replacing the old one).
 			Capsule::table('tblasciohandles')
-				->where('ascio_id', $ascioId)
-				->update([
-					"whmcs_id" => $whmcsId,
+				->where([
 					"type" => $type,
+					"whmcs_id" => $whmcsId,
 					"domain" => $domain
+				])
+				->update([
+					"ascio_id" => $ascioId
 				]);
 		}
 	}

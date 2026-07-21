@@ -101,9 +101,39 @@ class SoapClientMock extends \SoapClient
     }
 
     /**
+     * No-op header setter (production sendRequest sets SOAP auth headers).
+     */
+    public function __setSoapHeaders($headers = null): bool
+    {
+        return true;
+    }
+
+    /**
+     * Override __soapCall — this is what Request::sendRequest actually invokes.
+     * Routes to the same response resolution as __call.
+     */
+    public function __soapCall(
+        string $name,
+        array $args,
+        ?array $options = null,
+        $inputHeaders = null,
+        &$outputHeaders = null
+    ): mixed {
+        return $this->resolveResponse($name, $args);
+    }
+
+    /**
      * Override __call to return mock responses
      */
     public function __call(string $functionName, array $arguments): mixed
+    {
+        return $this->resolveResponse($functionName, $arguments);
+    }
+
+    /**
+     * Resolve a canned/default response for a SOAP method call.
+     */
+    private function resolveResponse(string $functionName, array $arguments): mixed
     {
         // Store the request
         self::$lastRequests[$functionName] = $arguments;
@@ -436,5 +466,42 @@ class SoapClientMock extends \SoapClient
                 ]
             ]
         ];
+    }
+}
+
+/**
+ * Object-shaped SOAP payload that also tolerates the module's array-style error
+ * probing (`isset($result['error'])`). Successful Ascio v3 responses are
+ * consumed with `->property` access, while errors are returned by sendRequest as
+ * `['error' => ...]` arrays; this fixture supports both without fataling.
+ */
+#[\AllowDynamicProperties]
+class SoapResponseMock implements \ArrayAccess
+{
+    public function __construct(array $properties = [])
+    {
+        foreach ($properties as $key => $value) {
+            $this->$key = $value;
+        }
+    }
+
+    public function offsetExists(mixed $offset): bool
+    {
+        return isset($this->$offset);
+    }
+
+    public function offsetGet(mixed $offset): mixed
+    {
+        return $this->$offset ?? null;
+    }
+
+    public function offsetSet(mixed $offset, mixed $value): void
+    {
+        $this->$offset = $value;
+    }
+
+    public function offsetUnset(mixed $offset): void
+    {
+        unset($this->$offset);
     }
 }

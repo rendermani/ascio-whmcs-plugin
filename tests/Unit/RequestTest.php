@@ -530,6 +530,40 @@ class RequestTest extends TestCase
         $this->assertEquals('tblasciohandles', $query['table']);
     }
 
+    /**
+     * Regression: a completed transfer produces a NEW registry handle for the
+     * same (whmcs_id, domain). storeHandle must overwrite the stale handle.
+     *
+     * Reproduces miserve.info: stale handle MISERVEI63560 was never replaced by
+     * the completed-transfer handle MISERVEI31291, because the UPDATE branch
+     * keyed on the (new, not-yet-existing) ascio_id and matched zero rows.
+     */
+    #[Test]
+    public function testStoreHandleOverwritesChangedHandleForSameDomain(): void
+    {
+        CapsuleMock::setTableData('tblasciohandles', [
+            [
+                'type' => 'domain',
+                'whmcs_id' => 227474,
+                'domain' => 'miserve.info',
+                'ascio_id' => 'MISERVEI63560', // stale handle from failed transfer
+            ],
+        ]);
+
+        $request = new Request($this->defaultParams);
+
+        // Completed transfer resync with the new registry handle.
+        $request->storeHandle('domain', 227474, 'MISERVEI31291', 'miserve.info');
+
+        $stored = $request->getHandle('domain', 227474, 'miserve.info');
+
+        $this->assertEquals(
+            'MISERVEI31291',
+            $stored,
+            'storeHandle must overwrite a changed handle for the same (whmcs_id, domain)'
+        );
+    }
+
     // =========================================================================
     // Simulation Mode Tests
     // =========================================================================
