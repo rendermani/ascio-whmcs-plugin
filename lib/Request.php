@@ -267,12 +267,15 @@ Class Request {
 			Tools::log("DomainId: " . $domainId." not found in the WHMCS-Database: " .$order->order->Type. ", Domain: ".$domainName.", Order-Status: ".$orderStatus. ", MessageId" . $messageId . "\n ");
 			return;	
 		}
-		if($order->order->Domain->DomaiHandle) {
+		if($order->order->Domain->DomainHandle) {
 			$domain = $this->getDomain($order->order->Domain->DomainHandle);
 			$this->setDomainStatus($domain);
 			$domain->domainId = $domainId;
 			DomainCache::put($domain);
-			$this->setHandle($domain);
+			// The persistent handle is deliberately NOT stored here. This block
+			// runs for every callback, including Failed/Invalid orders, whose
+			// handle must not overwrite the good one. The handle is persisted
+			// only on Completed (see below).
 		}
 		$this->params["domainname"] = $domainName;
 		$msgPart = "Domain (". $domainId . "): ".$domainName;
@@ -954,14 +957,20 @@ Class Request {
 					"whmcs_id" => $whmcsId,
 					"type" => $type,
 					"domain" => $domain]);		
-		} else {			
+		} else {
+			// Overwrite by (type, whmcs_id, domain) — the same keys getHandle
+			// matched on. Keying the UPDATE on ascio_id would target the NEW
+			// handle, which does not yet exist, silently updating zero rows and
+			// leaving a stale handle behind (e.g. a completed transfer's new
+			// registry handle never replacing the old one).
 			Capsule::table('tblasciohandles')
-				->where('ascio_id',$ascioId)
-				->update([
-					"whmcs_id" => $whmcsId,
+				->where([
 					"type" => $type,
-					"domain" => $domain]);			
-		}		
+					"whmcs_id" => $whmcsId,
+					"domain" => $domain])
+				->update([
+					"ascio_id" => $ascioId]);
+		}
 	}
 	public function deleteOldHandles($domainName) {
 		foreach($this->getHandlesByDomain($domainName) as $key => $ascioId)  {
