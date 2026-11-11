@@ -248,6 +248,12 @@ Class Request {
 			$callback->process($orderId,$orderStatus,$messageId,$message);			
 			return;
 		}
+		// Invalid and Failed orders change nothing at Ascio, so there is nothing to process. Always ack.
+		if($orderStatus == "Invalid" || $orderStatus == "Failed") {
+			$this->ackMessage($messageId,$order);
+			Tools::log($type." acked without processing. Order: ".$order->order->Type.", Domain: ".$order->order->Domain->DomainName.", Order-Status: ".$orderStatus.", OrderId: ".$orderId.", MessageId: ".$messageId);
+			return;
+		}
 		$domainName = $order->order->Domain->DomainName;
 		$domainId = Tools::getDomainIdFromOrder($order->order);
 		if(!$this->isAscioOrder($domainId,$domainName)) {
