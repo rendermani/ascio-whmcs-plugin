@@ -53,6 +53,7 @@ Class Request {
 	var $params;
 	var $domain;
 	public $domainName;
+	private $ackedMessageIds = [];
 	public function __construct($params) {
 		$this->setParams($params);
 	}
@@ -215,6 +216,7 @@ Class Request {
 			'msgId' => $messageId
 		);	
 		$result = $this->request("AckMessage", $ascioParams);		
+		$this->ackedMessageIds[$messageId] = true;
 		if(($order->order->Type=="Register_Domain" || $order->order->Type=="Transfer_Domain") && $order->order->Status=="Completed") {
 			if($this->params["NameserverRegex"] =="") {
 				$this->params["NameserverRegex"] = "/.*/";
@@ -234,11 +236,25 @@ Class Request {
 		try {
 			$this->processCallback($orderStatus,$messageId,$orderId,$type);
 		} catch (\Throwable $e) {
-			if($orderStatus == "Invalid" || $orderStatus == "Failed") {
-				$this->request("AckMessage", array('sessionId' => 'mySessionId', 'msgId' => $messageId));
-				Tools::log("Acked ".$orderStatus." order after error. OrderId: ".$orderId.", MessageId: ".$messageId.", Error: ".$e->getMessage());
+			if(($orderStatus == "Invalid" || $orderStatus == "Failed") && !isset($this->ackedMessageIds[$messageId])) {
+				$this->ackAfterError($messageId,$orderStatus,$orderId,$e);
 			}
 			throw $e;
+		}
+	}
+	// A failing ack (SOAP fault, Ascio error) must not mask the original exception: log it, the caller rethrows the original.
+	private function ackAfterError($messageId,$orderStatus,$orderId,\Throwable $cause) {
+		$context = $orderStatus." order. OrderId: ".$orderId.", MessageId: ".$messageId.", Error: ".$cause->getMessage();
+		try {
+			$result = $this->request("AckMessage", array('sessionId' => 'mySessionId', 'msgId' => $messageId));
+			if(is_array($result) && isset($result["error"])) {
+				Tools::log("Ack after error failed: ".$result["error"]." - ".$context);
+				return;
+			}
+			$this->ackedMessageIds[$messageId] = true;
+			Tools::log("Acked ".$context);
+		} catch (\Throwable $ackError) {
+			Tools::log("Ack after error threw ".get_class($ackError).": ".$ackError->getMessage()." - ".$context);
 		}
 	}
 	protected function processCallback($orderStatus,$messageId,$orderId,$type=null) {
@@ -276,6 +292,7 @@ Class Request {
 					'msgId' => $messageId
 				);	
 				$this->request("AckMessage", $ascioParams);
+				$this->ackedMessageIds[$messageId] = true;
 			}
 			Tools::log("DomainId: " . $domainId." not found in the WHMCS-Database: " .$order->order->Type. ", Domain: ".$domainName.", Order-Status: ".$orderStatus. ", MessageId" . $messageId . "\n ");
 			return;	
