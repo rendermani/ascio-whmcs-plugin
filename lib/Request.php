@@ -228,7 +228,20 @@ Class Request {
 		$result =  get_query_val("tbldomains","registrar", array("id" => $domainId,"domain" => $domainName));
 		return $result == "ascio" || $result == "ascio_usd";
 	}
+	// Invalid and Failed orders change nothing at Ascio. If processing them throws, ack anyway
+	// (and rethrow), otherwise the message stays at the head of the poll queue and blocks it forever.
 	public function getCallbackData($orderStatus,$messageId,$orderId,$type=null) {
+		try {
+			$this->processCallback($orderStatus,$messageId,$orderId,$type);
+		} catch (\Throwable $e) {
+			if($orderStatus == "Invalid" || $orderStatus == "Failed") {
+				$this->request("AckMessage", array('sessionId' => 'mySessionId', 'msgId' => $messageId));
+				Tools::log("Acked ".$orderStatus." order after error. OrderId: ".$orderId.", MessageId: ".$messageId.", Error: ".$e->getMessage());
+			}
+			throw $e;
+		}
+	}
+	protected function processCallback($orderStatus,$messageId,$orderId,$type=null) {
 		$ascioParams = array(
 			'sessionId' => 'mySessionId',
 			'msgId' => $messageId
