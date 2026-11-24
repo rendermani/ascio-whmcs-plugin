@@ -659,14 +659,22 @@ Class Request {
 			$contactResult = $this->request("CreateOrder",$ascioParams);
 		}
 		
-		if(! ($contactResult["error"] || $registrantResult["error"])) {
+		$contactResult    = $contactResult    ?? null;
+		$registrantResult = $registrantResult ?? null;
+
+		// request() returns a stdClass on success and an array ["error" => ...] on failure
+		$contactError    = (is_array($contactResult)    && !empty($contactResult["error"]))    ? $contactResult["error"]    : "";
+		$registrantError = (is_array($registrantResult) && !empty($registrantResult["error"])) ? $registrantResult["error"] : "";
+
+		if ($contactError === "" && $registrantError === "") {
 			return ["success" => true];
 		}
-		
-		$errorContactUpdate = $contactResult && $contactResult["error"] ? $contactResult["error"] . ". \n" : "";
-		$errorRegistrantUpdate =  $registrantResult && $registrantResult["error"] ? $registrantResult["error"]. ". \n" : "";
-		$error = ["error" => $errorContactUpdate . $errorRegistrantUpdate];
-		return $error; 
+
+		$error = "";
+		if ($contactError !== "")    { $error .= $contactError . ". \n"; }
+		if ($registrantError !== "") { $error .= $registrantError . ". \n"; }
+
+		return ["error" => $error];
 	}
 	public function doRegistrantVerification($email) {
 		$ascioParams = [
